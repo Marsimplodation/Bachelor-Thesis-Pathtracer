@@ -1,10 +1,12 @@
 #include "scene.h"
 #include "../primitives/plane.h"
+#include "../primitives/pointLight.h"
 #include "../primitives/triangle.h"
 #include "../primitives/sphere.h"
 #include "../shader/shader.h"
 #include "../types/camera.h"
 #include "../window/window.h"
+#include <cmath>
 #include <cstdlib>
 namespace {
 Triangle triangles[1];
@@ -13,7 +15,14 @@ Sphere spheres[1];
 SimpleShaderInfo red{.color=Vector3{1.0f, 0.0f, 0.0f}};
     SimpleShaderInfo blue{.color={0.0f, 0.0f, 1.0f}};
     SimpleShaderInfo white{.color={1.0f, 1.0f, 1.0f}};
+    SimpleShaderInfo whitelight{.color={4.0f, 4.0f, 4.0f}};
     SimpleShaderInfo orange{.color={1.0f, 0.6f, 0.0f}};
+    SimpleShaderInfo glass{.refractiveIdx1 = 1.0f, .refractiveIdx2=1.31f};
+    PointLight sphereLights[] = {{
+    .color = {14, 14, 14},
+    .center = {0,5,0},
+    .radius = 0.2f,
+}};
 }
 
 
@@ -21,7 +30,7 @@ void findIntersection(Ray &ray) {
     int numTris = sizeof(triangles) / sizeof(triangles[0]);
     float xi = ((float)rand()/RAND_MAX);
     xi -= (1.0f-ray.throughPut);
-    if(ray.depth > 3 && xi < KILLCHANCE) {
+    if(xi < KILLCHANCE) {
         ray.terminated = true;
     }
     for (int i = 0; i < numTris; i++) {
@@ -37,6 +46,16 @@ void findIntersection(Ray &ray) {
         sphereIntersect(ray, spheres[i]);
     }
 }
+
+
+Vector3 getDirectLightSample(Ray & r) {
+    int numpLights = sizeof(sphereLights) / sizeof(sphereLights[0]);
+    for (int i = 0; i < numpLights; i++) {
+        return illuminate(r, sphereLights[i]);
+    }
+    return {};
+}
+
 
 void initScene() {
    triangles[0] = {
@@ -57,8 +76,8 @@ void initScene() {
 
     spheres[0].center = {-3, -2, -1};
     spheres[0].radius = 1.5f;
-    spheres[0].shaderFlag = SHADOWSHADER;
-    spheres[0].shaderInfo = (void*)&orange;
+    spheres[0].shaderFlag = REFRACTSHADER;
+    spheres[0].shaderInfo = (void*)&glass;
 
 
     planes[0].normal = {0.0, 1.0, 0.0};
@@ -95,7 +114,9 @@ void initScene() {
     Vector3 f{0.25f, -0.43f, 1.0f};
     Vector3 u{0.2f, 1.0f, 0.0f};
     registerInfo(getCamera()->origin, "camera origin"); 
-    registerInfo(*getLight(), "light Intensity");
+        registerInfo(sphereLights[0].center, "light Center");
+    registerInfo(sphereLights[0].color, "light Intensity");
+    registerInfo(sphereLights[0].radius, "light radius");
     cameraSetForward(f);
     cameraSetUp(u);
 }

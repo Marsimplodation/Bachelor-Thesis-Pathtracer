@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include "../scene/scene.h"
 namespace {
-float light = 10.0f;
+float light = 0.0f;
 }
 
 Vector3 shade(Ray &r) {
@@ -17,6 +17,8 @@ Vector3 shade(Ray &r) {
             return mirrorShader(r);
         case SHADOWSHADER:
             return shadowShader(r, r.shaderInfo);
+        case REFRACTSHADER:
+            return refractionShader(r);
         default:
             return r.direction;
     }
@@ -28,7 +30,6 @@ Vector3 mirrorShader(Ray & r) {
     r.terminated = false;
     r.length = MAXFLOAT;
     r.throughPut = 1.0f;
-    r.depth--;
     r.hit=false;
     return {};
 }
@@ -38,7 +39,40 @@ float *getLight() {
 }
 
 Vector3 solidShader(Ray &r, void *info) {
-    return ((SimpleShaderInfo*)info)->color;
+    return ((SimpleShaderInfo*)info)->color * r.colorMask;
+
+}
+
+Vector3 refractionShader(Ray &r) {
+    SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
+        
+    float eps = 0.001f;
+    Vector3 normal = r.normal;
+    float n1 = info->refractiveIdx1;
+    float n2 = info->refractiveIdx2;
+    float eta = n1 / n2;
+    float cos = dotProduct(r.direction, r.normal);
+
+    if(cos >= eps) { //in object
+        cos *= -1;
+        eta = 1.0f / eta;
+        normal = normal * -1;
+    }
+    
+    Vector3 refractDirection;
+    float discriminator = 1.0f - (eta * eta) * (1.0f - (cos * cos));
+
+    //internal relection
+    if(discriminator < eps)  refractDirection = - 2.0f* dotProduct(r.direction, r.normal)*r.normal;
+    else refractDirection = normalized(eta* (r.direction - cos * normal) - normal * sqrtf(discriminator+eps));
+    
+    r.origin = r.origin +r.direction * (r.length) + refractDirection*eps;
+    r.direction = refractDirection;
+    r.terminated = false;
+    r.length = MAXFLOAT;
+    r.hit=false;
+
+    return {};
 }
 
 Vector3 shadowShader(Ray &r, void *info) {
@@ -48,25 +82,7 @@ Vector3 shadowShader(Ray &r, void *info) {
     r.colorMask = r.colorMask * in->color;
     
     //light
-    float radius = 0.2f;
-    float xi1 = (((float)rand()/RAND_MAX)*2-1.0f) *radius;
-    float xi2 = (((float)rand()/RAND_MAX)*2 -1.0f)*radius;
-    float xi3 = (((float)rand()/RAND_MAX)*2 -1.0f) *radius;
-    Vector3 lightColor{1,1,1};
-    Vector3 lightPos{0.0f + xi1, 0.0f+xi2, 0.0f+xi3};
-   
-    //direct illumination
-    Ray shadowRay = r;
-    shadowRay.hit = false;
-    shadowRay.origin = r.origin +r.direction * (r.length+0.01f);
-    shadowRay.direction = normalized(lightPos - shadowRay.origin);
-    shadowRay.length = length(lightPos-shadowRay.origin);
-    findIntersection(shadowRay);
-    float i = 1.0f/(shadowRay.length * shadowRay.length);
-    if (i >= 1.0f) i=1.0f;
-    i*= fabs(dotProduct(r.normal, shadowRay.direction));
-    i*=light; // intensity
-    i*=1.0f/(1.0f-KILLCHANCE); // russian roullete
+    Vector3 lightColor = getDirectLightSample(r);
 
     //reset for next bounce
     r.origin = r.origin + r.direction * r.length;
@@ -74,13 +90,12 @@ Vector3 shadowShader(Ray &r, void *info) {
     //attenuation for secondary rays
     if(r.depth > 0 && r.length != MAXFLOAT) {
         //fix later
-        float f  = 1.0f;///(r.length*r.length);
+        float f  = 1.0f;//(r.length*r.length);
         if(f > 1.0f) f = 1.0f;
         r.throughPut *= f;
         r.throughPut *= fabs(dotProduct(r.normal, r.direction));
     }
     r.length = MAXFLOAT;
     
-    if(shadowRay.hit) i=0;
-    return fgColor * lightColor * i * r.throughPut;
+    return fgColor * lightColor  * r.throughPut;
 }
