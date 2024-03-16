@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include "../scene/scene.h"
 namespace {
-float light = 1.0f;
+float light = 10.0f;
 }
 
 Vector3 shade(Ray &r) {
@@ -73,7 +73,8 @@ Vector3 shadowShader(Ray &r, void *info) {
     r.direction = randomV3UnitHemisphere(r.normal);
     //attenuation for secondary rays
     if(r.depth > 0 && r.length != MAXFLOAT) {
-        float f  = 1.0f/(r.length*r.length);
+        //fix later
+        float f  = 1.0f;///(r.length*r.length);
         if(f > 1.0f) f = 1.0f;
         r.throughPut *= f;
         r.throughPut *= fabs(dotProduct(r.normal, r.direction));

@@ -3,6 +3,7 @@
 #define SOLIDSHADER 0x00
 #define SHADOWSHADER 0x01
 #define MIRRORSHADER 0x02
+#define FRESNELSHADER 0x02
 
 #include "../types/vector.h"
 #include "../types/ray.h"

@@ -12,6 +12,8 @@
 #include "types/vector.h"
 
 namespace {
+const int MAX_WIDTH = 4096;
+const int MAX_HEIGHT = 2160;
 int WIDTH = 800;
 int HEIGHT = 600;
 Vector3 * pixels;
@@ -119,7 +121,6 @@ void reset() {
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     onGoingReset = false;
 }
 
@@ -127,11 +128,8 @@ void setWindowSize(int x, int y) {
     onGoingReset = true;
     WIDTH = x;
     HEIGHT = y;
-    free(pixels);
-    free(samples);
-    pixels = (Vector3 *) malloc(sizeof(Vector3)*WIDTH*HEIGHT);
-    samples = (int *) malloc(sizeof(int)*WIDTH*HEIGHT);
     reset();
+    onGoingReset = false;
 }
 
 Vector3 getWindowSize() {
@@ -143,8 +141,8 @@ Vector3 getWindowSize() {
 }
 
 void initTracer() {
-    pixels = (Vector3 *) malloc(sizeof(Vector3)*WIDTH*HEIGHT);
-    samples = (int *) malloc(sizeof(int)*WIDTH*HEIGHT);
+    pixels = (Vector3 *) malloc(sizeof(Vector3)*MAX_WIDTH*MAX_HEIGHT);
+    samples = (int *) malloc(sizeof(int)*MAX_WIDTH*MAX_HEIGHT);
     for (int i = 0; i < 16; i++) {
         wavefront[i].x = i % 4;
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;

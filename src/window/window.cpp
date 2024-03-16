@@ -66,6 +66,8 @@ void createWindow() {
     // Main loop
     SDL_Event e;
     bool quit = false;
+    bool preview = true;
+    ImVec2 previewSize(0,0);
     while (!quit) {
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
@@ -81,20 +83,40 @@ void createWindow() {
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
-        // Draw a pixel (e.g., red) at coordinates (400, 300)
-        /*for(int x = 0; x < WIDTH; x++) {
-            for(int y = 0; y < HEIGHT; y++) {
-                auto c = tracerGetPixel(x, y);
-                SDL_SetRenderDrawColor(renderer, c->x*255, c->y * 255, c->z*255, 255); 
-                SDL_RenderDrawPoint(renderer, x, y + 100);
-            }
-        }*/
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-        ImGui::Begin("Canvas", nullptr);
+        
 
+        ImGui::Begin("Menu");
+        if(ImGui::Button("clear")) {
+           reset(); 
+        }
+        ImGui::Checkbox("Preview", &preview);
+
+        for(auto & var : fields) {
+           switch (var.flag) {
+                case 0x00: 
+                    if(ImGui::DragFloat(var.name, (float*)var.data)) reset();
+                    break;
+                case 0x01:
+                    if(ImGui::DragFloat3(var.name, (float*)var.data)) reset();
+                default:
+                    break;
+           }
+        }
+        ImGui::End();
+
+
+        ImGui::Begin("Rendering", nullptr);
+        if(preview) {
+            ImVec2 renderingSize = ImGui::GetWindowSize();
+            ImGui::End();
+            ImGui::Begin("Preview", nullptr);
+            ImVec2 previewSize = ImGui::GetWindowSize();
+            float factor = (float)previewSize.x / renderingSize.x;
+            ImGui::SetWindowSize("Preview", ImVec2(previewSize.x, renderingSize.y * factor));
+        }
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
-        
         ImVec2 size = ImGui::GetWindowSize();
         if(size.x != WIDTH || size.y != HEIGHT) {
             setWindowSize(size.x, size.y);
@@ -115,23 +137,7 @@ void createWindow() {
 
 
         
-        ImGui::Begin("Menu");
-        if(ImGui::Button("clear")) {
-           reset(); 
-        }
-
-        for(auto & var : fields) {
-           switch (var.flag) {
-                case 0x00: 
-                    if(ImGui::DragFloat(var.name, (float*)var.data)) reset();
-                    break;
-                case 0x01:
-                    if(ImGui::DragFloat3(var.name, (float*)var.data)) reset();
-                default:
-                    break;
-           }
-        }
-        ImGui::End();
+        
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());

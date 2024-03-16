@@ -1,13 +1,15 @@
 #include "scene.h"
 #include "../primitives/plane.h"
 #include "../primitives/triangle.h"
+#include "../primitives/sphere.h"
 #include "../shader/shader.h"
 #include "../types/camera.h"
 #include "../window/window.h"
 #include <cstdlib>
 namespace {
-Triangle triangles[2];
+Triangle triangles[1];
 Plane planes[6];
+Sphere spheres[1];
 SimpleShaderInfo red{.color=Vector3{1.0f, 0.0f, 0.0f}};
     SimpleShaderInfo blue{.color={0.0f, 0.0f, 1.0f}};
     SimpleShaderInfo white{.color={1.0f, 1.0f, 1.0f}};
@@ -29,6 +31,11 @@ void findIntersection(Ray &ray) {
     for (int i = 0; i < numPlanes; i++) {
         planeIntersect(ray, planes[i]);
     }
+
+    int numSpheres = sizeof(spheres) / sizeof(spheres[0]);
+    for (int i = 0; i < numSpheres; i++) {
+        sphereIntersect(ray, spheres[i]);
+    }
 }
 
 void initScene() {
@@ -48,21 +55,10 @@ void initScene() {
     triangles[0].shaderFlag = MIRRORSHADER;
     triangles[0].shaderInfo = &white;
 
-    triangles[1] = {
-        .vertices =
-            {
-                {2, 3.0, 3.0},
-                {0, 1.0f, 3.0},
-                {3.0, 1.0f, 2.0},
-
-            },
-        .normal = normalized({0, 0, -1}),
-    };
-    triangles[1].normal = normalized(
-        crossProduct(triangles[1].vertices[1] - triangles[1].vertices[0],
-                     triangles[1].vertices[2] - triangles[1].vertices[0]));
-    triangles[1].shaderFlag = SHADOWSHADER;
-    triangles[1].shaderInfo = &orange;
+    spheres[0].center = {-3, -2, -1};
+    spheres[0].radius = 1.5f;
+    spheres[0].shaderFlag = SHADOWSHADER;
+    spheres[0].shaderInfo = (void*)&orange;
 
 
     planes[0].normal = {0.0, 1.0, 0.0};
