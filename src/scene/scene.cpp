@@ -17,7 +17,7 @@ SimpleShaderInfo red{.color=Vector3{1.0f, 0.0f, 0.0f}};
     SimpleShaderInfo white{.color={1.0f, 1.0f, 1.0f}};
     SimpleShaderInfo whitelight{.color={4.0f, 4.0f, 4.0f}};
     SimpleShaderInfo orange{.color={1.0f, 0.6f, 0.0f}};
-    SimpleShaderInfo glass{.refractiveIdx1 = 1.0f, .refractiveIdx2=1.31f};
+    SimpleShaderInfo glass{.color={1.0f, 1.0f, 1.0f}, .refractiveIdx1 = 1.0f, .refractiveIdx2=1.31f};
     PointLight sphereLights[] = {{
     .color = {14, 14, 14},
     .center = {0,5,0},

@@ -7,6 +7,11 @@ namespace {
 float light = 0.0f;
 }
 
+float calculateFresnelTerm(float dot, float n1, float n2) {
+    float r0 = ((n1 -n2)/(n1+n2));
+    r0*=r0;
+    return r0 + (1-r0) * pow(1-dot, 5);
+}
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
     if (!r.hit) return black;
@@ -63,14 +68,24 @@ Vector3 refractionShader(Ray &r) {
     float discriminator = 1.0f - (eta * eta) * (1.0f - (cos * cos));
 
     //internal relection
-    if(discriminator < eps)  refractDirection = - 2.0f* dotProduct(r.direction, r.normal)*r.normal;
-    else refractDirection = normalized(eta* (r.direction - cos * normal) - normal * sqrtf(discriminator+eps));
+    float xi = (float)rand()/RAND_MAX;
+    float reflectance = calculateFresnelTerm(-dotProduct(r.direction, normal), n1, n2);
+    if(discriminator < eps || xi < 0.5f){
+        refractDirection = normalized(r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal);
+        r.throughPut *= reflectance;    
+    }
+    else{
+        refractDirection = normalized(eta* (r.direction - cos * normal) - normal * sqrtf(discriminator+eps));
+        r.throughPut *= 1 - reflectance;    
+    }
+    r.throughPut*=2;
     
     r.origin = r.origin +r.direction * (r.length) + refractDirection*eps;
     r.direction = refractDirection;
     r.terminated = false;
     r.length = MAXFLOAT;
     r.hit=false;
+    r.colorMask = r.colorMask * info->color;
 
     return {};
 }
