@@ -81,15 +81,17 @@ Vector3 refractionShader(Ray &r) {
     //internal relection
     float xi = (float)rand()/RAND_MAX;
     float reflectance = calculateFresnelTerm(-cos, n1, n2);
-    if(discriminator < eps || xi > 0.5f){
+    if(reflectance > 1) reflectance = 1;
+    if(reflectance < 0) reflectance = 0;
+    if(discriminator < eps || xi < 0.5f*reflectance){
         refractDirection = normalized(r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal);
-        r.throughPut *= reflectance;    
+        r.throughPut *= reflectance * 1.0f / (1-0.5f*reflectance);    
     }
     else{
         refractDirection = normalized(eta * (r.direction - cos * normal) - normal * sqrtf(discriminator+eps));
         r.throughPut *= 1 - reflectance;    
+        r.throughPut *= 1.0f / (1-0.5f*(1-reflectance));    
     }
-    r.throughPut*=2;
     
     r.origin = r.origin +r.direction * (r.length) + refractDirection*eps;
     r.direction = refractDirection;

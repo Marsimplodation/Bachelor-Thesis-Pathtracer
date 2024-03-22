@@ -28,9 +28,10 @@ SimpleShaderInfo normal{.shaderFlag=static_cast<char>(0xFF)};
 
 void findIntersection(Ray &ray) {
     float xi = ((float)rand()/RAND_MAX);
-    if(xi < KILLCHANCE) {
+    if(ray.depth > 2 && xi < KILLCHANCE) {
         ray.terminated = true;
-    }
+    } else if(ray.depth > 2)
+        ray.throughPut *= 1.0f/(1-KILLCHANCE);
 
     int num = triangles.count + planes.count + spheres.count + cubes.count; 
     for (int i = 0; i < num; i++) {
@@ -77,8 +78,8 @@ void initScene() {
     addToPrimitiveContainer(cubes, createCube({0,5,1}, {4,1,4}, &emit));
     
     
-    Vector3 f{0.05f, -0.45f, 1.0f};
-    Vector3 u{0.2f, 1.0f, 0.0f};
+    Vector3 f{0.05f, -0.15f, 1.0f};
+    Vector3 u{0.0f, 1.0f, 0.0f};
     registerInfo(getCamera()->origin, "camera origin"); 
     registerInfo(cubes.data[0].center, "light Center");
     registerInfo(cubes.data[0].size, "light Size");

@@ -2,7 +2,7 @@
 #define SCENE_H
 #include "../types/ray.h"
 #include <cstdlib>
-#define KILLCHANCE 0.20
+#define KILLCHANCE 0.50
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
 void initScene();
