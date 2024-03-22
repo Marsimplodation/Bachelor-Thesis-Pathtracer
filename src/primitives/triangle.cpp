@@ -1,4 +1,5 @@
 #include "triangle.h"
+#include <algorithm>
 #include <cmath>
 
 bool findIntersection(Ray &ray, Triangle & primitive) {
@@ -36,7 +37,7 @@ bool findIntersection(Ray &ray, Triangle & primitive) {
     if (t < 0.1 || ray.length < t)
         return false;
 
-    ray.normal = primitive.normal;
+    ray.normal = normalized(u * primitive.normal[1] + v * primitive.normal[2] + (1 - u - v) * primitive.normal[0]);;
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
@@ -50,7 +51,34 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo) {
         .vertices = {v0, v1, v2},
         .shaderInfo = shaderInfo,
     };
-    t.normal = normalized(crossProduct(t.vertices[1] - t.vertices[0],
+    t.normal[0] = normalized(crossProduct(t.vertices[1] - t.vertices[0],
                      t.vertices[2] - t.vertices[0]));
+    t.normal[1] = t.normal[0];
+    t.normal[2] = t.normal[0];
     return t;
+}
+
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, void * shaderInfo) {
+    Triangle t{
+        .vertices = {v0, v1, v2},
+        .normal = {n0, n1, n2},
+        .shaderInfo = shaderInfo,
+    };
+    return t;
+}
+
+Vector3 minBounds(Triangle &primitive) {
+    return {
+        std::min(primitive.vertices[0].x, std::min(primitive.vertices[1].x, primitive.vertices[2].x)),
+        std::min(primitive.vertices[0].y, std::min(primitive.vertices[1].y, primitive.vertices[2].y)),
+        std::min(primitive.vertices[0].z, std::min(primitive.vertices[1].z, primitive.vertices[2].z)),
+    };
+}
+
+Vector3 maxBounds(Triangle &primitive) {
+    return {
+        std::max(primitive.vertices[0].x, std::max(primitive.vertices[1].x, primitive.vertices[2].x)),
+        std::max(primitive.vertices[0].y, std::max(primitive.vertices[1].y, primitive.vertices[2].y)),
+        std::max(primitive.vertices[0].z, std::max(primitive.vertices[1].z, primitive.vertices[2].z)),
+    };
 }
