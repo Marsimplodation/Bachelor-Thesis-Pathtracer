@@ -15,7 +15,6 @@ struct Ray {
     bool hit;
 
     //shaderinfo
-    char shaderFlag;
     void * shaderInfo;
     Vector3 colorMask;
 };

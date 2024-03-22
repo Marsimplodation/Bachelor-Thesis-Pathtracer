@@ -11,14 +11,15 @@
 
 struct SimpleShaderInfo {
     Vector3 color;
+    char shaderFlag;
     float refractiveIdx1;
     float refractiveIdx2;
 };
 
 float *getLight();
 Vector3 shade(Ray & r);
-Vector3 solidShader(Ray & r, void * info);
-Vector3 shadowShader(Ray & r, void * info);
+Vector3 solidShader(Ray & r);
+Vector3 shadowShader(Ray & r);
 Vector3 mirrorShader(Ray & r);
 Vector3 refractionShader(Ray & r);
 

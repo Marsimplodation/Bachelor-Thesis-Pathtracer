@@ -5,9 +5,9 @@
 struct Triangle {
     Vector3 vertices[3];
     Vector3 normal;
-    char shaderFlag;
     void *shaderInfo;
 };
 
-bool triangleIntersect(Ray &ray, Triangle & primitive);
+bool findIntersection(Ray &ray, Triangle & primitive);
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo);
 #endif // !TRIANGLE_H

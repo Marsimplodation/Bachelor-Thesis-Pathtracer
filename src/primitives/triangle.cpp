@@ -1,7 +1,7 @@
 #include "triangle.h"
 #include <cmath>
 
-bool triangleIntersect(Ray &ray, Triangle & primitive) {
+bool findIntersection(Ray &ray, Triangle & primitive) {
     // Determine two neighboring edge vectors
     Vector3 const edge1 =
         primitive.vertices[1] - primitive.vertices[0];
@@ -40,8 +40,17 @@ bool triangleIntersect(Ray &ray, Triangle & primitive) {
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
-    ray.shaderFlag = primitive.shaderFlag;
     ray.shaderInfo = primitive.shaderInfo;
     ray.hit = true;
     return true;
+}
+
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo) {
+    Triangle t{
+        .vertices = {v0, v1, v2},
+        .shaderInfo = shaderInfo,
+    };
+    t.normal = normalized(crossProduct(t.vertices[1] - t.vertices[0],
+                     t.vertices[2] - t.vertices[0]));
+    return t;
 }

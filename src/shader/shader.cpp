@@ -15,13 +15,13 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
     if (!r.hit) return black;
-    switch (r.shaderFlag) {
+    switch (((SimpleShaderInfo*)r.shaderInfo)->shaderFlag) {
         case SOLIDSHADER:
-            return solidShader(r, r.shaderInfo);
+            return solidShader(r);
         case MIRRORSHADER: 
             return mirrorShader(r);
         case SHADOWSHADER:
-            return shadowShader(r, r.shaderInfo);
+            return shadowShader(r);
         case REFRACTSHADER:
             return refractionShader(r);
         default:
@@ -43,8 +43,9 @@ float *getLight() {
     return &light;
 }
 
-Vector3 solidShader(Ray &r, void *info) {
-    return ((SimpleShaderInfo*)info)->color * r.colorMask;
+Vector3 solidShader(Ray &r) {
+    SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
+    return (info)->color * r.colorMask;
 
 }
 
@@ -90,7 +91,7 @@ Vector3 refractionShader(Ray &r) {
     return {};
 }
 
-Vector3 shadowShader(Ray &r, void *info) {
+Vector3 shadowShader(Ray &r) {
     SimpleShaderInfo * in = (SimpleShaderInfo*) r.shaderInfo;
     auto fgColor = in->color;
     fgColor = fgColor * r.colorMask;

@@ -6,11 +6,11 @@
 struct Plane {
     Vector3 center;
     Vector3 normal;
-    char shaderFlag;
     void *shaderInfo;
 };
 
-bool planeIntersect(Ray & ray, Plane & primitive);
+bool findIntersection(Ray &ray, Plane & primitive);
+Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo);
 
 #endif // !PLANE_H
 

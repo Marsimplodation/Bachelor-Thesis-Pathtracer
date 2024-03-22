@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cstdio>
 
-bool sphereIntersect(Ray &ray, Sphere &primitive) {
+bool findIntersection(Ray &ray, Sphere & primitive){
     Vector3 origin = ray.origin - primitive.center;
     float a = 1.0f;
     float b = 2.0 * dotProduct(origin, ray.direction);
@@ -28,8 +28,15 @@ bool sphereIntersect(Ray &ray, Sphere &primitive) {
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
-    ray.shaderFlag = primitive.shaderFlag;
     ray.shaderInfo = primitive.shaderInfo;
     ray.hit = true;
     return true;
+}
+
+Sphere createSphere(Vector3 center, float radius, void *shaderInfo) {
+    return {
+        .center = center,
+        .radius = radius,
+        .shaderInfo = shaderInfo,
+    };
 }

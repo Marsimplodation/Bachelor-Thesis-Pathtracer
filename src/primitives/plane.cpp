@@ -1,6 +1,6 @@
 #include "plane.h"
 
-bool planeIntersect(Ray &ray, Plane & primitive) {
+bool findIntersection(Ray &ray, Plane & primitive) {
     // Determine two neighboring edge vectors
     float cosine = dotProduct(ray.direction, primitive.normal); 
     if(cosine > 0) return false;
@@ -14,8 +14,15 @@ bool planeIntersect(Ray &ray, Plane & primitive) {
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
-    ray.shaderFlag = primitive.shaderFlag;
     ray.shaderInfo = primitive.shaderInfo;
     ray.hit = true;
     return true;
+}
+
+Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo) {
+    return {
+        .center = center,
+        .normal = normal,
+        .shaderInfo = shaderInfo,
+    };
 }

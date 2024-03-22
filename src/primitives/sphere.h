@@ -5,10 +5,10 @@
 struct Sphere {
     Vector3 center;
     float radius;
-    char shaderFlag;
     void *shaderInfo;
 };
 
-bool sphereIntersect(Ray & ray, Sphere & primitive);
+bool findIntersection(Ray & ray, Sphere & primitive);
+Sphere createSphere(Vector3 center, float radius, void *shaderInfo);
 
 #endif // !SPHERE_H
