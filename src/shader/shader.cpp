@@ -32,7 +32,6 @@ Vector3 shade(Ray &r) {
 Vector3 mirrorShader(Ray & r) {
     r.origin = r.origin + r.direction * r.length;
     r.direction = r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal;
-    r.terminated = false;
     r.length = MAXFLOAT;
     r.throughPut = 1.0f;
     r.hit=false;
@@ -83,7 +82,6 @@ Vector3 refractionShader(Ray &r) {
     
     r.origin = r.origin +r.direction * (r.length) + refractDirection*eps;
     r.direction = refractDirection;
-    r.terminated = false;
     r.length = MAXFLOAT;
     r.hit=false;
     r.colorMask = r.colorMask * info->color;

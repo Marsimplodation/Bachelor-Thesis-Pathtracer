@@ -25,8 +25,7 @@ bool onGoingReset = false;
 
 void traceWF(int i) {
     while (true) {
-        if (onGoingReset)
-            continue;
+        if(onGoingReset) continue;
         int y = wavefront[i].y;
         int x = wavefront[i].x;
         auto &ray = wavefront[i].ray;

@@ -31,12 +31,13 @@ PointLight sphereLights[] = {{
 
 void findIntersection(Ray &ray) {
     float xi = ((float)rand()/RAND_MAX);
-    if(ray.depth > 4 && xi < KILLCHANCE) {
+    if(xi < KILLCHANCE) {
         ray.terminated = true;
     }
 
     int num = triangles.count + planes.count + spheres.count; 
     for (int i = 0; i < num; i++) {
+        if(ray.terminated) return;
         int idx = i;
         if(idx < triangles.count) {
             findIntersection(ray, triangles.data[idx]);
