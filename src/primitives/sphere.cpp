@@ -40,3 +40,19 @@ Sphere createSphere(Vector3 center, float radius, void *shaderInfo) {
         .shaderInfo = shaderInfo,
     };
 }
+
+Vector3 minBounds(Sphere &primitive){
+    return {
+        primitive.center.x - primitive.radius,
+        primitive.center.y - primitive.radius,
+        primitive.center.z - primitive.radius,
+    };
+}
+
+Vector3 maxBounds(Sphere &primitive){
+    return {
+        primitive.center.x + primitive.radius,
+        primitive.center.y + primitive.radius,
+        primitive.center.z + primitive.radius,
+    };
+}

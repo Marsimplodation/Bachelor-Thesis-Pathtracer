@@ -7,6 +7,7 @@
 #include "types/vector.h"
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <functional>
 #include <thread>
@@ -69,9 +70,8 @@ void traceWF(int i) {
         auto pixelValue = tracerGetPixel(x, y);
         float currentSample = (float)samples[y * WIDTH + x];
         pixelValue = pixelValue * (float)currentSample;
-        pixelValue += ray.color;
+        pixelValue += linearRGBToNonLinear(ray.color, 2.2f);
         pixelValue = pixelValue / (currentSample + 1.0f);
-        pixelValue = clampToOne(pixelValue);
         setPixel(x, y, pixelValue);
         samples[y * WIDTH + x]++;
     }

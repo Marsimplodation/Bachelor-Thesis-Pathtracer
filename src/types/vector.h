@@ -14,10 +14,12 @@ void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
                      Vector3 *buff);
 Vector3 randomV3UnitHemisphere(Vector3 n);
 Vector3 clampToOne(const Vector3 & v);
+Vector3 linearRGBToNonLinear(const Vector3 & v, float gamma);
 
 Vector3 operator*(const Vector3 & v, float s);
 Vector3 operator*(const Vector3 & v1, const Vector3 & v2);
 Vector3 operator/(const Vector3 & v, float s);
+Vector3 operator/(const Vector3 & v1,const Vector3 &v2);
 Vector3 operator*(float s, const Vector3 & v);
 Vector3 operator-(const Vector3 & v1, const Vector3 & v2);
 Vector3 operator+(const Vector3 & v1, const Vector3 & v2);

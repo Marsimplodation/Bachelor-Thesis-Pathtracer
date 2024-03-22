@@ -67,6 +67,9 @@ void createWindow() {
     SDL_Event e;
     bool quit = false;
     bool preview = true;
+    int scaleFactor = 1;
+    int zoomFactor = 1;
+    int zoomOffset[] = {0,0};
     ImVec2 previewSize(0,0);
     while (!quit) {
         while (SDL_PollEvent(&e)) {
@@ -91,6 +94,9 @@ void createWindow() {
            reset(); 
         }
         ImGui::Checkbox("Preview", &preview);
+        ImGui::DragInt("scale factor", &scaleFactor);
+        ImGui::DragInt("zoom factor", &zoomFactor);
+        ImGui::DragInt2("zoom offset", zoomOffset);
 
         for(auto & var : fields) {
            switch (var.flag) {
@@ -118,19 +124,26 @@ void createWindow() {
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
         ImVec2 size = ImGui::GetWindowSize();
-        if(size.x != WIDTH || size.y != HEIGHT) {
+        size = ImVec2(size.x/scaleFactor, size.y/scaleFactor);
+        if((int)size.x != WIDTH || (int)size.y != HEIGHT) {
             setWindowSize(size.x, size.y);
             WIDTH = getWindowSize().x;
             HEIGHT = getWindowSize().y;
         }
         // Draw pixels
-        for (int x = 0; x < WIDTH; x++)
+        int steps = scaleFactor*zoomFactor;
+        for (int x = 0; x < WIDTH*steps; x+=steps)
         {
-            for (int y = 0; y < HEIGHT; y++)
+            for (int y = 0; y < HEIGHT*steps; y+=steps)
             {
                 ImVec2 pixelPos = ImVec2(canvasPos.x + x, canvasPos.y + y);
-                auto c = tracerGetPixel(x, y) * 255;
-                ImGui::GetWindowDrawList()->AddRectFilled(pixelPos, ImVec2(pixelPos.x + 1, pixelPos.y + 1), IM_COL32(c.x, c.y, c.z, 255));
+                auto c = tracerGetPixel((int)(x+zoomOffset[0])/steps, (int)(y+zoomOffset[1])/steps);
+                c = clampToOne(c)*255;
+                for (int i = 1; i <=steps; i++) {
+                    for (int j = 1; j <=steps; j++) {
+                        ImGui::GetWindowDrawList()->AddRectFilled(pixelPos, ImVec2(pixelPos.x + i, pixelPos.y + j), IM_COL32(c.x, c.y, c.z, 255));
+                    }
+                } 
             }
         }
         ImGui::End();

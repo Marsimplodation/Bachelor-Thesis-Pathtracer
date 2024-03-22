@@ -11,6 +11,7 @@ struct Plane {
 
 bool findIntersection(Ray &ray, Plane & primitive);
 Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo);
-
+Vector3 minBounds(Plane &primitive);
+Vector3 maxBounds(Plane &primitive);
 #endif // !PLANE_H
 

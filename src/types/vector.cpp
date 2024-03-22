@@ -51,11 +51,22 @@ Vector3 randomV3UnitHemisphere(Vector3 n) {
 }
 
 Vector3 clampToOne(const Vector3 & v){
+    float max = fmaxf(v.x, fmaxf(v.y, v.z));
+    if(max < 1.0f) max = 1.0f;
     return {
-        fminf(v.x, 1.0f),
-        fminf(v.y, 1.0f),
-        fminf(v.z, 1.0f),
+        .x = fminf(v.x/max, 1.0f),
+        .y = fminf(v.y/max, 1.0f),
+        .z = fminf(v.z/max, 1.0f),
     };
+}
+
+Vector3 linearRGBToNonLinear(const Vector3 & v, float gamma) {
+    return {
+        powf(v.x, gamma),
+        powf(v.y, gamma),
+        powf(v.z, gamma),
+    };
+
 }
 
 //operators
@@ -100,3 +111,12 @@ return {
     };
 
 }
+
+Vector3 operator/(const Vector3 & v1,const Vector3 &v2) {
+    return {
+        .x = v1.x / v2.x,
+        .y = v1.y / v2.y,
+        .z = v1.z / v2.z,
+    };
+}
+

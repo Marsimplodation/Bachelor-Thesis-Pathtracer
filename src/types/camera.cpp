@@ -32,6 +32,9 @@ void cameraSetUp(Vector3 &v) {
     camera.right = buff[2];
 }
 
+void setCameraFov(float f) {
+    camera.focus = 1.0f / (tanf((f * 3.14f / 180.0f) / 2.0f));
+}
 
 void createCameraRay(float x, float y, Ray &ray) {
     ray.origin = camera.origin;

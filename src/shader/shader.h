@@ -14,9 +14,9 @@ struct SimpleShaderInfo {
     char shaderFlag;
     float refractiveIdx1;
     float refractiveIdx2;
+    float intensity;
 };
 
-float *getLight();
 Vector3 shade(Ray & r);
 Vector3 solidShader(Ray & r);
 Vector3 shadowShader(Ray & r);

@@ -1,4 +1,5 @@
 #include "plane.h"
+#include <cmath>
 
 bool findIntersection(Ray &ray, Plane & primitive) {
     // Determine two neighboring edge vectors
@@ -24,5 +25,21 @@ Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo) {
         .center = center,
         .normal = normal,
         .shaderInfo = shaderInfo,
+    };
+}
+
+Vector3 minBounds(Plane &primitive) {
+    return {
+        primitive.normal.x == 1 ? primitive.center.x : -MAXFLOAT,
+        primitive.normal.y == 1 ? primitive.center.y : -MAXFLOAT,
+        primitive.normal.z == 1 ? primitive.center.z : -MAXFLOAT,
+    };
+}
+
+Vector3 maxBounds(Plane &primitive) {
+    return {
+        primitive.normal.x == 1 ? primitive.center.x : MAXFLOAT,
+        primitive.normal.y == 1 ? primitive.center.y : MAXFLOAT,
+        primitive.normal.z == 1 ? primitive.center.z : MAXFLOAT,
     };
 }
