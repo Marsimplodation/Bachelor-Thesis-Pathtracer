@@ -2,8 +2,10 @@
 #include <SDL2/SDL.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_sdlrenderer2.h>
+#include <chrono>
 #include <imgui.h>
 #include <iostream>
+#include <ratio>
 #include <vector>
 #include "../tracer.h"
 
@@ -71,6 +73,7 @@ void createWindow() {
     int zoomFactor = 1;
     int zoomOffset[] = {0,0};
     ImVec2 previewSize(0,0);
+    auto tBegin = std::chrono::high_resolution_clock::now();
     while (!quit) {
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
@@ -87,8 +90,24 @@ void createWindow() {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-        
 
+        //show rendering time
+        auto tNow = std::chrono::high_resolution_clock::now();
+        double elapsed_time_ms = std::chrono::duration<double, std::milli>(tNow-tBegin).count();
+        int seconds = (elapsed_time_ms) / 1000;
+        int minutes = seconds/60;
+        seconds %= 60;
+        int hours = minutes/60;
+        minutes %= 60;
+        //char buffer[64];
+        //sprintf(buffer, "Rendering Time: %02d:%02d:%02d", hours, minutes, seconds);
+        ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+    
+        bool showOverlay = true;
+        //ImGui::Begin("Overlay", &showOverlay,overlayFlags);
+        ImGui::Begin("Information", &showOverlay);
+        ImGui::TextColored(ImVec4(0.8,0.8,0.8,1), "Rendering Time: %02d:%02d:%02d", hours, minutes, seconds);
+        ImGui::End();
         ImGui::Begin("Menu");
         ImGui::TextColored(ImVec4(0.8,0.8,0.8,1), "Window Settings");
         ImGui::Checkbox("Preview", &preview);
@@ -100,10 +119,16 @@ void createWindow() {
         for(auto & var : fields) {
            switch (var.flag) {
                 case 0x00: 
-                    if(ImGui::DragFloat(var.name, (float*)var.data)) reset();
+                    if(ImGui::DragFloat(var.name, (float*)var.data)){
+                        reset();
+                        tBegin = std::chrono::high_resolution_clock::now();
+                    }
                     break;
                 case 0x01:
-                    if(ImGui::DragFloat3(var.name, (float*)var.data)) reset();
+                    if(ImGui::DragFloat3(var.name, (float*)var.data)){
+                        reset();
+                        tBegin = std::chrono::high_resolution_clock::now();
+                    }
                 default:
                     break;
            }
@@ -114,9 +139,10 @@ void createWindow() {
 
         ImGui::Begin("Rendering", nullptr);
         if(preview) {
+            ImGuiWindowFlags previewFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking;
             ImVec2 renderingSize = ImGui::GetWindowSize();
             ImGui::End();
-            ImGui::Begin("Preview", nullptr);
+            ImGui::Begin("Preview", nullptr, previewFlags);
             ImVec2 previewSize = ImGui::GetWindowSize();
             float factor = (float)previewSize.x / renderingSize.x;
             ImGui::SetWindowSize("Preview", ImVec2(previewSize.x, renderingSize.y * factor));
@@ -129,6 +155,7 @@ void createWindow() {
             setWindowSize(size.x, size.y);
             WIDTH = getWindowSize().x;
             HEIGHT = getWindowSize().y;
+            tBegin = std::chrono::high_resolution_clock::now();
         }
         // Draw pixels
         int steps = scaleFactor*zoomFactor;
