@@ -90,14 +90,13 @@ void createWindow() {
         
 
         ImGui::Begin("Menu");
-        if(ImGui::Button("clear")) {
-           reset(); 
-        }
+        ImGui::TextColored(ImVec4(0.8,0.8,0.8,1), "Window Settings");
         ImGui::Checkbox("Preview", &preview);
         ImGui::DragInt("scale factor", &scaleFactor);
         ImGui::DragInt("zoom factor", &zoomFactor);
         ImGui::DragInt2("zoom offset", zoomOffset);
-
+        ImGui::TextColored(ImVec4(0.8,0.8,0.8,1), "Render Settings");
+        ImGui::BeginChild("renderSetting");
         for(auto & var : fields) {
            switch (var.flag) {
                 case 0x00: 
@@ -109,6 +108,7 @@ void createWindow() {
                     break;
            }
         }
+        ImGui::EndChild();
         ImGui::End();
 
 

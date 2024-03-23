@@ -84,10 +84,10 @@ void findIntersection(Ray &ray) {
 
 
 
-void initScene() {   
+void initScene(float & scale) {   
     //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
-    //addToPrimitiveContainer(spheres, createSphere({-3, -2, -1}, 1.5f, &glass));
-    addToPrimitiveContainer(spheres, createSphere({2, 0, 3}, 1.5f, &glass));
+    addToPrimitiveContainer(spheres, createSphere({-3, -2, -1}, 1.5f, &glass));
+    addToPrimitiveContainer(spheres, createSphere({3, -4, 3}, 1.5f, &orange));
 
     addToPrimitiveContainer(planes, createPlane({0,-5,0}, {0,1,0}, &white)); 
     addToPrimitiveContainer(planes, createPlane({0,5,0}, {0,-1,0}, &white)); 
@@ -96,7 +96,7 @@ void initScene() {
     addToPrimitiveContainer(planes, createPlane({0,0,-15}, {0,0,1}, &white)); 
     addToPrimitiveContainer(planes, createPlane({0,0,10}, {0,0,-1}, &white));
     addToPrimitiveContainer(cubes, createCube({0,5,1}, {4,1,4}, &emit));
-    addToPrimitiveContainer(objects, loadObject("test.obj", {-3,-5,3}, {-1,1,1}, &orange));
+    //addToPrimitiveContainer(objects, loadObject("test.obj", {3,-5,3}, {-1,1,1}, &orange));
     
     
     Vector3 f{0.05f, -0.15f, 1.0f};
@@ -106,6 +106,7 @@ void initScene() {
     registerInfo(cubes.data[0].size, "light Size");
     registerInfo(emit.color, "light Color");
     registerInfo(emit.intensity, "light intensity");
+    registerInfo(scale, "scene scale");
     cameraSetForward(f);
     cameraSetUp(u);
 }

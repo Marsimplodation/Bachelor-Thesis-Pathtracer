@@ -6,7 +6,7 @@
 #define KILLCHANCE 0.50
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
-void initScene();
+void initScene(float & scale);
 
 
 template<typename T>

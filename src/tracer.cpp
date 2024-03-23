@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <functional>
 #include <thread>
+#include "window/window.h"
 
 namespace {
 const int MAX_WIDTH = 4096;
@@ -22,6 +23,7 @@ int *samples;
 WaveFrontEntry wavefront[16];
 std::thread threads[16];
 bool onGoingReset = false;
+float sceneScale = 1.0f;
 } // namespace
 
 void traceWF(int i) {
@@ -50,7 +52,7 @@ void traceWF(int i) {
 
         findIntersection(ray);
         // float t = ray.throughPut;
-        auto color = shade(ray);
+        auto color = shade(ray, sceneScale);
         ray.color += (color);
         ray.depth++;
 
@@ -143,7 +145,7 @@ void initTracer() {
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
     }
-    initScene();
+    initScene(sceneScale);
 }
 void destroyTracer() {
     free(pixels);

@@ -17,7 +17,7 @@ struct SimpleShaderInfo {
     float intensity;
 };
 
-Vector3 shade(Ray & r);
+Vector3 shade(Ray &r, float scale);
 Vector3 solidShader(Ray & r);
 Vector3 shadowShader(Ray & r);
 Vector3 mirrorShader(Ray & r);
