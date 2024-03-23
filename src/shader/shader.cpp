@@ -53,6 +53,7 @@ Vector3 mirrorShader(Ray & r) {
 
 Vector3 solidShader(Ray &r) {
     SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
+    r.terminated = true;
     return clampToOne((info)->color * r.colorMask * info->intensity * r.throughPut);
 }
 
