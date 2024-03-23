@@ -71,8 +71,8 @@ Vector3 refractionShader(Ray &r) {
         eta = 1.0f / eta;
         normal = normal * -1;
         float tmp = n2;
-        n2 = n1;
-        n1 = tmp;
+        //n2 = n1;
+        //n1 = tmp;
     }
     
     Vector3 refractDirection;
@@ -85,12 +85,13 @@ Vector3 refractionShader(Ray &r) {
     if(reflectance < 0) reflectance = 0;
     if(discriminator < eps || xi < 0.5f*reflectance){
         refractDirection = normalized(r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal);
-        r.throughPut *= reflectance * 1.0f / (1-0.5f*reflectance);    
+        if(discriminator > eps)
+            r.throughPut *= reflectance * 1.0f / (1-0.5f*reflectance);    
     }
     else{
         refractDirection = normalized(eta * (r.direction - cos * normal) - normal * sqrtf(discriminator+eps));
         r.throughPut *= 1 - reflectance;    
-        r.throughPut *= 1.0f / (1-0.5f*(1-reflectance));    
+        r.throughPut *= 1.0f / (0.5f*reflectance);    
     }
     
     r.origin = r.origin +r.direction * (r.length) + refractDirection*eps;

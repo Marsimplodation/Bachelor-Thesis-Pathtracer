@@ -1,11 +1,13 @@
 #include "scene.h"
 #include "../primitives/plane.h"
 #include "../primitives/triangle.h"
+#include "../primitives/object.h"
 #include "../primitives/cube.h"
 #include "../primitives/sphere.h"
 #include "../shader/shader.h"
 #include "../types/camera.h"
 #include "../window/window.h"
+#include <cstdio>
 #include <cstdlib>
 
 namespace {
@@ -14,6 +16,8 @@ PrimitivesContainer<Triangle> triangles={};
 PrimitivesContainer<Plane> planes={};
 PrimitivesContainer<Sphere> spheres={};
 PrimitivesContainer<Cube> cubes={};
+PrimitivesContainer<Triangle> objectBuffer={};
+PrimitivesContainer<Object> objects={};
 
 SimpleShaderInfo red{.color=Vector3{1.0f, 0.0f, 0.0f}, .shaderFlag=SHADOWSHADER};
 SimpleShaderInfo blue{.color={0.0f, 0.0f, 1.0f}, .shaderFlag=SHADOWSHADER};
@@ -26,6 +30,16 @@ SimpleShaderInfo normal{.shaderFlag=static_cast<char>(0xFF)};
 }
 
 
+Triangle *getObjectBufferAtIdx(int idx) {
+    if (idx >= objectBuffer.count) return 0x0;
+    return &objectBuffer.data[idx];
+}
+
+PrimitivesContainer<Triangle> *getObjectBuffer() {
+    return &objectBuffer;
+}
+
+
 void findIntersection(Ray &ray) {
     float xi = ((float)rand()/RAND_MAX);
     if(ray.depth > 2 && xi < KILLCHANCE) {
@@ -33,7 +47,7 @@ void findIntersection(Ray &ray) {
     } else if(ray.depth > 2)
         ray.throughPut *= 1.0f/(1-KILLCHANCE);
 
-    int num = triangles.count + planes.count + spheres.count + cubes.count; 
+    int num = triangles.count + planes.count + spheres.count + cubes.count + objects.count; 
     for (int i = 0; i < num; i++) {
         if(ray.terminated) return;
         int idx = i;
@@ -59,15 +73,21 @@ void findIntersection(Ray &ray) {
             findIntersection(ray, cubes.data[idx]);
             continue;
         }
+
+        idx -= cubes.count;
+        if(idx < objects.count) {
+            findIntersection(ray, objects.data[idx]);
+            continue;
+        }
     }
 }
 
 
 
 void initScene() {   
-    addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
-    addToPrimitiveContainer(spheres, createSphere({-3, -2, -1}, 1.5f, &glass));
-    addToPrimitiveContainer(spheres, createSphere({2, 0, 3}, 1.2f, &orange));
+    //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
+    //addToPrimitiveContainer(spheres, createSphere({-3, -2, -1}, 1.5f, &glass));
+    addToPrimitiveContainer(spheres, createSphere({2, 0, 3}, 1.5f, &glass));
 
     addToPrimitiveContainer(planes, createPlane({0,-5,0}, {0,1,0}, &white)); 
     addToPrimitiveContainer(planes, createPlane({0,5,0}, {0,-1,0}, &white)); 
@@ -76,6 +96,7 @@ void initScene() {
     addToPrimitiveContainer(planes, createPlane({0,0,-15}, {0,0,1}, &white)); 
     addToPrimitiveContainer(planes, createPlane({0,0,10}, {0,0,-1}, &white));
     addToPrimitiveContainer(cubes, createCube({0,5,1}, {4,1,4}, &emit));
+    addToPrimitiveContainer(objects, loadObject("test.obj", {-3,-5,3}, {-1,1,1}, &orange));
     
     
     Vector3 f{0.05f, -0.15f, 1.0f};
