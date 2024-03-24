@@ -110,3 +110,12 @@ void initScene(float & scale) {
     cameraSetForward(f);
     cameraSetUp(u);
 }
+
+void destroyScene() {   
+    destroyContainer(objects); 
+    destroyContainer(triangles); 
+    destroyContainer(objectBuffer); 
+    destroyContainer(spheres); 
+    destroyContainer(cubes); 
+    destroyContainer(planes); 
+}

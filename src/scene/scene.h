@@ -7,6 +7,7 @@
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
 void initScene(float & scale);
+void destroyScene();
 
 
 template<typename T>
@@ -26,6 +27,12 @@ void addToPrimitiveContainer(PrimitivesContainer<T> & container, T primitive) {
         container.capacity += 10;
     }
     container.data[container.count++] = primitive;
+}
+
+template<typename T>
+void destroyContainer(PrimitivesContainer<T> & container) {
+    if(!container.data) return;
+    free(container.data);
 }
 
 Triangle *getObjectBufferAtIdx(int idx);

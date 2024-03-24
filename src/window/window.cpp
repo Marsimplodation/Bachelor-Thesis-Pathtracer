@@ -109,6 +109,10 @@ void createWindow() {
         ImGui::TextColored(ImVec4(0.8,0.8,0.8,1), "Rendering Time: %02d:%02d:%02d", hours, minutes, seconds);
         ImGui::End();
         ImGui::Begin("Menu");
+        if(ImGui::Button("Quit")) {
+            destroyTracer();
+            break;
+        }
         ImGui::TextColored(ImVec4(0.8,0.8,0.8,1), "Window Settings");
         ImGui::Checkbox("Preview", &preview);
         ImGui::DragInt("scale factor", &scaleFactor);

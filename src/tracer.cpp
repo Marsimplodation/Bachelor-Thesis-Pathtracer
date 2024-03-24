@@ -24,10 +24,11 @@ WaveFrontEntry wavefront[16];
 std::thread threads[16];
 bool onGoingReset = false;
 float sceneScale = 1.0f;
+bool running = true;
 } // namespace
 
 void traceWF(int i) {
-    while (true) {
+    while (running) {
         if(onGoingReset) continue;
         int y = wavefront[i].y;
         int x = wavefront[i].x;
@@ -148,6 +149,12 @@ void initTracer() {
     initScene(sceneScale);
 }
 void destroyTracer() {
+    running = false;
+    for (int i = 0; i < 16; i++) {
+        wavefront[i].ray.terminated = true;
+    }
+    destroyScene();
+    onGoingReset = true;
     free(pixels);
     free(samples);
 }
