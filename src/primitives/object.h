@@ -3,8 +3,9 @@
 #include "../types/ray.h"
 #include "../types/vector.h"
 #include "cube.h"
-
+#define OBJECT 0x01
 struct Object {
+    char type;
     int startIdx;
     int endIdx;
     Cube boundingBox;

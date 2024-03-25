@@ -80,6 +80,7 @@ bool findIntersection(Ray &ray, Cube & primitive) {
 }
 Cube createCube(Vector3 center, Vector3 size, void *shaderInfo){
     return {
+        .type = CUBE,
         .center = center,
         .size = size,
         .shaderInfo = shaderInfo,

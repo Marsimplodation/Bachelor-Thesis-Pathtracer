@@ -4,11 +4,12 @@
 
 namespace {
 Camera camera{
-    {-2.5f, 2.5f, -10},
-    {0, 0, 1},
-    {0, 1, 0},
-    {1, 0, 0},
-    1.0f / (tanf((70 * 3.14f / 180.0f) / 2.0f)),
+    .origin= {2.0f, 0.0f, -9.0f},
+    .forward= {0, 0, 1},
+    .right= {1, 0, 0},
+    .up= {0, 1, 0},
+    .focus= 1.0f / (tanf((70 * 3.14f / 180.0f) / 2.0f)),
+    .fov = 70,
 };
 }
 
@@ -32,7 +33,7 @@ void cameraSetUp(Vector3 &v) {
     camera.right = buff[2];
 }
 
-void setCameraFov(float f) {
+void cameraSetFov(float f) {
     camera.focus = 1.0f / (tanf((f * 3.14f / 180.0f) / 2.0f));
 }
 

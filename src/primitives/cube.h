@@ -2,8 +2,10 @@
 #define CUBE_H
 #include "../types/ray.h"
 #include "../types/vector.h"
+#define CUBE 0x00
 
 struct Cube {
+    char type;
     Vector3 center;
     Vector3 size;
     void *shaderInfo;

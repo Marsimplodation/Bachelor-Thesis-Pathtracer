@@ -86,6 +86,7 @@ Object loadObject(const char *fileName, Vector3 position, Vector3 size,
     };
 
     return {
+        .type = OBJECT,
         .startIdx = startIdx,
         .endIdx = endIdx,
         .boundingBox =  {.center = position, .size=scale*2, .shaderInfo=shaderInfo},

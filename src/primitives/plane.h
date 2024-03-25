@@ -2,8 +2,9 @@
 #define PLANE_H
 #include "../types/ray.h"
 #include "../types/vector.h"
-
+#define PLANE 0x02
 struct Plane {
+    char type;
     Vector3 center;
     Vector3 normal;
     void *shaderInfo;

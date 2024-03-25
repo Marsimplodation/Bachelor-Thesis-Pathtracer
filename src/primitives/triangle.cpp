@@ -60,6 +60,7 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo) {
 
 Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, void * shaderInfo) {
     Triangle t{
+        .type = TRIANGLE,
         .vertices = {v0, v1, v2},
         .normal = {n0, n1, n2},
         .shaderInfo = shaderInfo,

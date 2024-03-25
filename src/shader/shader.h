@@ -1,6 +1,6 @@
 #ifndef SHADER_H
 #define SHADER_H
-#define SOLIDSHADER 0x00
+#define EMITSHADER 0x00
 #define SHADOWSHADER 0x01
 #define MIRRORSHADER 0x02
 #define REFRACTSHADER 0x03
@@ -17,8 +17,8 @@ struct SimpleShaderInfo {
     float intensity;
 };
 
-Vector3 shade(Ray &r, float scale);
-Vector3 solidShader(Ray & r);
+Vector3 shade(Ray &r);
+Vector3 emitShader(Ray & r);
 Vector3 shadowShader(Ray & r);
 Vector3 mirrorShader(Ray & r);
 Vector3 refractionShader(Ray & r);

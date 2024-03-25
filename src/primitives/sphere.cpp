@@ -35,6 +35,7 @@ bool findIntersection(Ray &ray, Sphere & primitive){
 
 Sphere createSphere(Vector3 center, float radius, void *shaderInfo) {
     return {
+        .type = SPHERE,
         .center = center,
         .radius = radius,
         .shaderInfo = shaderInfo,

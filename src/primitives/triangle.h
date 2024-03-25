@@ -2,7 +2,10 @@
 #define TRIANGLE_H
 #include "../types/vector.h"
 #include "../types/ray.h"
+#define TRIANGLE 0x04
+
 struct Triangle {
+    char type;
     Vector3 vertices[3];
     Vector3 normal[3];
     void *shaderInfo;

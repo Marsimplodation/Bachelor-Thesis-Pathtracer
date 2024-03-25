@@ -23,7 +23,6 @@ int *samples;
 WaveFrontEntry wavefront[16];
 std::thread threads[16];
 bool onGoingReset = false;
-float sceneScale = 1.0f;
 bool running = true;
 } // namespace
 
@@ -53,7 +52,7 @@ void traceWF(int i) {
 
         findIntersection(ray);
         // float t = ray.throughPut;
-        auto color = shade(ray, sceneScale);
+        auto color = shade(ray);
         ray.color += (color);
         ray.depth++;
 
@@ -73,7 +72,7 @@ void traceWF(int i) {
         auto pixelValue = tracerGetPixel(x, y);
         float currentSample = (float)samples[y * WIDTH + x];
         pixelValue = pixelValue * (float)currentSample;
-        pixelValue += linearRGBToNonLinear(ray.color, 2.2f);
+        pixelValue += ray.color;
         pixelValue = pixelValue / (currentSample + 1.0f);
         setPixel(x, y, pixelValue);
         samples[y * WIDTH + x]++;
@@ -146,7 +145,7 @@ void initTracer() {
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
     }
-    initScene(sceneScale);
+    initScene();
 }
 void destroyTracer() {
     running = false;

@@ -22,6 +22,7 @@ bool findIntersection(Ray &ray, Plane & primitive) {
 
 Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo) {
     return {
+        .type = PLANE,
         .center = center,
         .normal = normal,
         .shaderInfo = shaderInfo,
