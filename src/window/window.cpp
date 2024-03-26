@@ -315,7 +315,7 @@ void createWindow() {
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-
+        SDL_DestroyTexture(texture);
         // Update the window
         SDL_RenderPresent(renderer);
     }
