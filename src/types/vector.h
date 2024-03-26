@@ -12,7 +12,6 @@ Vector3 normalized(const Vector3 &v);
 Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2);
 void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
                      Vector3 *buff);
-Vector3 randomV3UnitHemisphere(Vector3 n);
 Vector3 clampToOne(const Vector3 & v);
 Vector3 linearRGBToNonLinear(const Vector3 & v, float gamma);
 

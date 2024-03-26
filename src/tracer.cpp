@@ -1,4 +1,5 @@
 #include "tracer.h"
+#include "common.h"
 #include "primitives/plane.h"
 #include "primitives/triangle.h"
 #include "scene/scene.h"
@@ -18,8 +19,9 @@ const int MAX_WIDTH = 4096;
 const int MAX_HEIGHT = 2160;
 int WIDTH = 800;
 int HEIGHT = 600;
-Vector3 *pixels;
-int *samples;
+Vector3 pixels[MAX_WIDTH][MAX_HEIGHT];
+int samples[MAX_WIDTH][MAX_HEIGHT];
+u32 randomStates[MAX_WIDTH][MAX_HEIGHT];
 WaveFrontEntry wavefront[16];
 std::thread threads[16];
 bool onGoingReset = false;
@@ -27,23 +29,27 @@ bool running = true;
 } // namespace
 
 void traceWF(int i) {
+    int x,y;
+    Vector3 color{0,0,0};
+    float xi1, xi2, xIn, yIn;
     while (running) {
         if(onGoingReset) continue;
-        int y = wavefront[i].y;
-        int x = wavefront[i].x;
+        y = wavefront[i].y;
+        x = wavefront[i].x;
         auto &ray = wavefront[i].ray;
         if (ray.terminated) {
-            float xi1 = 2 * ((float)rand() / (float)RAND_MAX) - 1.0f;
-            float xi2 = 2 * ((float)rand() / (float)RAND_MAX) - 1.0f;
-            float xIn = 2.0f * ((float)(x + xi1) / (float)WIDTH) - 1.0f;
-            float yIn = 2.0f * ((float)(y + xi2) / (float)HEIGHT) - 1.0f;
+            ray.randomState = randomStates[x][y];
+            xi1 = 2 * (fastRandom(ray.randomState)) - 1.0f;
+            xi2 = 2 * (fastRandom(ray.randomState)) - 1.0f;
+            xIn = 2.0f * ((float)(x + xi1) / (float)WIDTH) - 1.0f;
+            yIn = 2.0f * ((float)(y + xi2) / (float)HEIGHT) - 1.0f;
             yIn = -yIn;
             if (WIDTH >= HEIGHT)
                 yIn = (float)HEIGHT / (float)WIDTH * yIn;
             else
                 xIn = (float)WIDTH / float(HEIGHT) * xIn;
 
-            ray.color = {0.0f, 0.0f, 0.0f};
+            color = {0.0f, 0.0f, 0.0f};
             ray.colorMask = {1.0f, 1.0f, 1.0f};
             ray.throughPut = 1.0f;
             ray.depth = 0;
@@ -52,8 +58,7 @@ void traceWF(int i) {
 
         findIntersection(ray);
         // float t = ray.throughPut;
-        auto color = shade(ray);
-        ray.color += (color);
+        color += shade(ray);
         ray.depth++;
 
         if (!ray.terminated)
@@ -69,13 +74,13 @@ void traceWF(int i) {
         } else {
             wavefront[i].x += 4;
         }
-        auto pixelValue = tracerGetPixel(x, y);
-        float currentSample = (float)samples[y * WIDTH + x];
-        pixelValue = pixelValue * (float)currentSample;
-        pixelValue += ray.color;
-        pixelValue = pixelValue / (currentSample + 1.0f);
-        setPixel(x, y, pixelValue);
-        samples[y * WIDTH + x]++;
+        float currentSample = (float)samples[x][y];
+        color += tracerGetPixel(x, y) * (float)currentSample;
+        color = color / (currentSample + 1.0f);
+        
+        setPixel(x, y, color);
+        samples[x][y]++;
+        randomStates[x][y] = ray.randomState;
     }
 }
 
@@ -94,7 +99,7 @@ Vector3 tracerGetPixel(int x, int y) {
     if (x >= WIDTH || x < 0 || y >= HEIGHT || y < 0)
         return {};
 
-    return pixels[y * WIDTH + x];
+    return pixels[x][y];
 }
 
 void setPixel(int x, int y, Vector3 &c) {
@@ -102,9 +107,9 @@ void setPixel(int x, int y, Vector3 &c) {
         return;
     if (x >= WIDTH || x < 0 || y >= HEIGHT || y < 0)
         return;
-    pixels[y * WIDTH + x].x = c.x;
-    pixels[y * WIDTH + x].y = c.y;
-    pixels[y * WIDTH + x].z = c.z;
+    pixels[x][y].x = c.x;
+    pixels[x][y].y = c.y;
+    pixels[x][y].z = c.z;
 }
 
 void reset() {
@@ -112,11 +117,11 @@ void reset() {
     Vector3 v{0, 0, 0};
     for (int x = 0; x < WIDTH; x++) {
         for (int y = 0; y < HEIGHT; y++) {
-            pixels[y * WIDTH + x].x = v.x;
-            pixels[y * WIDTH + x].y = v.y;
-            pixels[y * WIDTH + x].z = v.z;
+            pixels[x][y].x = 0;
+            pixels[x][y].y = 0;
+            pixels[x][y].z = 0;
 
-            samples[y * WIDTH + x] = 0;
+            samples[x][y] = 0;
         }
     }
     for (int i = 0; i < 16; i++) {
@@ -138,12 +143,20 @@ void setWindowSize(int x, int y) {
 Vector3 getWindowSize() { return {(float)WIDTH, (float)HEIGHT, 0.0f}; }
 
 void initTracer() {
-    pixels = (Vector3 *)malloc(sizeof(Vector3) * MAX_WIDTH * MAX_HEIGHT);
-    samples = (int *)malloc(sizeof(int) * MAX_WIDTH * MAX_HEIGHT);
     for (int i = 0; i < 16; i++) {
         wavefront[i].x = i % 4;
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
+    }
+    for (int x = 0; x < MAX_WIDTH; x++) {
+        for (int y = 0; y < MAX_HEIGHT; y++) {
+            pixels[x][y].x = 0;
+            pixels[x][y].y = 0;
+            pixels[x][y].z = 0;
+
+            samples[x][y] = 0;
+            randomStates[x][y] = hashCoords(x, y); 
+        }
     }
     initScene();
 }
@@ -154,6 +167,4 @@ void destroyTracer() {
     }
     destroyScene();
     onGoingReset = true;
-    free(pixels);
-    free(samples);
 }

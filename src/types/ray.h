@@ -1,12 +1,13 @@
 #ifndef RAY_H
 #define RAY_H
 #include "vector.h"
+#include "../common.h"
 struct Ray {
     Vector3 origin;
     Vector3 direction;
-    Vector3 color;
     float throughPut;
     int depth;
+    u32 randomState;
     
     //hit info
     Vector3 normal;
@@ -18,4 +19,5 @@ struct Ray {
     void * shaderInfo;
     Vector3 colorMask;
 };
+Vector3 randomV3UnitHemisphere(Ray & r);
 #endif // !RAY_H

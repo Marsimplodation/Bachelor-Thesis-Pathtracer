@@ -6,9 +6,9 @@
 
 Vector3 illuminate(Ray & r, PointLight & light) {
     float radius = light.radius;
-    float xi1 = (((float)rand()/RAND_MAX)*2-1.0f) *radius;
-    float xi2 = (((float)rand()/RAND_MAX)*2 -1.0f)*radius;
-    float xi3 = (((float)rand()/RAND_MAX)*2 -1.0f) *radius;
+    float xi1 = ((fastRandom(r.randomState))*2-1.0f)*radius;
+    float xi2 = ((fastRandom(r.randomState))*2 -1.0f)*radius;
+    float xi3 = ((fastRandom(r.randomState))*2 -1.0f) *radius;
     Vector3 lightPos = {xi1, xi2, xi3};
     lightPos += light.center;
 

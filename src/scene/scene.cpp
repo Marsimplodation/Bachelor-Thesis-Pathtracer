@@ -71,20 +71,8 @@ void *getPrimitive(int idx) {
     return 0x0;
 }
 
-void findIntersection(Ray &ray) {
-    float xi = ((float)rand()/RAND_MAX);
-    if(ray.depth > 2 && xi < KILLCHANCE) {
-        ray.terminated = true;
-    } else if(ray.depth > 2)
-        ray.throughPut *= 1.0f/(1-KILLCHANCE);
-
-    int num = triangles.count + planes.count + spheres.count + cubes.count + objects.count; 
-    void * primitive;
-    for (int i = 0; i < num; i++) {
-        if(ray.terminated) return;
-        int idx = i;
-        primitive = getPrimitive(idx);
-        if(!primitive) continue;
+void findIntersection(Ray &ray, void * primitive) {
+    if(!primitive) return;
         char flag = *((char*)primitive);
         switch(flag) {
             case CUBE:
@@ -105,7 +93,25 @@ void findIntersection(Ray &ray) {
             default:
                 break;
         }
-     
+
+}
+
+void findIntersection(Ray &ray) {
+    //    float xi = ((float)rand()/RAND_MAX);
+    if(ray.terminated) return;
+    float xi = (fastRandom(ray.randomState));
+    if(ray.depth > 2 && xi < KILLCHANCE) {
+        ray.terminated = true;
+    } else if(ray.depth > 2)
+        ray.throughPut *= 1.0f/(1-KILLCHANCE);
+
+    int num = triangles.count + planes.count + spheres.count + cubes.count + objects.count; 
+    void * primitive;
+    for (int i = 0; i < num; i++) {
+        if(ray.terminated) return;
+        int idx = i;
+        primitive = getPrimitive(idx);
+        findIntersection(ray, primitive);
     }
 }
 

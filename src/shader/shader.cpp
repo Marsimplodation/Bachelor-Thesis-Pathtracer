@@ -12,6 +12,7 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
     return r0 + (1-r0) * pow(1-dot, 5);
 }
 
+    u32 randomState;
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
     if (!r.hit) return black;
@@ -68,7 +69,7 @@ Vector3 refractionShader(Ray &r) {
     float discriminator = 1.0f - (eta * eta) * (1.0f - (cos * cos));
 
     //internal relection
-    float xi = (float)rand()/RAND_MAX;
+    float xi = fastRandom(r.randomState);
     float reflectance = calculateFresnelTerm(-cos, n1, n2);
     if(reflectance > 1) reflectance = 1;
     if(reflectance < 0) reflectance = 0;
@@ -101,7 +102,7 @@ Vector3 shadowShader(Ray &r) {
 
     //reset for next bounce
     r.origin = r.origin + r.direction * r.length;
-    r.direction = randomV3UnitHemisphere(r.normal);
+    r.direction = randomV3UnitHemisphere(r);
     r.origin += r.direction*0.01;
     r.length = MAXFLOAT;
     r.hit=false;

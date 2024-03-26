@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "ray.h"
 #include <cmath>
 
 Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2) {
@@ -36,19 +37,6 @@ void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
     buff[2] = normalized(v3 - dotProduct(buff[0], v3) * buff[0] - dotProduct(buff[1], v3) * buff[1]);
 }
 
-Vector3 randomV3UnitHemisphere(Vector3 n) {
-    Vector3 direction;
-    float theta = (float)rand()/RAND_MAX; //=sinf(acosf(cos));
-    float sinTheta = sqrtf(1-theta*theta);
-    float phi = 2 * 3.14f * ((float)rand() / RAND_MAX);
-    direction.x = sinTheta * cosf(phi);
-    direction.y = sinTheta * sinf(phi);
-    direction.z = theta;
-    //adding the normal to attain the final random direction in the hemisphere
-    if(dotProduct(n, direction) < 0.0f) direction = -1*direction;
-    direction = normalized(direction + n);
-  return direction;
-}
 
 Vector3 clampToOne(const Vector3 & v){
     float max = fmaxf(v.x, fmaxf(v.y, v.z));
