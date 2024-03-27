@@ -1,5 +1,5 @@
 #include "ray.h"
-#include "../common.h"
+#include "common.h"
 #include <cmath>
 
 

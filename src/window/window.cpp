@@ -1,13 +1,14 @@
 #include "window.h"
-#include "../primitives/cube.h"
-#include "../primitives/object.h"
-#include "../primitives/plane.h"
-#include "../primitives/sphere.h"
-#include "../primitives/triangle.h"
-#include "../scene/scene.h"
-#include "../shader/shader.h"
-#include "../tracer.h"
-#include "../types/camera.h"
+#include "common.h"
+#include "primitives/cube.h"
+#include "primitives/object.h"
+#include "primitives/plane.h"
+#include "primitives/sphere.h"
+#include "primitives/triangle.h"
+#include "scene/scene.h"
+#include "shader/shader.h"
+#include "tracer.h"
+#include "types/camera.h"
 
 #include <SDL2/SDL.h>
 #include <SDL_pixels.h>
@@ -170,6 +171,25 @@ void displayCamera() {
     ImGui::End();
 }
 
+void displayIntersectSettings() {
+    ImGui::Begin("Trace Setttings");
+    const char *items[] = {"ALL", "BVH", "GRID"};
+    if (ImGui::BeginCombo("intersect mode", items[getIntersectMode()])) {
+        for (int i = 0; i < IM_ARRAYSIZE(items); i++) {
+            bool isSelected = (getIntersectMode() == i);
+            if (ImGui::Selectable(items[i], isSelected)) {
+                setIntersectMode(i);
+                callReset();
+            }
+            if (isSelected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::End();
+
+}
+
 void createWindow() {
     SDL_Window *window;
     SDL_Init(SDL_INIT_VIDEO);
@@ -263,6 +283,7 @@ void createWindow() {
 
         displayObjects();
         displayCamera();
+        displayIntersectSettings();
 
         ImGui::Begin("Rendering", nullptr);
         if (preview) {

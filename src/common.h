@@ -7,4 +7,7 @@
 #define INFINITY MAX_FLOAT
 float fastRandom(u32 & seed);
 u32 hashCoords(int x, int y);
+enum IntersectMode{ALL, BVH, GRID};
+IntersectMode getIntersectMode();
+void setIntersectMode(int i);
 #endif

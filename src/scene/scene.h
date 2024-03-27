@@ -3,17 +3,18 @@
 #include "../types/ray.h"
 #include "../primitives/triangle.h"
 #include <cstdlib>
-#define KILLCHANCE 0.10
+#define KILLCHANCE 0.1
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
 void initScene();
 void destroyScene();
 
+
 template<typename T>
 struct PrimitivesContainer{
     T* data;
-    int count;
-    int capacity;
+    u32 count;
+    u32 capacity;
 };
 
 template<typename T>
@@ -40,4 +41,5 @@ PrimitivesContainer<Triangle> *getObjectBuffer();
 int getNumPrimitives();
 void *getPrimitive(int idx);
 
+void resetScene();
 #endif // !SCENE_H

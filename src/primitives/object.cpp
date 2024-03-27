@@ -1,7 +1,9 @@
 #include "object.h"
-#include "../scene/scene.h"
+#include "common.h"
+#include "scene/scene.h"
 #include "cube.h"
 #include "triangle.h"
+#include "types/bvh.h"
 #include <cstdlib>
 #include <string>
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -11,6 +13,12 @@ bool findIntersection(Ray &ray, Object &primitive) {
     Ray bRay = ray;
     if (!findIntersection(bRay, primitive.boundingBox))
         return false;
+    
+    if(getIntersectMode() == BVH) {
+        findBVHIntesection(ray, &primitive.root, true);
+        return ray.hit;
+    }
+
     auto vertices = getObjectBufferAtIdx(primitive.startIdx);
     bool hit = false;
     for (int i = 0; i < primitive.endIdx - primitive.startIdx; i++) {
@@ -78,19 +86,26 @@ Object loadObject(const char *fileName, Vector3 position, Vector3 size,
         if (tmax.y > max.y) max.y = tmax.y;
         if (tmax.z > max.z) max.z = tmax.z;
     }
-    
-    Vector3 scale{ 
-        fmaxf(max.x -position.x, position.x - min.x),
-        fmaxf(max.y -position.y, position.y - min.y),
-        fmaxf(max.z -position.z, position.z - min.z),
-    };
 
+    // Calculate the center and size of the bounding box
+    Vector3 center = {
+        (min.x + max.x) * 0.5f,
+        (min.y + max.y) * 0.5f,
+        (min.z + max.z) * 0.5f
+    };
+    
+    Vector3 ssize = {
+        max.x - min.x,
+        max.y - min.y,
+        max.z - min.z
+    };
     return {
         .type = OBJECT,
         .startIdx = startIdx,
         .endIdx = endIdx,
-        .boundingBox =  {.center = position, .size=scale*2, .shaderInfo=shaderInfo},
+        .boundingBox =  {.center = center, .size=ssize, .shaderInfo=shaderInfo},
         .shaderInfo = shaderInfo,
+        .root = constructBVH(startIdx, endIdx, true),
     };
 }
 

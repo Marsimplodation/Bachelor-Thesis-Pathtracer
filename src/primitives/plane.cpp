@@ -31,16 +31,16 @@ Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo) {
 
 Vector3 minBounds(Plane &primitive) {
     return {
-        primitive.normal.x == 1 ? primitive.center.x : -MAXFLOAT,
-        primitive.normal.y == 1 ? primitive.center.y : -MAXFLOAT,
-        primitive.normal.z == 1 ? primitive.center.z : -MAXFLOAT,
+        primitive.normal.x == 1 ? primitive.center.x : 0,
+        primitive.normal.y == 1 ? primitive.center.y : 0,
+        primitive.normal.z == 1 ? primitive.center.z : 0,
     };
 }
 
 Vector3 maxBounds(Plane &primitive) {
     return {
-        primitive.normal.x == 1 ? primitive.center.x : MAXFLOAT,
-        primitive.normal.y == 1 ? primitive.center.y : MAXFLOAT,
-        primitive.normal.z == 1 ? primitive.center.z : MAXFLOAT,
+        primitive.normal.x == 1 ? primitive.center.x : 0,
+        primitive.normal.y == 1 ? primitive.center.y : 0,
+        primitive.normal.z == 1 ? primitive.center.z : 0,
     };
 }

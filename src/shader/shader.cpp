@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include "../scene/scene.h"
+#include "scene/scene.h"
 namespace {
 }
 

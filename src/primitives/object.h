@@ -3,6 +3,7 @@
 #include "../types/ray.h"
 #include "../types/vector.h"
 #include "cube.h"
+#include "types/bvh.h"
 #define OBJECT 0x01
 struct Object {
     char type;
@@ -10,6 +11,7 @@ struct Object {
     int endIdx;
     Cube boundingBox;
     void * shaderInfo;
+    BvhNode root;
 };
 
 bool findIntersection(Ray & ray, Object & primitive);
