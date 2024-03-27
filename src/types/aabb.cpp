@@ -23,7 +23,6 @@ bool findIntersection(Ray &ray, AABB & primitive) {
     Vector3 const maxBound = maxBounds(primitive);
     auto t1 = (minBound - ray.origin) / ray.direction;
     auto t2 = (maxBound - ray.origin) / ray.direction;
-
     
     // Determine the intersection points (tNear, tFar)
     // We also have to remember the intersection axes (tNearIndex, tFarIndex)

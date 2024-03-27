@@ -23,10 +23,19 @@ Vector3 pixels[MAX_WIDTH][MAX_HEIGHT];
 int samples[MAX_WIDTH][MAX_HEIGHT];
 u32 randomStates[MAX_WIDTH][MAX_HEIGHT];
 WaveFrontEntry wavefront[16];
+int intersects[16];
 std::thread threads[16];
 bool onGoingReset = false;
 bool running = true;
 } // namespace
+
+float getIntersectionCount() {
+    float tests = 0.0f;
+    for (int i = 0; i < 16; i++) {
+        tests+=intersects[i];
+    }
+    return tests;
+}
 
 void traceWF(int i) {
     int x,y;
@@ -48,7 +57,6 @@ void traceWF(int i) {
                 yIn = (float)HEIGHT / (float)WIDTH * yIn;
             else
                 xIn = (float)WIDTH / float(HEIGHT) * xIn;
-
             color = {0.0f, 0.0f, 0.0f};
             ray.colorMask = {1.0f, 1.0f, 1.0f};
             ray.throughPut = 1.0f;
@@ -66,6 +74,8 @@ void traceWF(int i) {
         bool xOverFlow = x + 4 >= WIDTH;
         bool yOverFlow = y + 4 >= HEIGHT;
         if (xOverFlow && yOverFlow) {
+            intersects[i] = ray.interSectionTests;
+            ray.interSectionTests = 0;
             wavefront[i].x = x + 4 - WIDTH;
             wavefront[i].y = y + 4 - HEIGHT;
         } else if (xOverFlow) {
@@ -120,11 +130,11 @@ void reset() {
             pixels[x][y].x = 0;
             pixels[x][y].y = 0;
             pixels[x][y].z = 0;
-
             samples[x][y] = 0;
         }
     }
     for (int i = 0; i < 16; i++) {
+        intersects[i] = 0;
         wavefront[i].x = i % 4;
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;

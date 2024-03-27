@@ -119,6 +119,8 @@ void displayActiveObject() {
 
     if (activeObjectFlag == OBJECT) {
         Object *o = (Object *)activeObjectPtr;
+        ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
+        change |= ImGui::DragInt2("indices", &(o->startIdx));
         change |= DisplayShaderInfo((SimpleShaderInfo *)o->shaderInfo);
     }
 
@@ -173,6 +175,7 @@ void displayCamera() {
 
 void displayIntersectSettings() {
     ImGui::Begin("Trace Setttings");
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Intersections/sample: %f", getIntersectionCount());
     const char *items[] = {"ALL", "BVH", "GRID"};
     if (ImGui::BeginCombo("intersect mode", items[getIntersectMode()])) {
         for (int i = 0; i < IM_ARRAYSIZE(items); i++) {

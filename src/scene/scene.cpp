@@ -95,6 +95,7 @@ void findIntersection(Ray &ray) {
     for (int i = 0; i < num; i++) {
         if(ray.terminated) return;
         int idx = i;
+        ray.interSectionTests++;
         primitive = getPrimitive(idx);
         findIntersection(ray, primitive);
     }
@@ -106,17 +107,17 @@ void findIntersection(Ray &ray) {
 bool scenenInited = false;
 void initScene() {   
     //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
-    addToPrimitiveContainer(spheres, createSphere({3, -1.5f, 0}, 1.5f, &glass));
+    //addToPrimitiveContainer(spheres, createSphere({3, -1.5f, 0}, 1.5f, &glass));
     //addToPrimitiveContainer(spheres, createSphere({-3, -3.5f, 3}, 1.5f, &mirror));
 
-    addToPrimitiveContainer(cubes, createCube({0,-5,0}, {10,0.1,10}, &white)); 
-    addToPrimitiveContainer(cubes, createCube({0,5,0}, {10,0.1,10}, &white)); 
-    addToPrimitiveContainer(cubes, createCube({-5,0,0}, {0.1,10,10}, &red)); 
-    addToPrimitiveContainer(cubes, createCube({5,0,0}, {0.1,10,10}, &green)); 
+    addToPrimitiveContainer(cubes, createCube({0,-250,0}, {500,0.1,500}, &white)); 
+    addToPrimitiveContainer(cubes, createCube({0,250,0}, {500,0.1,500}, &white)); 
+    addToPrimitiveContainer(cubes, createCube({-250,0,0}, {0.1,500,500}, &red)); 
+    addToPrimitiveContainer(cubes, createCube({250,0,0}, {0.1,500,500}, &green)); 
     //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, &white)); 
-    addToPrimitiveContainer(cubes, createCube({0,0,5}, {10,10,0.1}, &white));
-    addToPrimitiveContainer(cubes, createCube({0,5-0.1f,2}, {4,0.1f,4}, &emit));
-    addToPrimitiveContainer(objects, loadObject("test.obj", {-1,0,3}, {1,1,1}, &orange));
+    addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, &white));
+    addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, &emit));
+    addToPrimitiveContainer(objects, loadObject("test.obj", {0,-250,30}, {2,2,2}, &orange));
     
     root = constructBVH(0, getNumPrimitives(), false);
     
@@ -124,10 +125,15 @@ void initScene() {
     Vector3 u{0.0f, 1.0f, 0.0f};
     cameraSetForward(f);
     cameraSetUp(u);
+    scenenInited = true;
 }
 
 void resetScene() {
     if(!scenenInited) return;
+    constructBVH(root, false);
+    for(int i = 0; i < objects.count; i++) {
+        constructBVH(objects.data[i].root, true);
+    }
     //destroyBVH(root.childLeft);
     //destroyBVH(root.childRight);
     //root = constructBVH(0, getNumPrimitives(), false);

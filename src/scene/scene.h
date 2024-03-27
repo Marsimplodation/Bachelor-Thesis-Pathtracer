@@ -3,7 +3,7 @@
 #include "../types/ray.h"
 #include "../primitives/triangle.h"
 #include <cstdlib>
-#define KILLCHANCE 0.1
+#define KILLCHANCE 0.4
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
 void initScene();

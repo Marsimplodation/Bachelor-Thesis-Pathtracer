@@ -8,6 +8,7 @@ struct Ray {
     float throughPut;
     int depth;
     u32 randomState;
+    int interSectionTests;
     
     //hit info
     Vector3 normal;

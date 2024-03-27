@@ -10,8 +10,8 @@ struct BvhNode {
     PrimitivesContainer<int> indices;
     int splitAxis; 
     AABB box;
-    BvhNode * childLeft;
-    BvhNode * childRight;
+    BvhNode * childLeft = 0x0;
+    BvhNode * childRight = 0x0;
 };
 
 void destroyBVH(BvhNode * node);

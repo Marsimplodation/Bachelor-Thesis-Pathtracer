@@ -22,6 +22,7 @@ bool findIntersection(Ray &ray, Object &primitive) {
     auto vertices = getObjectBufferAtIdx(primitive.startIdx);
     bool hit = false;
     for (int i = 0; i < primitive.endIdx - primitive.startIdx; i++) {
+        ray.interSectionTests++;
         hit |= findIntersection(ray, vertices[i]);
     }
     return hit;

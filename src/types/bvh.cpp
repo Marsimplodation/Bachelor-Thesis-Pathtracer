@@ -60,6 +60,7 @@ void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     if(ray.terminated) return;
     if(!findIntersection(ray, node->box)) {return;}
     
+    ray.interSectionTests++;
     bool leaf = !node->childLeft && !node->childRight; 
     findBVHIntesection(ray, node->childLeft, isObject);
     findBVHIntesection(ray, node->childRight, isObject);
@@ -75,6 +76,8 @@ void constructBVH(BvhNode & node, bool isObject) {
     calculateBoundingBox(node, isObject);
     int split = (int)(rand() % 3);
     if(node.indices.count == 1) {
+        if(node.childRight) delete node.childRight;
+        if(node.childLeft) delete node.childLeft;
         node.childRight = 0x0;
         node.childLeft = 0x0;
         return;
@@ -99,9 +102,9 @@ void constructBVH(BvhNode & node, bool isObject) {
     
     
     //median split
-    node.childLeft = new BvhNode; 
+    if(!node.childLeft)node.childLeft = new BvhNode; 
     node.childLeft->indices = {};
-    node.childRight = new BvhNode;
+    if(!node.childRight)node.childRight = new BvhNode;
     node.childRight->indices = {};
     int size = node.indices.count;
     int halfSize = size / 2;
