@@ -32,7 +32,10 @@ BvhNode root {};
 
 //----- Container access----//
 Triangle *getObjectBufferAtIdx(int idx) {
-    if (idx >= objectBuffer.count) return 0x0;
+    if (idx >= objectBuffer.count) {
+        printf("does not exist");
+        return 0x0;
+    }
     return &objectBuffer.data[idx];
 }
 
@@ -104,7 +107,7 @@ bool scenenInited = false;
 void initScene() {   
     //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
     addToPrimitiveContainer(spheres, createSphere({3, -1.5f, 0}, 1.5f, &glass));
-    addToPrimitiveContainer(spheres, createSphere({-3, -3.5f, 3}, 1.5f, &mirror));
+    //addToPrimitiveContainer(spheres, createSphere({-3, -3.5f, 3}, 1.5f, &mirror));
 
     addToPrimitiveContainer(cubes, createCube({0,-5,0}, {10,0.1,10}, &white)); 
     addToPrimitiveContainer(cubes, createCube({0,5,0}, {10,0.1,10}, &white)); 
@@ -113,7 +116,7 @@ void initScene() {
     //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, &white)); 
     addToPrimitiveContainer(cubes, createCube({0,0,5}, {10,10,0.1}, &white));
     addToPrimitiveContainer(cubes, createCube({0,5-0.1f,2}, {4,0.1f,4}, &emit));
-    //addToPrimitiveContainer(objects, loadObject("test.obj", {0,-5,0}, {1,1,1}, &orange));
+    addToPrimitiveContainer(objects, loadObject("test.obj", {-1,0,3}, {1,1,1}, &orange));
     
     root = constructBVH(0, getNumPrimitives(), false);
     

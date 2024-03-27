@@ -29,8 +29,6 @@ bool findIntersection(Ray &ray, AABB & primitive) {
     // We also have to remember the intersection axes (tNearIndex, tFarIndex)
     float tNear = -MAXFLOAT;
     float tFar = +MAXFLOAT;
-    int tNearIndex = 0;
-    int tFarIndex = 0;
 
     // Test the trivial case (and to avoid division by zero errors)
     if ((ray.direction.x == 0 && (ray.origin.x < minBound.x || ray.origin.x > maxBound.x)) ||
@@ -49,29 +47,23 @@ bool findIntersection(Ray &ray, AABB & primitive) {
     // Check for the near intersection
     if (t1.x > tNear) {
         tNear = t1.x;
-        tNearIndex = 0;
     }
     if (t1.y > tNear) {
         tNear = t1.y;
-        tNearIndex = 1;
     }
     if (t1.z > tNear) {
         tNear = t1.z;
-        tNearIndex = 2;
     }
 
     // Check for the far intersection
     if (t2.x < tFar) {
         tFar = t2.x;
-        tFarIndex = 0;
     }
     if (t2.y < tFar) {
         tFar = t2.y;
-        tFarIndex = 1;
     }
     if (t2.z < tFar) {
         tFar = t2.z;
-        tFarIndex = 2;
     }
 
     // Check whether we missed the box completely

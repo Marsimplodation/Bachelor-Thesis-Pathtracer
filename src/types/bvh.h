@@ -15,7 +15,7 @@ struct BvhNode {
 };
 
 void destroyBVH(BvhNode * node);
-void calculateBoundingBox(BvhNode & node);
+void calculateBoundingBox(BvhNode & node, bool isObject = false);
 void constructBVH(BvhNode & node, bool isObject = false);
 BvhNode constructBVH(int startIdx, int endIdx, bool isObject = false);
 void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject = false);

@@ -33,7 +33,7 @@ Vector3 shade(Ray &r) {
 Vector3 mirrorShader(Ray & r) {
     r.origin = r.origin + r.direction * (r.length);
     r.direction = r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal;
-    r.origin += r.direction * 0.001f;
+    r.origin += r.direction * EPS;
     r.length = MAXFLOAT;
     r.throughPut *= 1.0f;
     r.hit=false;
@@ -49,14 +49,13 @@ Vector3 emitShader(Ray &r) {
 Vector3 refractionShader(Ray &r) {
     SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
         
-    float eps = 0.001f;
     Vector3 normal = r.normal;
     float n1 = info->refractiveIdx1;
     float n2 = info->refractiveIdx2;
     float eta = n1 / n2;
     float cos = dotProduct(r.direction, r.normal);
 
-    if(cos >= eps) { //in object
+    if(cos >= EPS) { //in object
         cos *= -1;
         eta = 1.0f / eta;
         normal = normal * -1;
@@ -73,18 +72,18 @@ Vector3 refractionShader(Ray &r) {
     float reflectance = calculateFresnelTerm(-cos, n1, n2);
     if(reflectance > 1) reflectance = 1;
     if(reflectance < 0) reflectance = 0;
-    if(discriminator < eps || xi < reflectance){
+    if(discriminator < EPS || xi < reflectance){
         refractDirection = normalized(r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal);
         //if(discriminator > eps)
             //r.throughPut *= reflectance * 1.0f / (reflectance);  // r * 1/r = 1
     }
     else{
-        refractDirection = normalized(eta * (r.direction - cos * normal) - normal * sqrtf(discriminator+eps));
+        refractDirection = normalized(eta * (r.direction - cos * normal) - normal * sqrtf(discriminator+EPS));
         //r.throughPut *= 1 - reflectance;    
         //r.throughPut *= 1.0f / (1-reflectance);    
     }
     
-    r.origin = r.origin +r.direction * (r.length) + refractDirection*eps;
+    r.origin = r.origin +r.direction * (r.length) + refractDirection*EPS;
     r.direction = refractDirection;
     r.length = MAXFLOAT;
     r.hit=false;
@@ -103,7 +102,7 @@ Vector3 shadowShader(Ray &r) {
     //reset for next bounce
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomV3UnitHemisphere(r);
-    r.origin += r.direction*0.01;
+    r.origin += r.direction*EPS;
     r.length = MAXFLOAT;
     r.hit=false;
     
