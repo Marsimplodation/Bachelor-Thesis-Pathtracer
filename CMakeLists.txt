@@ -43,7 +43,7 @@ file(GLOB_RECURSE SOURCES
 		"src/*.h"
 )
 # Add executable
-include_directories(includes/singleHeaderLibs)
+include_directories(src/ includes/singleHeaderLibs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} SDL2)
 target_link_libraries(${PROJECT_NAME} imgui)
