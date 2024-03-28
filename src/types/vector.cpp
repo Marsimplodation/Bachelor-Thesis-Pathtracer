@@ -108,3 +108,27 @@ Vector3 operator/(const Vector3 & v1,const Vector3 &v2) {
     };
 }
 
+float getIndex(const Vector3 & vec, int i) {
+    switch (i) {
+        case 0: return vec.x;
+        case 1: return vec.y;
+        case 2: return vec.z;
+        default: return 0;
+    }
+}
+
+void setIndex(Vector3 & vec, int i, float val) {
+    switch (i) {
+        case 0:
+            vec.x = val;
+            break;
+        case 1:
+            vec.y = val;
+            break;
+        case 2:
+            vec.z = val;
+            break;
+        default: break;
+    }
+
+}

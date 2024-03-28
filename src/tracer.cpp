@@ -34,7 +34,7 @@ float getIntersectionCount() {
     for (int i = 0; i < 16; i++) {
         tests+=intersects[i];
     }
-    return tests;
+    return (float)tests / 1000000;
 }
 
 void traceWF(int i) {

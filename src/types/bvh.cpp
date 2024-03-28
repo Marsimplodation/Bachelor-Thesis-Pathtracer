@@ -60,12 +60,12 @@ void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     if(ray.terminated) return;
     if(!findIntersection(ray, node->box)) {return;}
     
-    ray.interSectionTests++;
     bool leaf = !node->childLeft && !node->childRight; 
     findBVHIntesection(ray, node->childLeft, isObject);
     findBVHIntesection(ray, node->childRight, isObject);
     
     if(!leaf) return;
+    ray.interSectionTests++;
     int idx =  node->indices.data[0];
     if(!isObject)findIntersection(ray, getPrimitive(idx));
     else{findIntersection(ray, getObjectBufferAtIdx(idx));}

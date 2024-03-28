@@ -1,4 +1,5 @@
 #include "types/aabb.h"
+#include "types/vector.h"
 #include <cmath>
 #include <utility>
 
@@ -21,56 +22,24 @@ Vector3 maxBounds(AABB &primitive){
 bool findIntersection(Ray &ray, AABB & primitive) {
     Vector3 const minBound = minBounds(primitive);
     Vector3 const maxBound = maxBounds(primitive);
-    auto t1 = (minBound - ray.origin) / ray.direction;
-    auto t2 = (maxBound - ray.origin) / ray.direction;
-    
-    // Determine the intersection points (tNear, tFar)
-    // We also have to remember the intersection axes (tNearIndex, tFarIndex)
-    float tNear = -MAXFLOAT;
-    float tFar = +MAXFLOAT;
+    float tNear = -INFINITY;
+    float tFar = +INFINITY;
+    //pixars aabb test
+    for (int a = 0; a < 3; a++) {
+            auto invD = 1 / getIndex(ray.direction, a);
+            auto orig = getIndex(ray.origin, a);
 
-    // Test the trivial case (and to avoid division by zero errors)
-    if ((ray.direction.x == 0 && (ray.origin.x < minBound.x || ray.origin.x > maxBound.x)) ||
-        (ray.direction.y == 0 && (ray.origin.y < minBound.y || ray.origin.y > maxBound.y)) ||
-        (ray.direction.z == 0 && (ray.origin.z < minBound.z || ray.origin.z > maxBound.z)))
-        return false;
+            auto t0 = (getIndex(minBound, a) - orig) * invD;
+            auto t1 = (getIndex(maxBound, a) - orig) * invD;
 
-    // Swap the bounds if necessary
-    if (t1.x > t2.x)
-        std::swap(t1.x, t2.x);
-    if (t1.y > t2.y)
-        std::swap(t1.y, t2.y);
-    if (t1.z > t2.z)
-        std::swap(t1.z, t2.z);
+            if (invD < 0)
+                std::swap(t0, t1);
 
-    // Check for the near intersection
-    if (t1.x > tNear) {
-        tNear = t1.x;
-    }
-    if (t1.y > tNear) {
-        tNear = t1.y;
-    }
-    if (t1.z > tNear) {
-        tNear = t1.z;
-    }
+            if (t0 > tNear) tNear = t0;
+            if (t1 < tFar) tFar = t1;
 
-    // Check for the far intersection
-    if (t2.x < tFar) {
-        tFar = t2.x;
-    }
-    if (t2.y < tFar) {
-        tFar = t2.y;
-    }
-    if (t2.z < tFar) {
-        tFar = t2.z;
-    }
-
-    // Check whether we missed the box completely
-    if (tFar < 0 || tNear > tFar)
-        return false;
-
-    float const t = tNear;    // Test whether this is the foremost primitive in front of the camera
-    if (ray.length < t)
-        return false;
-    return true;
+            if (tNear > tFar)
+                return false;
+        }
+        return true;
 }

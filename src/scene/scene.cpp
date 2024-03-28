@@ -107,7 +107,7 @@ void findIntersection(Ray &ray) {
 bool scenenInited = false;
 void initScene() {   
     //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
-    //addToPrimitiveContainer(spheres, createSphere({3, -1.5f, 0}, 1.5f, &glass));
+    addToPrimitiveContainer(spheres, createSphere({300, -150.0f, 0}, 150.0f, &glass));
     //addToPrimitiveContainer(spheres, createSphere({-3, -3.5f, 3}, 1.5f, &mirror));
 
     addToPrimitiveContainer(cubes, createCube({0,-250,0}, {500,0.1,500}, &white)); 
