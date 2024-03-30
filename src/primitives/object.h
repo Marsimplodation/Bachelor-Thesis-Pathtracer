@@ -7,6 +7,7 @@
 #define OBJECT 0x01
 struct Object {
     char type;
+    const char * name;
     int startIdx;
     int endIdx;
     Cube boundingBox;
@@ -15,7 +16,7 @@ struct Object {
 };
 
 bool findIntersection(Ray & ray, Object & primitive);
-Object loadObject(const char* fileName, Vector3 position, Vector3 size, void * shaderInfo);
+void loadObject(const char* fileName, Vector3 position, Vector3 size, void * shaderInfo, void * oBuffer);
 Vector3 minBounds(Object &primitive);
 Vector3 maxBounds(Object &primitive);
 

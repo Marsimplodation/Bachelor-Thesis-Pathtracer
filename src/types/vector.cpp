@@ -117,7 +117,7 @@ float getIndex(const Vector3 & vec, int i) {
         case 0: return vec.x;
         case 1: return vec.y;
         case 2: return vec.z;
-        default: return 0;
+        default: return -INFINITY; //blow up
     }
 }
 

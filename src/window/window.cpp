@@ -30,7 +30,7 @@ char activeObjectFlag = 0x0;
 char pixels[4096 * 2160 * 4];
 } // namespace
 
-std::string objectNames(char flag) {
+std::string objectNames(char flag, void* primitive) {
     switch (flag) {
     case CUBE:
         return "cube";
@@ -41,7 +41,7 @@ std::string objectNames(char flag) {
     case SPHERE:
         return "sphere";
     case OBJECT:
-        return "object";
+        return ((Object*)primitive)->name;
     default:
         return "cube";
     }
@@ -79,7 +79,6 @@ bool DisplayShaderInfo(SimpleShaderInfo *info) {
 
 void displayActiveObject() {
     ImGui::Begin("Object properties");
-    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", activeObject.c_str());
     if (activeObject == "") {
         ImGui::End();
         return;
@@ -119,6 +118,7 @@ void displayActiveObject() {
 
     if (activeObjectFlag == OBJECT) {
         Object *o = (Object *)activeObjectPtr;
+        ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", o->name);
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
         change |= ImGui::DragInt2("indices", &(o->startIdx));
         change |= DisplayShaderInfo((SimpleShaderInfo *)o->shaderInfo);
@@ -139,7 +139,7 @@ void displayObjects() {
     for (int n = 0; n < numP; n++) {
         primitive = getPrimitive(n);
         char flag = *((char *)primitive);
-        auto name = objectNames(flag) + std::to_string(n);
+        auto name = objectNames(flag, primitive) + std::to_string(n);
         if (ImGui::Button(name.c_str(), ImVec2(windowWidth, 0))) {
             activeObjectPtr = primitive;
             activeObject = name;

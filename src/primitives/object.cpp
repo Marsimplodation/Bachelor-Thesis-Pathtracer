@@ -5,6 +5,7 @@
 #include "triangle.h"
 #include "types/bvh.h"
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -28,10 +29,9 @@ bool findIntersection(Ray &ray, Object &primitive) {
     }
     return hit;
 }
-Object loadObject(const char *fileName, Vector3 position, Vector3 size,
-                  void *shaderInfo) {
+void loadObject(const char *fileName, Vector3 position, Vector3 size,
+                  void *shaderInfo, void *oBuffer) {
     auto buffer = getObjectBuffer();
-    int startIdx = buffer->count;
     // load the triangles and normals
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -43,10 +43,14 @@ Object loadObject(const char *fileName, Vector3 position, Vector3 size,
         exit(1);
     }
     
-    Vector3 verts[3];
-    Vector3 normals[3];
-    tinyobj::index_t idxs[3];
+   
     for (const auto &shape : shapes) {
+        int startIdx = buffer->count;
+        const char* name= shape.name.c_str();
+        printf("loaded: %s\n", name);
+        Vector3 verts[3];
+        Vector3 normals[3];
+        tinyobj::index_t idxs[3];
         for (size_t i = 0; i < shape.mesh.indices.size(); i += 3) {
             idxs[0] = shape.mesh.indices[i];
             idxs[1] = shape.mesh.indices[i+1];
@@ -70,45 +74,47 @@ Object loadObject(const char *fileName, Vector3 position, Vector3 size,
                                                    normals[0], normals[1],
                                                    normals[2], shaderInfo));
         }
-    }
 
-    int endIdx = buffer->count;
-    
-    //boundingbox
-    auto vertices = getObjectBufferAtIdx(startIdx);
-    Vector3 min, max{};
-    Vector3 tmin, tmax{};
-    for (int i = 0; i < endIdx - startIdx; i++) {
-        tmin = minBounds(vertices[i]);
-        tmax = maxBounds(vertices[i]);
-        if (tmin.x < min.x) min.x = tmin.x;
-        if (tmin.y < min.y) min.y = tmin.y;
-        if (tmin.z < min.z) min.z = tmin.z;
-        if (tmax.x > max.x) max.x = tmax.x;
-        if (tmax.y > max.y) max.y = tmax.y;
-        if (tmax.z > max.z) max.z = tmax.z;
-    }
+        int endIdx = buffer->count;
+        
+        //boundingbox
+        auto vertices = getObjectBufferAtIdx(startIdx);
+        Vector3 min, max{};
+        Vector3 tmin, tmax{};
+        for (int i = 0; i < endIdx - startIdx; i++) {
+            tmin = minBounds(vertices[i]);
+            tmax = maxBounds(vertices[i]);
+            if (tmin.x < min.x) min.x = tmin.x;
+            if (tmin.y < min.y) min.y = tmin.y;
+            if (tmin.z < min.z) min.z = tmin.z;
+            if (tmax.x > max.x) max.x = tmax.x;
+            if (tmax.y > max.y) max.y = tmax.y;
+            if (tmax.z > max.z) max.z = tmax.z;
+        }
 
-    // Calculate the center and size of the bounding box
-    Vector3 center = {
-        (min.x + max.x) * 0.5f,
-        (min.y + max.y) * 0.5f,
-        (min.z + max.z) * 0.5f
-    };
-    
-    Vector3 ssize = {
-        max.x - min.x,
-        max.y - min.y,
-        max.z - min.z
-    };
-    return {
-        .type = OBJECT,
-        .startIdx = startIdx,
-        .endIdx = endIdx,
-        .boundingBox =  {.center = center, .size=ssize, .shaderInfo=shaderInfo},
-        .shaderInfo = shaderInfo,
-        .root = constructBVH(startIdx, endIdx, true),
-    };
+        // Calculate the center and size of the bounding box
+        Vector3 center = {
+            (min.x + max.x) * 0.5f,
+            (min.y + max.y) * 0.5f,
+            (min.z + max.z) * 0.5f
+        };
+        
+        Vector3 ssize = {
+            max.x - min.x,
+            max.y - min.y,
+            max.z - min.z
+        };
+        Object o{
+            .type = OBJECT,
+            .name = name,
+            .startIdx = startIdx,
+            .endIdx = endIdx,
+            .boundingBox =  {.center = center, .size=ssize, .shaderInfo=shaderInfo},
+            .shaderInfo = shaderInfo,
+            .root = constructBVH(startIdx, endIdx, true),
+        };
+        addToPrimitiveContainer(*((PrimitivesContainer<Object>*)oBuffer), o);
+    }
 }
 
 Vector3 minBounds(Object &primitive) {

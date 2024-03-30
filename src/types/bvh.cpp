@@ -24,7 +24,8 @@ void destroyBVH(BvhNode * node) {
 }
 void calculateBoundingBox(BvhNode & node, bool isObject){
     Vector3 min, max{};
-    Vector3 tmin, tmax{};
+    Vector3 tmin{INFINITY, INFINITY, INFINITY};
+    Vector3 tmax{-INFINITY, -INFINITY, -INFINITY};
     void * primitive;
     int idx = 0; 
     for (int i = 0; i < node.indices.count; i++) {
@@ -59,19 +60,31 @@ void calculateBoundingBox(BvhNode & node, bool isObject){
 void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     if(!node) return;
     if(ray.terminated) return;
-    if(!findIntersection(ray, node->box)) {return;}
-    
     bool leaf = !node->childLeft && !node->childRight; 
+    //check if it can collide in the first place
+    float origin = getIndex(ray.origin, node->splitAxis);
+    float dir = getIndex(ray.direction, node->splitAxis);
+    float max = getIndex(maxBounds(node->box), node->splitAxis);
+    float min = getIndex(minBounds(node->box), node->splitAxis);
+    float tMin = (min-origin)/dir;
+    float tMax = (max-origin)/dir;
+    if(tMin > tMax) {
+        float tmp = tMin;
+        tMin = tMax;
+        tMax = tmp;
+    }
+    if(tMin > ray.length) return;
+    if(tMax < 0) return;
+
+    if(!findIntersection(ray, node->box)) {return;}
     //test which to test first
     if(node->childLeft && node->childRight) {
-        float origin = getIndex(ray.origin, node->splitAxis);
         float leftBound = getIndex(minBounds(node->childLeft->box), node->splitAxis);
         float rightBound = getIndex(minBounds(node->childRight->box), node->splitAxis);
         BvhNode* firstChild = (origin < rightBound) ? node->childLeft : node->childRight;
         BvhNode* secondChild = (origin < rightBound) ? node->childRight : node->childLeft;
-        float tSplit = (origin < rightBound) ? rightBound - origin : leftBound - origin;
         findBVHIntesection(ray, firstChild, isObject);
-        if(ray.length > tSplit) findBVHIntesection(ray, secondChild, isObject); 
+        findBVHIntesection(ray, secondChild, isObject); 
     } else {
         if(node->childLeft) findBVHIntesection(ray, node->childLeft, isObject);
         if(node->childRight) findBVHIntesection(ray, node->childRight, isObject);
@@ -88,6 +101,7 @@ void constructBVH(BvhNode & node, bool isObject) {
     std::vector<PrimitiveCompare> primitvesAtSplittingAcces(0);
     calculateBoundingBox(node, isObject);
     int split = (int)(rand() % 3);
+    node.splitAxis = split;
     if(node.indices.count == 1) {
         if(node.childRight) delete node.childRight;
         if(node.childLeft) delete node.childLeft;
@@ -95,7 +109,6 @@ void constructBVH(BvhNode & node, bool isObject) {
         node.childLeft = 0x0;
         return;
     }
-    node.splitAxis = split;
 
     void* primitive;
     for (int i = 0; i < node.indices.count; i++) {
@@ -138,6 +151,7 @@ BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
     BvhNode root{};
     std::vector<PrimitiveCompare> primitvesAtSplittingAcces(0);
     int split = (int)(rand() % 3);
+    root.splitAxis = split;
     void* primitive;
     //get minBounds of every primtive
     for (int i = startIdx; i < endIdx; i++) {
@@ -154,7 +168,6 @@ BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
         primitvesAtSplittingAcces.push_back(p);
         addToPrimitiveContainer(root.indices, i);
     }
-    root.splitAxis = split;
     std::sort(primitvesAtSplittingAcces.begin(), primitvesAtSplittingAcces.end());
     //median split
     calculateBoundingBox(root, isObject);
