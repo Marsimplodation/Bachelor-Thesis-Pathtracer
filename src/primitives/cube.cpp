@@ -48,7 +48,6 @@ bool findIntersection(Ray &ray, Cube & primitive) {
     normalize(ray.normal);
     ray.length = t;
     ray.shaderInfo = primitive.shaderInfo;
-    ray.hit = true;
     return true;
 }
 Cube createCube(Vector3 center, Vector3 size, void *shaderInfo){

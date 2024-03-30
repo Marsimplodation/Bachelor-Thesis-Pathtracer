@@ -58,8 +58,7 @@ void traceWF(int i) {
             else
                 xIn = (float)WIDTH / float(HEIGHT) * xIn;
             color = {0.0f, 0.0f, 0.0f};
-            ray.colorMask = {1.0f, 1.0f, 1.0f};
-            ray.throughPut = 1.0f;
+            ray.throughPut = {1.0f, 1.0f, 1.0f};
             ray.depth = 0;
             createCameraRay(xIn, yIn, ray);
         }

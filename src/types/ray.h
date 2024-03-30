@@ -5,20 +5,19 @@
 struct Ray {
     Vector3 origin;
     Vector3 direction;
-    float throughPut;
+    Vector3 throughPut;
+    Vector3 normal;
+    
     int depth;
-    u32 randomState;
     int interSectionTests;
+    u32 randomState;
     
     //hit info
-    Vector3 normal;
-    float length;
+    float length; //gives hit as well
     bool terminated;
-    bool hit;
 
     //shaderinfo
     void * shaderInfo;
-    Vector3 colorMask;
 };
 Vector3 randomV3UnitHemisphere(Ray & r);
 #endif // !RAY_H

@@ -117,7 +117,7 @@ void initScene() {
     //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, &white)); 
     addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, &white));
     addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, &emit));
-    addToPrimitiveContainer(objects, loadObject("test.obj", {0,-250,30}, {2,2,2}, &orange));
+    //addToPrimitiveContainer(objects, loadObject("test.obj", {0,-250,30}, {2,2,2}, &orange));
     
     root = constructBVH(0, getNumPrimitives(), false);
     

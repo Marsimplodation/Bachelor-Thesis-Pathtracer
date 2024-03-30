@@ -8,5 +8,7 @@ struct AABB{
     Vector3 size;
 };
 bool findIntersection(Ray & ray, AABB & primitive);
+Vector3 minBounds(AABB &primitive);
+Vector3 maxBounds(AABB &primitive);
 
 #endif // !AABB_H

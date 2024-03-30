@@ -29,7 +29,6 @@ bool findIntersection(Ray &ray, Sphere & primitive){
     // Set the new length and the current primitive
     ray.length = t;
     ray.shaderInfo = primitive.shaderInfo;
-    ray.hit = true;
     return true;
 }
 

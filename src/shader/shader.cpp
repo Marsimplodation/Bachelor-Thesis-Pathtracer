@@ -15,7 +15,7 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
     u32 randomState;
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
-    if (!r.hit) return black;
+    if (r.length == INFINITY) return black;
     switch (((SimpleShaderInfo*)r.shaderInfo)->shaderFlag) {
         case EMITSHADER:
             return emitShader(r);
@@ -35,15 +35,13 @@ Vector3 mirrorShader(Ray & r) {
     r.direction = r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal;
     r.origin += r.direction * EPS;
     r.length = MAXFLOAT;
-    r.throughPut *= 1.0f;
-    r.hit=false;
     return {};
 }
 
 Vector3 emitShader(Ray &r) {
     SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
     r.terminated = true;
-    return ((info)->color * r.colorMask * info->intensity * r.throughPut);
+    return ((info)->color * info->intensity * r.throughPut);
 }
 
 Vector3 refractionShader(Ray &r) {
@@ -86,7 +84,6 @@ Vector3 refractionShader(Ray &r) {
     r.origin = r.origin +r.direction * (r.length) + refractDirection*EPS;
     r.direction = refractDirection;
     r.length = MAXFLOAT;
-    r.hit=false;
     //r.colorMask = r.colorMask * info->color;
 
     return {};
@@ -95,16 +92,13 @@ Vector3 refractionShader(Ray &r) {
 Vector3 shadowShader(Ray &r) {
     SimpleShaderInfo * in = (SimpleShaderInfo*) r.shaderInfo;
     auto fgColor = in->color;
-    fgColor = fgColor * r.colorMask;
-    r.colorMask = r.colorMask * in->color;
-    r.throughPut *= fabsf(dotProduct(r.normal, r.direction));
+    r.throughPut = r.throughPut * in->color * fabsf(dotProduct(r.normal, r.direction));
 
     //reset for next bounce
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomV3UnitHemisphere(r);
     r.origin += r.direction*EPS;
     r.length = MAXFLOAT;
-    r.hit=false;
     
     return {};// fgColor * lightColor  * r.throughPut;
 }

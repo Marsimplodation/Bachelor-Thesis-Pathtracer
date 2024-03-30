@@ -4,6 +4,7 @@
 #include "cube.h"
 #include "triangle.h"
 #include "types/bvh.h"
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -16,7 +17,7 @@ bool findIntersection(Ray &ray, Object &primitive) {
     
     if(getIntersectMode() == BVH) {
         findBVHIntesection(ray, &primitive.root, true);
-        return ray.hit;
+        return ray.length != INFINITY;
     }
 
     auto vertices = getObjectBufferAtIdx(primitive.startIdx);

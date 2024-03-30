@@ -2,6 +2,7 @@
 #include "common.h"
 #include "scene/scene.h"
 #include "shader/shader.h"
+#include "types/vector.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -61,8 +62,20 @@ void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     if(!findIntersection(ray, node->box)) {return;}
     
     bool leaf = !node->childLeft && !node->childRight; 
-    findBVHIntesection(ray, node->childLeft, isObject);
-    findBVHIntesection(ray, node->childRight, isObject);
+    //test which to test first
+    if(node->childLeft && node->childRight) {
+        float origin = getIndex(ray.origin, node->splitAxis);
+        float leftBound = getIndex(minBounds(node->childLeft->box), node->splitAxis);
+        float rightBound = getIndex(minBounds(node->childRight->box), node->splitAxis);
+        BvhNode* firstChild = (origin < rightBound) ? node->childLeft : node->childRight;
+        BvhNode* secondChild = (origin < rightBound) ? node->childRight : node->childLeft;
+        float tSplit = (origin < rightBound) ? rightBound - origin : leftBound - origin;
+        findBVHIntesection(ray, firstChild, isObject);
+        if(ray.length > tSplit) findBVHIntesection(ray, secondChild, isObject); 
+    } else {
+        if(node->childLeft) findBVHIntesection(ray, node->childLeft, isObject);
+        if(node->childRight) findBVHIntesection(ray, node->childRight, isObject);
+    }
     
     if(!leaf) return;
     ray.interSectionTests++;
@@ -82,6 +95,7 @@ void constructBVH(BvhNode & node, bool isObject) {
         node.childLeft = 0x0;
         return;
     }
+    node.splitAxis = split;
 
     void* primitive;
     for (int i = 0; i < node.indices.count; i++) {
@@ -140,6 +154,7 @@ BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
         primitvesAtSplittingAcces.push_back(p);
         addToPrimitiveContainer(root.indices, i);
     }
+    root.splitAxis = split;
     std::sort(primitvesAtSplittingAcces.begin(), primitvesAtSplittingAcces.end());
     //median split
     calculateBoundingBox(root, isObject);

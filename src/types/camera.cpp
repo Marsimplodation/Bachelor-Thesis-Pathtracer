@@ -41,8 +41,7 @@ void createCameraRay(float x, float y, Ray &ray) {
     ray.origin = camera.origin;
     ray.direction = normalized(camera.right * x + camera.up * y +
                                camera.forward * camera.focus);
-    ray.length = MAXFLOAT;
-    ray.throughPut = 1.0f;
-    ray.hit = false;
+    ray.length = INFINITY;
+    ray.throughPut = {1,1,1};
     ray.terminated = false;
 }

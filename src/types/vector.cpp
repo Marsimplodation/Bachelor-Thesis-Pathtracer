@@ -66,6 +66,10 @@ Vector3 operator*(const Vector3 & v, float s) {
     };
 }
 
+void operator*=(Vector3 & v, float s) {
+    v = v * s;
+}
+
 Vector3 operator*(float s, const Vector3 & v) {return v * s;}
 
 Vector3 operator-(const Vector3 & v1, const Vector3 & v2) {
