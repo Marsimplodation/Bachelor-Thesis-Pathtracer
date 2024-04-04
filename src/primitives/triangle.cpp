@@ -1,6 +1,8 @@
 #include "triangle.h"
+#include "types/vector.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 
 bool findIntersection(Ray &ray, Triangle & primitive) {
     // Determine two neighboring edge vectors
@@ -37,18 +39,19 @@ bool findIntersection(Ray &ray, Triangle & primitive) {
     if (t < 0.00001f || ray.length < t)
         return false;
 
-    ray.normal = normalized(u * primitive.normal[1] + v * primitive.normal[2] + (1 - u - v) * primitive.normal[0]);;
+    ray.normal = normalized(u * primitive.normal[1] + v * primitive.normal[2] + (1 - u - v) * primitive.normal[0]);
+    ray.uv = (u * primitive.uv[1] + v * primitive.uv[2] + (1 - u - v) * primitive.uv[0]);
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
-    ray.shaderInfo = primitive.shaderInfo;
+    ray.materialIdx = primitive.materialIdx;
     return true;
 }
 
-Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo) {
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, int materialIdx) {
     Triangle t{
         .vertices = {v0, v1, v2},
-        .shaderInfo = shaderInfo,
+        .materialIdx = materialIdx,
     };
     t.normal[0] = normalized(crossProduct(t.vertices[1] - t.vertices[0],
                      t.vertices[2] - t.vertices[0]));
@@ -57,12 +60,13 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo) {
     return t;
 }
 
-Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, void * shaderInfo) {
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector3 uv0, Vector3 uv1, Vector3 uv2, int materialIdx) {
     Triangle t{
         .type = TRIANGLE,
         .vertices = {v0, v1, v2},
         .normal = {n0, n1, n2},
-        .shaderInfo = shaderInfo,
+        .uv = {uv0, uv1, uv2},
+        .materialIdx = materialIdx,
     };
     return t;
 }

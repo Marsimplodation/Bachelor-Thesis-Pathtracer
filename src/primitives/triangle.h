@@ -8,12 +8,13 @@ struct Triangle {
     char type;
     Vector3 vertices[3];
     Vector3 normal[3];
-    void *shaderInfo;
+    Vector3 uv[3]; 
+    int materialIdx;
 };
 
 bool findIntersection(Ray &ray, Triangle & primitive);
-Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, void * shaderInfo);
-Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, void * shaderInfo); 
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, int materialIdx);
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector3 uv0, Vector3 uv1, Vector3 uv2, int materialIdx);
 Vector3 minBounds(Triangle & primitive);
 Vector3 maxBounds(Triangle & primitive);
 #endif // !TRIANGLE_H

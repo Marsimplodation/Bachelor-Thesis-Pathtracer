@@ -2,11 +2,14 @@
 #define RAY_H
 #include "vector.h"
 #include "../common.h"
+
+
 struct Ray {
     Vector3 origin;
     Vector3 direction;
     Vector3 throughPut;
     Vector3 normal;
+    Vector3 uv;
     
     int depth;
     int interSectionTests;
@@ -17,7 +20,7 @@ struct Ray {
     bool terminated;
 
     //shaderinfo
-    void * shaderInfo;
+    int materialIdx;
 };
 Vector3 randomV3UnitHemisphere(Ray & r);
 #endif // !RAY_H

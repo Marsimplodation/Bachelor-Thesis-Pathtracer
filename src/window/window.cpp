@@ -8,6 +8,7 @@
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "tracer.h"
+#include "types/bvh.h"
 #include "types/camera.h"
 
 #include <SDL2/SDL.h>
@@ -30,20 +31,20 @@ char activeObjectFlag = 0x0;
 char pixels[4096 * 2160 * 4];
 } // namespace
 
-std::string objectNames(char flag, void* primitive) {
+std::string objectNames(char flag, void* primitive, int n) {
     switch (flag) {
     case CUBE:
-        return "cube";
+        return "cube" + std::to_string(n);
     case PLANE:
-        return "plane";
+        return "plane" + std::to_string(n);
     case TRIANGLE:
-        return "triangle";
+        return "triangle" + std::to_string(n);
     case SPHERE:
-        return "sphere";
+        return "sphere" + std::to_string(n);
     case OBJECT:
         return ((Object*)primitive)->name;
     default:
-        return "cube";
+        return "cube" + std::to_string(n);
     }
 }
 
@@ -52,12 +53,36 @@ void callReset() {
     tBegin = std::chrono::high_resolution_clock::now();
 }
 
-bool DisplayShaderInfo(SimpleShaderInfo *info) {
-    bool change = false;
-    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Shader");
-    const char *items[] = {"Emissive", "Lambert", "Mirror", "Refract", "None"};
 
-    if (ImGui::BeginCombo("Material Type", items[info->shaderFlag])) {
+bool DisplayMaterial(int & idx) {
+    Material * info = getMaterial(idx);
+    bool change = false;
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Material");
+    change |= ImGui::Button("New Material");
+    if(change) {
+       idx = addMaterial({}); 
+    }
+    
+    std::vector<const char*> mats(0);
+    for(auto & mat : *getMaterials()) {
+        if(!mat.name.empty())mats.push_back(mat.name.c_str()); 
+    }
+    if (ImGui::BeginCombo("Material", mats[idx])) {
+        for (int i = 0; i < getMaterials()->size(); i++) {
+            bool isSelected = (idx == i);
+            if (ImGui::Selectable(mats[i], isSelected)) {
+                idx = i; 
+                change = true;
+            }
+            if (isSelected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    const char *items[] = {"Emissive", "Lambert", "Mirror", "Refract", "Edge", "None"};
+    
+    if (ImGui::BeginCombo("Shader Type", items[info->shaderFlag])) {
         for (int i = 0; i < IM_ARRAYSIZE(items); i++) {
             bool isSelected = (info->shaderFlag == i);
             if (ImGui::Selectable(items[i], isSelected)) {
@@ -69,6 +94,7 @@ bool DisplayShaderInfo(SimpleShaderInfo *info) {
         }
         ImGui::EndCombo();
     }
+
 
     change |= ImGui::ColorEdit3("Color", (float *)&(info->color));
     change |= ImGui::DragFloat("Intensity", &(info->intensity));
@@ -88,21 +114,21 @@ void displayActiveObject() {
         Sphere *s = (Sphere *)activeObjectPtr;
         change |= ImGui::DragFloat3("Center", (float *)&(s->center));
         change |= ImGui::DragFloat("Radius", &(s->radius));
-        change |= DisplayShaderInfo((SimpleShaderInfo *)s->shaderInfo);
+        change |= DisplayMaterial(s->materialIdx);
     }
 
     if (activeObjectFlag == CUBE) {
         Cube *c = (Cube *)activeObjectPtr;
         change |= ImGui::DragFloat3("Center", (float *)&(c->center));
         change |= ImGui::DragFloat3("Size", (float *)&(c->size));
-        change |= DisplayShaderInfo((SimpleShaderInfo *)c->shaderInfo);
+        change |= DisplayMaterial(c->materialIdx);
     }
 
     if (activeObjectFlag == PLANE) {
         Plane *p = (Plane *)activeObjectPtr;
         change |= ImGui::DragFloat3("Center", (float *)&(p->center));
         change |= ImGui::DragFloat3("normal", (float *)&(p->normal));
-        change |= DisplayShaderInfo((SimpleShaderInfo *)p->shaderInfo);
+        change |= DisplayMaterial(p->materialIdx);
     }
 
     if (activeObjectFlag == TRIANGLE) {
@@ -113,7 +139,7 @@ void displayActiveObject() {
         change |= ImGui::DragFloat3("normal 0", (float *)&(t->normal[0]));
         change |= ImGui::DragFloat3("normal 1", (float *)&(t->normal[1]));
         change |= ImGui::DragFloat3("normal 2", (float *)&(t->normal[2]));
-        change |= DisplayShaderInfo((SimpleShaderInfo *)t->shaderInfo);
+        change |= DisplayMaterial(t->materialIdx);
     }
 
     if (activeObjectFlag == OBJECT) {
@@ -121,7 +147,7 @@ void displayActiveObject() {
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", o->name);
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
         change |= ImGui::DragInt2("indices", &(o->startIdx));
-        change |= DisplayShaderInfo((SimpleShaderInfo *)o->shaderInfo);
+        change |= DisplayMaterial(o->materialIdx);
     }
 
     if (change)
@@ -139,7 +165,7 @@ void displayObjects() {
     for (int n = 0; n < numP; n++) {
         primitive = getPrimitive(n);
         char flag = *((char *)primitive);
-        auto name = objectNames(flag, primitive) + std::to_string(n);
+        auto name = objectNames(flag, primitive, n);
         if (ImGui::Button(name.c_str(), ImVec2(windowWidth, 0))) {
             activeObjectPtr = primitive;
             activeObject = name;
@@ -188,6 +214,10 @@ void displayIntersectSettings() {
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
+    }
+    bool isBVH = getIntersectMode() == BVH;
+    if(isBVH && ImGui::DragInt("Max BVH depth", &(getBvhSettings()->maxDepth))) {
+        callReset();
     }
     ImGui::End();
 

@@ -10,8 +10,12 @@
 #include <vector>
 
 namespace {
-SimpleShaderInfo red{.color{1,0,0}, .shaderFlag=SHADOWSHADER, .intensity = 1.0f};
+BvhSettings settings{
+    .maxDepth = 4,
+};
 }
+
+BvhSettings *getBvhSettings() {return &settings;}
 
 //----- BVH Structure -----//
 void destroyBVH(BvhNode * node) {
@@ -54,13 +58,13 @@ void calculateBoundingBox(BvhNode & node, bool isObject){
         max.z - min.z
     };
     
-    node.box = {.center = center, .size=size*2};
+    node.box = {.center = center, .size=size};
 }
 
 void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     if(!node) return;
     if(ray.terminated) return;
-    bool leaf = !node->childLeft && !node->childRight; 
+    bool leaf = (node->depth == settings.maxDepth) || !node->childLeft && !node->childRight; 
     //check if it can collide in the first place
     float origin = getIndex(ray.origin, node->splitAxis);
     float dir = getIndex(ray.direction, node->splitAxis);
@@ -75,26 +79,65 @@ void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     }
     if(tMin > ray.length) return;
     if(tMax < 0) return;
-
+    ray.interSectionTests++;
     if(!findIntersection(ray, node->box)) {return;}
-    //test which to test first
     if(node->childLeft && node->childRight) {
-        float leftBound = getIndex(minBounds(node->childLeft->box), node->splitAxis);
-        float rightBound = getIndex(minBounds(node->childRight->box), node->splitAxis);
-        BvhNode* firstChild = (origin < rightBound) ? node->childLeft : node->childRight;
-        BvhNode* secondChild = (origin < rightBound) ? node->childRight : node->childLeft;
-        findBVHIntesection(ray, firstChild, isObject);
-        findBVHIntesection(ray, secondChild, isObject); 
-    } else {
-        if(node->childLeft) findBVHIntesection(ray, node->childLeft, isObject);
-        if(node->childRight) findBVHIntesection(ray, node->childRight, isObject);
+        float leftBoundMin = getIndex(minBounds(node->childLeft->box), node->splitAxis);
+        float leftBoundMax = getIndex(maxBounds(node->childLeft->box), node->splitAxis);
+        float rightBoundMin = getIndex(minBounds(node->childRight->box), node->splitAxis);
+        float rightBoundMax = getIndex(maxBounds(node->childRight->box), node->splitAxis);
+        float tMin1 = (leftBoundMin - origin)/dir;
+        float tMax1 = (leftBoundMax - origin)/dir;
+        
+        if(tMin1 > tMax1) {
+            float tmp = tMin1;
+            tMin1 = tMax1;
+            tMax1 = tmp;
+        }
+
+        float tMin2 = (rightBoundMin - origin)/dir;
+        float tMax2 = (rightBoundMax - origin)/dir;
+
+        if(tMin2 > tMax2) {
+            float tmp = tMin2;
+            tMin2 = tMax2;
+            tMax2 = tmp;
+        }
+       
+        if(tMax1 > 0 && tMin1 < ray.length)findBVHIntesection(ray, node->childLeft, isObject);
+        if(tMax2 > 0 && tMin2 < ray.length)findBVHIntesection(ray, node->childRight, isObject);
+    } else if(node->childLeft) {
+        float leftBoundMin = getIndex(minBounds(node->childLeft->box), node->splitAxis);
+        float leftBoundMax = getIndex(maxBounds(node->childLeft->box), node->splitAxis);
+        float tMin1 = (leftBoundMin - origin)/dir;
+        float tMax1 = (leftBoundMax - origin)/dir;
+        if(tMin1 > tMax1) {
+            float tmp = tMin1;
+            tMin1 = tMax1;
+            tMax1 = tmp;
+        }
+        if(tMax1 > 0 && tMin1 < ray.length) findBVHIntesection(ray, node->childLeft, isObject);
+    } else if(node->childRight) {
+        float rightBoundMin = getIndex(minBounds(node->childRight->box), node->splitAxis);
+        float rightBoundMax = getIndex(maxBounds(node->childRight->box), node->splitAxis);
+        float tMin2 = (rightBoundMin - origin)/dir;
+        float tMax2 = (rightBoundMax - origin)/dir;
+
+        if(tMin2 > tMax2) {
+            float tmp = tMin2;
+            tMin2 = tMax2;
+            tMax2 = tmp;
+        }
+        if(tMax2 > 0 && tMin2 < ray.length) findBVHIntesection(ray, node->childRight, isObject);
     }
     
     if(!leaf) return;
     ray.interSectionTests++;
-    int idx =  node->indices.data[0];
+    for (int i = 0; i < node->indices.count; ++i) {
+    int idx =  node->indices.data[i];
     if(!isObject)findIntersection(ray, getPrimitive(idx));
     else{findIntersection(ray, getObjectBufferAtIdx(idx));}
+    }
 }
 
 void constructBVH(BvhNode & node, bool isObject) {
@@ -102,7 +145,7 @@ void constructBVH(BvhNode & node, bool isObject) {
     calculateBoundingBox(node, isObject);
     int split = (int)(rand() % 3);
     node.splitAxis = split;
-    if(node.indices.count == 1) {
+    if((node.depth == settings.maxDepth) || node.indices.count == 1) {
         if(node.childRight) delete node.childRight;
         if(node.childLeft) delete node.childLeft;
         node.childRight = 0x0;
@@ -131,8 +174,10 @@ void constructBVH(BvhNode & node, bool isObject) {
     //median split
     if(!node.childLeft)node.childLeft = new BvhNode; 
     node.childLeft->indices = {};
+    node.childLeft->depth = node.depth+1;
     if(!node.childRight)node.childRight = new BvhNode;
     node.childRight->indices = {};
+    node.childRight->depth = node.depth+1;
     int size = node.indices.count;
     int halfSize = size / 2;
     for(int i=0; i < halfSize; i++) {
@@ -149,6 +194,7 @@ void constructBVH(BvhNode & node, bool isObject) {
 
 BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
     BvhNode root{};
+    root.depth = 0;
     std::vector<PrimitiveCompare> primitvesAtSplittingAcces(0);
     int split = (int)(rand() % 3);
     root.splitAxis = split;
@@ -173,8 +219,10 @@ BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
     calculateBoundingBox(root, isObject);
     root.childLeft = new BvhNode;
     root.childLeft->indices = {};
+    root.childLeft->depth = root.depth+1;
     root.childRight = new BvhNode;
     root.childRight->indices = {};
+    root.childRight->depth = root.depth+1;
     int size = primitvesAtSplittingAcces.size();
     int halfSize = size / 2;
     for(int i=0; i < (halfSize); i++) {

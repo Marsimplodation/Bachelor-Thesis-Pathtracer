@@ -11,12 +11,12 @@ struct Object {
     int startIdx;
     int endIdx;
     Cube boundingBox;
-    void * shaderInfo;
+    int materialIdx;
     BvhNode root;
 };
 
 bool findIntersection(Ray & ray, Object & primitive);
-void loadObject(const char* fileName, Vector3 position, Vector3 size, void * shaderInfo, void * oBuffer);
+void loadObject(const char* fileName, Vector3 position, Vector3 size, int  materialIdx, void * oBuffer);
 Vector3 minBounds(Object &primitive);
 Vector3 maxBounds(Object &primitive);
 

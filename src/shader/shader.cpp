@@ -2,8 +2,28 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
+#include "common.h"
 #include "scene/scene.h"
+#include "types/texture.h"
+#include "types/vector.h"
 namespace {
+    std::vector<Material> materials;
+}
+
+Material * getMaterial(int idx){
+    return &materials[idx];
+}
+
+std::vector<Material> *getMaterials() {
+    return &materials;
+}
+
+int addMaterial(Material m) {
+    int idx = materials.size();
+    if(m.name.empty()) m.name = "Material";
+    materials.push_back(m);
+    return idx;
 }
 
 float calculateFresnelTerm(float dot, float n1, float n2) {
@@ -16,7 +36,8 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
     if (r.length == INFINITY) return black;
-    switch (((SimpleShaderInfo*)r.shaderInfo)->shaderFlag) {
+    int idx = r.materialIdx;
+    switch (materials[idx].shaderFlag) {
         case EMITSHADER:
             return emitShader(r);
         case MIRRORSHADER: 
@@ -25,6 +46,8 @@ Vector3 shade(Ray &r) {
             return shadowShader(r);
         case REFRACTSHADER:
             return refractionShader(r);
+        case EDGESHADER:
+            return edgeShader(r);
         default:
             return r.normal;
     }
@@ -39,17 +62,33 @@ Vector3 mirrorShader(Ray & r) {
 }
 
 Vector3 emitShader(Ray &r) {
-    SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
-    r.terminated = true;
-    return ((info)->color * info->intensity * r.throughPut);
+    int idx = r.materialIdx;
+    Material & info = materials[idx];
+    
+    bool t = r.terminated;
+    r.terminated = true; 
+    if(info.texture.data.empty()) return info.color * info.intensity *r.throughPut;
+
+    Vector4 fgColor = getTextureAtUV(info.texture, r.uv.x, r.uv.y);
+    float opacity = fgColor.w;
+    float xi = fastRandom(r.randomState);
+    if(xi < 1 - opacity) {
+        r.terminated = t;
+        r.origin = r.origin + r.direction * (r.length + EPS *0.01f);
+        r.length = INFINITY;
+        return {};
+    }
+    Vector3 color = {fgColor.x, fgColor.y, fgColor.z};
+    return (color * info.intensity * r.throughPut);
 }
 
 Vector3 refractionShader(Ray &r) {
-    SimpleShaderInfo * info = (SimpleShaderInfo*) r.shaderInfo;
+    int idx = r.materialIdx;
+    Material & info = materials[idx];
         
     Vector3 normal = r.normal;
-    float n1 = info->refractiveIdx1;
-    float n2 = info->refractiveIdx2;
+    float n1 = info.refractiveIdx1;
+    float n2 = info.refractiveIdx2;
     float eta = n1 / n2;
     float cos = dotProduct(r.direction, r.normal);
 
@@ -89,16 +128,41 @@ Vector3 refractionShader(Ray &r) {
     return {};
 }
 
-Vector3 shadowShader(Ray &r) {
-    SimpleShaderInfo * in = (SimpleShaderInfo*) r.shaderInfo;
-    auto fgColor = in->color;
-    r.throughPut = r.throughPut * in->color * fabsf(dotProduct(r.normal, r.direction));
+Vector3 edgeShader(Ray & r) {
+    int idx = r.materialIdx;
+    Material & info = materials[idx];
+    Vector3 fgColor =info.color;
+    
+    float cos = dotProduct(r.normal, r.direction);
+    float edge = 1.0f;
+    if(-cos > info.intensity) edge = .0f;
+    r.throughPut = r.throughPut * fgColor * fabsf(cos);
+    if(edge){
+        r.terminated = true;
+        return {0,0,0};
+    }
 
     //reset for next bounce
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomV3UnitHemisphere(r);
     r.origin += r.direction*EPS;
     r.length = INFINITY;
-    
-    return {};// fgColor * lightColor  * r.throughPut;
+    return {};
+
+}
+
+Vector3 shadowShader(Ray &r) {
+    int idx = r.materialIdx;
+    Material & info = materials[idx];
+    Vector3 fgColor = info.color;
+    float cos = dotProduct(r.normal, r.direction);
+    r.throughPut = r.throughPut * fgColor *  fabsf(cos);
+ 
+
+    //reset for next bounce
+    r.origin = r.origin + r.direction * r.length;
+    r.direction = randomV3UnitHemisphere(r);
+    r.origin += r.direction*EPS;
+    r.length = INFINITY;
+    return {};
 }

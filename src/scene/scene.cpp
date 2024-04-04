@@ -19,14 +19,14 @@ PrimitivesContainer<Cube> cubes={};
 PrimitivesContainer<Triangle> objectBuffer={};
 PrimitivesContainer<Object> objects={};
 
-SimpleShaderInfo red{.color=Vector3{.65f, 0.05f, 0.05f}, .shaderFlag=SHADOWSHADER};
-SimpleShaderInfo green{.color={0.12f, 0.45f, 0.15f}, .shaderFlag=SHADOWSHADER};
-SimpleShaderInfo white{.color={0.73f, 0.73f, 0.73f}, .shaderFlag=SHADOWSHADER};
-SimpleShaderInfo emit{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=EMITSHADER, .intensity=10.0f};
-SimpleShaderInfo mirror{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=MIRRORSHADER};
-SimpleShaderInfo orange{.color={1.0f, 0.6f, 0.0f}, .shaderFlag=SHADOWSHADER};
-SimpleShaderInfo glass{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=REFRACTSHADER, .refractiveIdx1 = 1.0f, .refractiveIdx2=1.51f};
-SimpleShaderInfo normal{.shaderFlag=static_cast<char>(0xFF)};
+Material red{.color=Vector3{.65f, 0.05f, 0.05f}, .shaderFlag=SHADOWSHADER, .refractiveIdx2 = 1.0f };
+Material green{.color={0.12f, 0.45f, 0.15f}, .shaderFlag=SHADOWSHADER, .refractiveIdx2 = 1.0f };
+Material white{.color={0.73f, 0.73f, 0.73f}, .shaderFlag=SHADOWSHADER, .refractiveIdx2 = 1.0f };
+Material emit{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=EMITSHADER, .intensity=10.0f};
+Material mirror{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=MIRRORSHADER};
+Material orange{.color={1.0f, 0.6f, 0.0f}, .shaderFlag=EMITSHADER, .intensity = 1.0f };
+Material glass{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=REFRACTSHADER, .refractiveIdx1 = 1.0f, .refractiveIdx2=1.51f};
+Material normal{.shaderFlag=static_cast<char>(0xFF)};
 BvhNode root {};
 }
 
@@ -107,17 +107,17 @@ void findIntersection(Ray &ray) {
 bool scenenInited = false;
 void initScene() {   
     //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
-    addToPrimitiveContainer(spheres, createSphere({300, -150.0f, 0}, 150.0f, &glass));
+   /*addToPrimitiveContainer(spheres, createSphere({300, -150.0f, 0}, 150.0f, addMaterial(glass)));
     //addToPrimitiveContainer(spheres, createSphere({-3, -3.5f, 3}, 1.5f, &mirror));
 
-    addToPrimitiveContainer(cubes, createCube({0,-250,0}, {500,0.1,500}, &white)); 
-    addToPrimitiveContainer(cubes, createCube({0,250,0}, {500,0.1,500}, &white)); 
-    addToPrimitiveContainer(cubes, createCube({-250,0,0}, {0.1,500,500}, &red)); 
-    addToPrimitiveContainer(cubes, createCube({250,0,0}, {0.1,500,500}, &green)); 
-    //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, &white)); 
-    addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, &white));
-    addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, &emit));
-    loadObject("test.obj", {0,-250,30}, {2,2,2}, &orange, &objects);
+    addToPrimitiveContainer(cubes, createCube({0,-250,0}, {500,0.1,500}, addMaterial(white))); 
+    addToPrimitiveContainer(cubes, createCube({0,250,0}, {500,0.1,500}, addMaterial(white))); 
+    addToPrimitiveContainer(cubes, createCube({-250,0,0}, {0.1,500,500}, addMaterial(red))); 
+    addToPrimitiveContainer(cubes, createCube({250,0,0}, {0.1,500,500}, addMaterial(green))); 
+    //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, addMaterial(white))); 
+    addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, addMaterial(white)));
+    addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, addMaterial(emit)));*/
+    loadObject("test.obj", {0,-400,30}, {400,400,400}, addMaterial(orange), &objects);
     
     root = constructBVH(0, getNumPrimitives(), false);
     

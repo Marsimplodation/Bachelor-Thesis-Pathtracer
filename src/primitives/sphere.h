@@ -6,11 +6,11 @@ struct Sphere {
     char type;
     Vector3 center;
     float radius;
-    void *shaderInfo;
+    int materialIdx;
 };
 
 bool findIntersection(Ray & ray, Sphere & primitive);
-Sphere createSphere(Vector3 center, float radius, void *shaderInfo);
+Sphere createSphere(Vector3 center, float radius, int materialIdx);
 Vector3 minBounds(Sphere &primitive);
 Vector3 maxBounds(Sphere &primitive);
 

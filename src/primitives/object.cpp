@@ -2,8 +2,10 @@
 #include "common.h"
 #include "scene/scene.h"
 #include "cube.h"
+#include "shader/shader.h"
 #include "triangle.h"
 #include "types/bvh.h"
+#include "types/texture.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -16,21 +18,27 @@ bool findIntersection(Ray &ray, Object &primitive) {
     if (!findIntersection(bRay, primitive.boundingBox))
         return false;
     
-    if(getIntersectMode() == BVH) {
-        findBVHIntesection(ray, &primitive.root, true);
-        return ray.length != INFINITY;
-    }
-
-    auto vertices = getObjectBufferAtIdx(primitive.startIdx);
     bool hit = false;
-    for (int i = 0; i < primitive.endIdx - primitive.startIdx; i++) {
-        ray.interSectionTests++;
-        hit |= findIntersection(ray, vertices[i]);
+    if(getIntersectMode() == BVH) {
+        float l = ray.length;
+        findBVHIntesection(ray, &primitive.root, true);
+        hit |= ray.length != l;
+    }
+    
+    if(getIntersectMode() == ALL) {
+        auto vertices = getObjectBufferAtIdx(primitive.startIdx);
+        for (int i = 0; i < primitive.endIdx - primitive.startIdx; i++) {
+            ray.interSectionTests++;
+            hit |= findIntersection(ray, vertices[i]);
+        }
+    }
+    if(hit) {
+       ray.materialIdx = primitive.materialIdx; 
     }
     return hit;
 }
 void loadObject(const char *fileName, Vector3 position, Vector3 size,
-                  void *shaderInfo, void *oBuffer) {
+                  int materialIdx, void *oBuffer) {
     auto buffer = getObjectBuffer();
     // load the triangles and normals
     tinyobj::attrib_t attrib;
@@ -42,6 +50,21 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
         printf("error: %s %s\n", warn.c_str(), err.c_str());
         exit(1);
     }
+
+    for (const auto & material : materials) {
+        Material m {
+            .color = {material.diffuse[0], material.diffuse[1], material.diffuse[2]},
+            .shaderFlag = SHADOWSHADER,
+            .name = material.name,
+        };
+        if(material.illum != 0) {
+            m.shaderFlag = EMITSHADER;
+            m.intensity = material.illum;
+        }
+        int idx = addMaterial(m);
+        if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->texture, material.diffuse_texname);
+        printf("loaded material %s\n", m.name.c_str());
+    }
     
    
     for (const auto &shape : shapes) {
@@ -50,6 +73,7 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
         printf("loaded: %s\n", name);
         Vector3 verts[3];
         Vector3 normals[3];
+        Vector3 uvs[3];
         tinyobj::index_t idxs[3];
         for (size_t i = 0; i < shape.mesh.indices.size(); i += 3) {
             idxs[0] = shape.mesh.indices[i];
@@ -67,13 +91,19 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
                     attrib.normals[3 * idxs[j].normal_index + 1],
                     attrib.normals[3 * idxs[j].normal_index + 2],
                 };
+                uvs[j]={
+                    attrib.texcoords[2 * idxs[j].texcoord_index + 0],
+                    1.0f-attrib.texcoords[2 * idxs[j].texcoord_index + 1],
+                    0,
+                };
             }
             
             addToPrimitiveContainer(*buffer,
                                     createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
-                                                   normals[2], shaderInfo));
+                                                   normals[2], uvs[0], uvs[1], uvs[2], materialIdx));
         }
+
 
         int endIdx = buffer->count;
         
@@ -109,8 +139,8 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             .name = name,
             .startIdx = startIdx,
             .endIdx = endIdx,
-            .boundingBox =  {.center = center, .size=ssize, .shaderInfo=shaderInfo},
-            .shaderInfo = shaderInfo,
+            .boundingBox =  {.center = center, .size=ssize, .materialIdx=materialIdx},
+            .materialIdx = materialIdx,
             .root = constructBVH(startIdx, endIdx, true),
         };
         addToPrimitiveContainer(*((PrimitivesContainer<Object>*)oBuffer), o);

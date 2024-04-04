@@ -47,15 +47,15 @@ bool findIntersection(Ray &ray, Cube & primitive) {
     setIndex(ray.normal, tIndex, std::copysignf(1.0f, getIndex(ray.direction, tIndex) * (tNear < 0.0f ? 1.0f : -1.0f)));
     normalize(ray.normal);
     ray.length = t;
-    ray.shaderInfo = primitive.shaderInfo;
+    ray.materialIdx = primitive.materialIdx;
     return true;
 }
-Cube createCube(Vector3 center, Vector3 size, void *shaderInfo){
+Cube createCube(Vector3 center, Vector3 size, int materialIdx){
     return {
         .type = CUBE,
         .center = center,
         .size = size,
-        .shaderInfo = shaderInfo,
+        .materialIdx = materialIdx,
     };
 }
 

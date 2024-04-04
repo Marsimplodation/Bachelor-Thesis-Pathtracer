@@ -15,16 +15,16 @@ bool findIntersection(Ray &ray, Plane & primitive) {
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
-    ray.shaderInfo = primitive.shaderInfo;
+    ray.materialIdx = primitive.materialIdx;
     return true;
 }
 
-Plane createPlane(Vector3 center, Vector3 normal, void *shaderInfo) {
+Plane createPlane(Vector3 center, Vector3 normal, int materialIdx) {
     return {
         .type = PLANE,
         .center = center,
         .normal = normal,
-        .shaderInfo = shaderInfo,
+        .materialIdx = materialIdx,
     };
 }
 

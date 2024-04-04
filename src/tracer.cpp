@@ -5,6 +5,7 @@
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "types/camera.h"
+#include "types/texture.h"
 #include "types/vector.h"
 #include <chrono>
 #include <cmath>
@@ -19,13 +20,12 @@ const int MAX_WIDTH = 4096;
 const int MAX_HEIGHT = 2160;
 int WIDTH = 800;
 int HEIGHT = 600;
-Vector3 pixels[MAX_WIDTH][MAX_HEIGHT];
+Texture image = createTexture(MAX_WIDTH, MAX_HEIGHT);
 int samples[MAX_WIDTH][MAX_HEIGHT];
 u32 randomStates[MAX_WIDTH][MAX_HEIGHT];
 WaveFrontEntry wavefront[16];
 int intersects[16];
 std::thread threads[16];
-bool onGoingReset = false;
 bool running = true;
 } // namespace
 
@@ -42,7 +42,7 @@ void traceWF(int i) {
     Vector3 color{0,0,0};
     float xi1, xi2, xIn, yIn;
     while (running) {
-        if(onGoingReset) continue;
+        //if(onGoingReset) continue;
         y = wavefront[i].y;
         x = wavefront[i].x;
         auto &ray = wavefront[i].ray;
@@ -103,32 +103,18 @@ void trace() {
 }
 
 Vector3 tracerGetPixel(int x, int y) {
-    if (onGoingReset)
-        return {0, 0, 0};
-    if (x >= WIDTH || x < 0 || y >= HEIGHT || y < 0)
-        return {};
-
-    return pixels[x][y];
+    return getTextureRGBAt(image, x, y);
 }
 
 void setPixel(int x, int y, Vector3 &c) {
-    if (onGoingReset)
-        return;
-    if (x >= WIDTH || x < 0 || y >= HEIGHT || y < 0)
-        return;
-    pixels[x][y].x = c.x;
-    pixels[x][y].y = c.y;
-    pixels[x][y].z = c.z;
+    setTextureAt(image, x, y, c);
 }
 
 void reset() {
-    onGoingReset = true;
     Vector3 v{0, 0, 0};
     for (int x = 0; x < WIDTH; x++) {
         for (int y = 0; y < HEIGHT; y++) {
-            pixels[x][y].x = 0;
-            pixels[x][y].y = 0;
-            pixels[x][y].z = 0;
+            setTextureAt(image, x, y, {});
             samples[x][y] = 0;
         }
     }
@@ -138,15 +124,12 @@ void reset() {
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
     }
-    onGoingReset = false;
 }
 
 void setWindowSize(int x, int y) {
-    onGoingReset = true;
     WIDTH = x;
     HEIGHT = y;
     reset();
-    onGoingReset = false;
 }
 
 Vector3 getWindowSize() { return {(float)WIDTH, (float)HEIGHT, 0.0f}; }
@@ -159,9 +142,7 @@ void initTracer() {
     }
     for (int x = 0; x < MAX_WIDTH; x++) {
         for (int y = 0; y < MAX_HEIGHT; y++) {
-            pixels[x][y].x = 0;
-            pixels[x][y].y = 0;
-            pixels[x][y].z = 0;
+            setTextureAt(image, x, y, {});
 
             samples[x][y] = 0;
             randomStates[x][y] = hashCoords(x, y); 
@@ -175,5 +156,4 @@ void destroyTracer() {
         wavefront[i].ray.terminated = true;
     }
     destroyScene();
-    onGoingReset = true;
 }

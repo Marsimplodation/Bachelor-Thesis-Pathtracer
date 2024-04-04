@@ -8,11 +8,11 @@ struct Cube {
     char type;
     Vector3 center;
     Vector3 size;
-    void *shaderInfo;
+    int materialIdx;
 };
 
 bool findIntersection(Ray &ray, Cube & primitive);
-Cube createCube(Vector3 center, Vector3 size, void *shaderInfo);
+Cube createCube(Vector3 center, Vector3 size, int materialIdx);
 Vector3 minBounds(Cube &primitive);
 Vector3 maxBounds(Cube &primitive);
 

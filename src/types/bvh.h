@@ -6,14 +6,20 @@
 #include "types/aabb.h"
 #include "vector.h"
 
+struct BvhSettings {
+   int maxDepth; 
+};
+
 struct BvhNode {
     PrimitivesContainer<int> indices;
     int splitAxis; 
+    int depth;
     AABB box;
     BvhNode * childLeft = 0x0;
     BvhNode * childRight = 0x0;
 };
 
+BvhSettings * getBvhSettings();
 void destroyBVH(BvhNode * node);
 void calculateBoundingBox(BvhNode & node, bool isObject = false);
 void constructBVH(BvhNode & node, bool isObject = false);

@@ -28,16 +28,16 @@ bool findIntersection(Ray &ray, Sphere & primitive){
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
     ray.length = t;
-    ray.shaderInfo = primitive.shaderInfo;
+    ray.materialIdx = primitive.materialIdx;
     return true;
 }
 
-Sphere createSphere(Vector3 center, float radius, void *shaderInfo) {
+Sphere createSphere(Vector3 center, float radius, int materialIdx) {
     return {
         .type = SPHERE,
         .center = center,
         .radius = radius,
-        .shaderInfo = shaderInfo,
+        .materialIdx = materialIdx,
     };
 }
 
