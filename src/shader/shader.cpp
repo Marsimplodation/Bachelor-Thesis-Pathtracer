@@ -133,16 +133,33 @@ Vector3 edgeShader(Ray & r) {
     Material & info = materials[idx];
     Vector3 fgColor =info.color;
     
-    float cos = dotProduct(r.normal, r.direction);
+       float cos = dotProduct(r.normal, r.direction);
     float edge = 1.0f;
-    if(-cos > info.intensity) edge = .0f;
-    r.throughPut = r.throughPut * fgColor * fabsf(cos);
+    if(fabs(cos) > info.intensity) edge = .0f;
     if(edge){
         r.terminated = true;
         return {0,0,0};
     }
+    
+
+    Vector3 color = {0, 0, 0};
+    if(info.texture.data.empty()) color = info.color;
+    else {
+        Vector4 fgColor = getTextureAtUV(info.texture, r.uv.x, r.uv.y);
+        float opacity = fgColor.w;
+        float xi = fastRandom(r.randomState);
+        if(xi < 1 - opacity) {
+            r.origin = r.origin + r.direction * (r.length + EPS *0.01f);
+            r.length = INFINITY;
+            return {};
+        }
+        color = {fgColor.x, fgColor.y, fgColor.z};
+    }
+
+
 
     //reset for next bounce
+    r.throughPut = r.throughPut * color *  fabsf(cos);
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomV3UnitHemisphere(r);
     r.origin += r.direction*EPS;
@@ -154,15 +171,30 @@ Vector3 edgeShader(Ray & r) {
 Vector3 shadowShader(Ray &r) {
     int idx = r.materialIdx;
     Material & info = materials[idx];
-    Vector3 fgColor = info.color;
     float cos = dotProduct(r.normal, r.direction);
-    r.throughPut = r.throughPut * fgColor *  fabsf(cos);
- 
+    Vector3 color = {0, 0, 0};
+    if(info.texture.data.empty()) color = info.color;
+    else {
+        Vector4 fgColor = getTextureAtUV(info.texture, r.uv.x, r.uv.y);
+        float opacity = fgColor.w;
+        float xi = fastRandom(r.randomState);
+        if(xi < 1 - opacity) {
+            r.origin = r.origin + r.direction * (r.length + EPS *0.01f);
+            r.length = INFINITY;
+            return {};
+        }
+        color = {fgColor.x, fgColor.y, fgColor.z};
+    }
+
+
 
     //reset for next bounce
+    r.throughPut = r.throughPut * color *  fabsf(cos);
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomV3UnitHemisphere(r);
     r.origin += r.direction*EPS;
     r.length = INFINITY;
     return {};
+
+
 }

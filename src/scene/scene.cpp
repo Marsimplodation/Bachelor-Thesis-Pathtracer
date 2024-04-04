@@ -107,7 +107,7 @@ void findIntersection(Ray &ray) {
 bool scenenInited = false;
 void initScene() {   
     //addToPrimitiveContainer(triangles, createTriangle({0,-3,-4}, {0,-3,0}, {3,-3,-5}, &mirror));
-   /*addToPrimitiveContainer(spheres, createSphere({300, -150.0f, 0}, 150.0f, addMaterial(glass)));
+    addToPrimitiveContainer(spheres, createSphere({300, -150.0f, 0}, 150.0f, addMaterial(glass)));
     //addToPrimitiveContainer(spheres, createSphere({-3, -3.5f, 3}, 1.5f, &mirror));
 
     addToPrimitiveContainer(cubes, createCube({0,-250,0}, {500,0.1,500}, addMaterial(white))); 
@@ -116,8 +116,8 @@ void initScene() {
     addToPrimitiveContainer(cubes, createCube({250,0,0}, {0.1,500,500}, addMaterial(green))); 
     //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, addMaterial(white))); 
     addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, addMaterial(white)));
-    addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, addMaterial(emit)));*/
-    loadObject("test.obj", {0,-400,30}, {400,400,400}, addMaterial(orange), &objects);
+    addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, addMaterial(emit)));
+    loadObject("test.obj", {0,-220,50}, {200,200,200}, addMaterial(orange), &objects);
     
     root = constructBVH(0, getNumPrimitives(), false);
     
