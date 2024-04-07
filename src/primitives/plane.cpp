@@ -2,6 +2,7 @@
 #include <cmath>
 
 bool findIntersection(Ray &ray, Plane & primitive) {
+    if(!primitive.active) return false;
     // Determine two neighboring edge vectors
     float cosine = dotProduct(ray.direction, primitive.normal); 
     if(cosine > 0) return false;
@@ -24,6 +25,7 @@ Plane createPlane(Vector3 center, Vector3 normal, int materialIdx) {
         .type = PLANE,
         .center = center,
         .normal = normal,
+        .active = true,
         .materialIdx = materialIdx,
     };
 }

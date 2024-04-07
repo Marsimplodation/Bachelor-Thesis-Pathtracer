@@ -5,6 +5,7 @@
 #include <cstdio>
 
 bool findIntersection(Ray &ray, Triangle & primitive) {
+    if(!primitive.active) return false;
     // Determine two neighboring edge vectors
     Vector3 const edge1 =
         primitive.vertices[1] - primitive.vertices[0];
@@ -51,6 +52,7 @@ bool findIntersection(Ray &ray, Triangle & primitive) {
 Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, int materialIdx) {
     Triangle t{
         .vertices = {v0, v1, v2},
+        .active = true,
         .materialIdx = materialIdx,
     };
     t.normal[0] = normalized(crossProduct(t.vertices[1] - t.vertices[0],
@@ -66,6 +68,7 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 
         .vertices = {v0, v1, v2},
         .normal = {n0, n1, n2},
         .uv = {uv0, uv1, uv2},
+        .active = true,
         .materialIdx = materialIdx,
     };
     return t;

@@ -2,17 +2,19 @@
 #define OBJECT_H
 #include "../types/ray.h"
 #include "../types/vector.h"
-#include "cube.h"
+#include "types/aabb.h"
 #include "types/bvh.h"
+#include <string>
 #define OBJECT 0x01
 struct Object {
     char type;
-    const char * name;
     int startIdx;
     int endIdx;
-    Cube boundingBox;
+    AABB boundingBox;
     int materialIdx;
     BvhNode root;
+    bool active;
+    std::string name;
 };
 
 bool findIntersection(Ray & ray, Object & primitive);

@@ -3,6 +3,7 @@
 #include <utility>
 #include <cmath>
 bool findIntersection(Ray &ray, Cube & primitive) {
+    if(!primitive.active) return false;
     Vector3 const minBound = minBounds(primitive);
     Vector3 const maxBound = maxBounds(primitive);
     float tNear = -INFINITY;
@@ -55,6 +56,7 @@ Cube createCube(Vector3 center, Vector3 size, int materialIdx){
         .type = CUBE,
         .center = center,
         .size = size,
+        .active = true,
         .materialIdx = materialIdx,
     };
 }

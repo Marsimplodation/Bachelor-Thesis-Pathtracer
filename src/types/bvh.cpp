@@ -22,8 +22,6 @@ void destroyBVH(BvhNode * node) {
     if(node == 0x0) return;
     destroyBVH(node->childLeft);
     destroyBVH(node->childRight);
-    
-    destroyContainer(node->indices);
     if(node)delete node;
 }
 void calculateBoundingBox(BvhNode & node, bool isObject){
@@ -32,8 +30,8 @@ void calculateBoundingBox(BvhNode & node, bool isObject){
     Vector3 tmax{-INFINITY, -INFINITY, -INFINITY};
     void * primitive;
     int idx = 0; 
-    for (int i = 0; i < node.indices.count; i++) {
-        idx = node.indices.data[i];
+    for (int i = 0; i < node.indices.size(); i++) {
+        idx = node.indices[i];
         if(!isObject) primitive = getPrimitive(idx);
         else primitive = getObjectBufferAtIdx(idx);
         tmin = minBounds(primitive);
@@ -133,8 +131,8 @@ void findBVHIntesection(Ray & ray, BvhNode * node, bool isObject) {
     
     if(!leaf) return;
     ray.interSectionTests++;
-    for (int i = 0; i < node->indices.count; ++i) {
-    int idx =  node->indices.data[i];
+    for (int i = 0; i < node->indices.size(); ++i) {
+    int idx =  node->indices[i];
     if(!isObject)findIntersection(ray, getPrimitive(idx));
     else{findIntersection(ray, getObjectBufferAtIdx(idx));}
     }
@@ -145,7 +143,7 @@ void constructBVH(BvhNode & node, bool isObject) {
     calculateBoundingBox(node, isObject);
     int split = (int)(rand() % 3);
     node.splitAxis = split;
-    if((node.depth == settings.maxDepth) || node.indices.count == 1) {
+    if((node.depth == settings.maxDepth) || node.indices.size() == 1) {
         if(node.childRight) delete node.childRight;
         if(node.childLeft) delete node.childLeft;
         node.childRight = 0x0;
@@ -154,8 +152,8 @@ void constructBVH(BvhNode & node, bool isObject) {
     }
 
     void* primitive;
-    for (int i = 0; i < node.indices.count; i++) {
-        int idx = node.indices.data[i];
+    for (int i = 0; i < node.indices.size(); ++i) {
+        int idx =  node.indices[i];
         PrimitiveCompare p{idx, 0.0f};
         if(!isObject) primitive = getPrimitive(idx);
         else primitive = getObjectBufferAtIdx(idx);
@@ -178,13 +176,13 @@ void constructBVH(BvhNode & node, bool isObject) {
     if(!node.childRight)node.childRight = new BvhNode;
     node.childRight->indices = {};
     node.childRight->depth = node.depth+1;
-    int size = node.indices.count;
+    int size = node.indices.size();
     int halfSize = size / 2;
     for(int i=0; i < halfSize; i++) {
-        addToPrimitiveContainer(node.childLeft->indices, primitvesAtSplittingAcces[i].idx);
+        node.childLeft->indices.push_back(primitvesAtSplittingAcces[i].idx);
     }
     for(int i=halfSize; i < size; i++) {
-        addToPrimitiveContainer(node.childRight->indices, primitvesAtSplittingAcces[i].idx);
+        node.childRight->indices.push_back(primitvesAtSplittingAcces[i].idx);
     }
     constructBVH(*node.childLeft, isObject);
     constructBVH(*node.childRight, isObject);
@@ -212,7 +210,7 @@ BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
             p.val = minBounds(primitive).z;
         }
         primitvesAtSplittingAcces.push_back(p);
-        addToPrimitiveContainer(root.indices, i);
+        root.indices.push_back(i);
     }
     std::sort(primitvesAtSplittingAcces.begin(), primitvesAtSplittingAcces.end());
     //median split
@@ -226,10 +224,10 @@ BvhNode constructBVH(int startIdx, int endIdx, bool isObject){
     int size = primitvesAtSplittingAcces.size();
     int halfSize = size / 2;
     for(int i=0; i < (halfSize); i++) {
-        addToPrimitiveContainer(root.childLeft->indices, primitvesAtSplittingAcces[i].idx);
+        root.childLeft->indices.push_back(primitvesAtSplittingAcces[i].idx);
     }
     for(int i=halfSize; i < size; i++) {
-        addToPrimitiveContainer(root.childRight->indices, primitvesAtSplittingAcces[i].idx);
+        root.childRight->indices.push_back(primitvesAtSplittingAcces[i].idx);
     }
     constructBVH(*root.childLeft, isObject);
     constructBVH(*root.childRight, isObject);

@@ -9,6 +9,7 @@ struct Triangle {
     Vector3 vertices[3];
     Vector3 normal[3];
     Vector3 uv[3]; 
+    bool active;
     int materialIdx;
 };
 

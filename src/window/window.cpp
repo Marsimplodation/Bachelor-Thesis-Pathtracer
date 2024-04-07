@@ -29,6 +29,8 @@ std::string activeObject = "";
 void *activeObjectPtr = 0x0;
 char activeObjectFlag = 0x0;
 char pixels[4096 * 2160 * 4];
+bool quit, preview, toneMapping;
+
 } // namespace
 
 std::string objectNames(char flag, void* primitive, int n) {
@@ -97,6 +99,7 @@ bool DisplayMaterial(int & idx) {
 
 
     change |= ImGui::ColorEdit3("Color", (float *)&(info->color));
+    change |= ImGui::ColorEdit3("Second Color", (float *)&(info->color2));
     change |= ImGui::DragFloat("Intensity", &(info->intensity));
     change |= ImGui::DragFloat("refractive index 1", &(info->refractiveIdx1));
     change |= ImGui::DragFloat("refractive index 2", &(info->refractiveIdx2));
@@ -109,6 +112,7 @@ void displayActiveObject() {
         ImGui::End();
         return;
     }
+    
     bool change = false;
     if (activeObjectFlag == SPHERE) {
         Sphere *s = (Sphere *)activeObjectPtr;
@@ -144,7 +148,7 @@ void displayActiveObject() {
 
     if (activeObjectFlag == OBJECT) {
         Object *o = (Object *)activeObjectPtr;
-        ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", o->name);
+        ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", o->name.c_str());
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
         change |= ImGui::DragInt2("indices", &(o->startIdx));
         change |= DisplayMaterial(o->materialIdx);
@@ -223,6 +227,20 @@ void displayIntersectSettings() {
 
 }
 
+void displayMenu() {
+    ImGui::Begin("Menu");
+    float windowWidth = ImGui::GetWindowWidth();
+    if (ImGui::Button("Quit", ImVec2(windowWidth, 0))) {
+        destroyTracer();
+        quit = true;
+    }
+    ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");
+    ImGui::Checkbox("Preview", &preview);
+    ImGui::Checkbox("Tonemapping", &toneMapping);
+    ImGui::End();
+
+}
+
 void createWindow() {
     SDL_Window *window;
     SDL_Init(SDL_INIT_VIDEO);
@@ -260,8 +278,6 @@ void createWindow() {
 
     // Main loop
     SDL_Event e;
-    bool quit = false;
-    bool preview = false;
     ImVec2 previewSize(0, 0);
     while (!quit) {
         while (SDL_PollEvent(&e)) {
@@ -304,16 +320,7 @@ void createWindow() {
                            "Rendering Time: %02d:%02d:%02d", hours, minutes,
                            seconds);
         ImGui::End();
-        ImGui::Begin("Menu");
-        float windowWidth = ImGui::GetWindowWidth();
-        if (ImGui::Button("Quit", ImVec2(windowWidth, 0))) {
-            destroyTracer();
-            break;
-        }
-        ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");
-        ImGui::Checkbox("Preview", &preview);
-        ImGui::End();
-
+        displayMenu(); 
         displayObjects();
         displayCamera();
         displayIntersectSettings();
@@ -341,13 +348,14 @@ void createWindow() {
         }
         // Draw pixels
         
-        // ImDrawList* drawList = ImGui::GetWindowDrawList();
+        //simple toneMapping
+        Vector3 oneVector = {1,1,1};
         for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
                 auto c = tracerGetPixel((int)(x),
                                         (int)(y));
+                if (toneMapping)c = c / ( oneVector + c); // simple tonemapping 
                 c = clampToOne(c); // Assuming clampToOne ensures c is in [0,1]
-
                 // Convert to 0-255 range
                 unsigned char r = (unsigned char)(c.x * 255);
                 unsigned char g = (unsigned char)(c.y * 255);

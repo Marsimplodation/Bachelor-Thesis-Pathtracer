@@ -3,6 +3,7 @@
 #include <cstdio>
 
 bool findIntersection(Ray &ray, Sphere & primitive){
+    if(!primitive.active) return false;
     Vector3 origin = ray.origin - primitive.center;
     float a = 1.0f;
     float b = 2.0 * dotProduct(origin, ray.direction);
@@ -37,6 +38,7 @@ Sphere createSphere(Vector3 center, float radius, int materialIdx) {
         .type = SPHERE,
         .center = center,
         .radius = radius,
+        .active = true,
         .materialIdx = materialIdx,
     };
 }

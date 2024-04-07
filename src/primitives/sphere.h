@@ -6,6 +6,7 @@ struct Sphere {
     char type;
     Vector3 center;
     float radius;
+    bool active;
     int materialIdx;
 };
 

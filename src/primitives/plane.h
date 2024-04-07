@@ -7,6 +7,7 @@ struct Plane {
     char type;
     Vector3 center;
     Vector3 normal;
+    bool active;
     int materialIdx;
 };
 

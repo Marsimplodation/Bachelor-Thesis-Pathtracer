@@ -14,6 +14,7 @@
 
 struct Material {
     Vector3 color;
+    Vector3 color2;
     char shaderFlag;
     float refractiveIdx1;
     float refractiveIdx2;

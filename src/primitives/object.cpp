@@ -10,10 +10,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <vector>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 bool findIntersection(Ray &ray, Object &primitive) {
+    if(!primitive.active) return false;
     Ray bRay = ray;
     if (!findIntersection(bRay, primitive.boundingBox))
         return false;
@@ -51,11 +53,13 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
         exit(1);
     }
 
+    int firstMatIdx = getMaterials()->size();
+
     for (const auto & material : materials) {
         Material m {
             .color = {material.diffuse[0], material.diffuse[1], material.diffuse[2]},
             .shaderFlag = SHADOWSHADER,
-            .name = material.name,
+            .name = std::string(material.name.c_str()),
         };
         if(material.illum != 0) {
             m.shaderFlag = EMITSHADER;
@@ -68,13 +72,15 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
     
    
     for (const auto &shape : shapes) {
-        int startIdx = buffer->count;
-        const char* name= shape.name.c_str();
-        printf("loaded: %s\n", name);
+        int startIdx = buffer->size();
+        printf("loaded: %s\n", shape.name.c_str());
         Vector3 verts[3];
         Vector3 normals[3];
         Vector3 uvs[3];
         tinyobj::index_t idxs[3];
+        int matIdx = shape.mesh.material_ids[0];
+        if(matIdx >= 0)matIdx += firstMatIdx;
+        else matIdx = materialIdx;
         for (size_t i = 0; i < shape.mesh.indices.size(); i += 3) {
             idxs[0] = shape.mesh.indices[i];
             idxs[1] = shape.mesh.indices[i+1];
@@ -98,14 +104,13 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
                 };
             }
             
-            addToPrimitiveContainer(*buffer,
-                                    createTriangle(verts[0], verts[1], verts[2],
+            buffer->push_back(createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
-                                                   normals[2], uvs[0], uvs[1], uvs[2], materialIdx));
+                                                   normals[2], uvs[0], uvs[1], uvs[2], matIdx));
         }
 
 
-        int endIdx = buffer->count;
+        int endIdx = buffer->size();
         
         //boundingbox
         auto vertices = getObjectBufferAtIdx(startIdx);
@@ -136,14 +141,15 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
         };
         Object o{
             .type = OBJECT,
-            .name = name,
             .startIdx = startIdx,
             .endIdx = endIdx,
-            .boundingBox =  {.center = center, .size=ssize, .materialIdx=materialIdx},
-            .materialIdx = materialIdx,
+            .boundingBox =  {.center = center, .size=ssize},
+            .materialIdx = matIdx,
             .root = constructBVH(startIdx, endIdx, true),
+            .active = true,
+            .name = std::string(shape.name.c_str()),
         };
-        addToPrimitiveContainer(*((PrimitivesContainer<Object>*)oBuffer), o);
+        ((std::vector<Object>*)oBuffer)->push_back(o);
     }
 }
 

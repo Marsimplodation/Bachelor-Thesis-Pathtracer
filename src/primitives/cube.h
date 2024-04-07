@@ -8,6 +8,7 @@ struct Cube {
     char type;
     Vector3 center;
     Vector3 size;
+    bool active;
     int materialIdx;
 };
 

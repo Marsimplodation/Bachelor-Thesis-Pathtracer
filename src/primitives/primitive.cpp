@@ -1,4 +1,5 @@
 #include "primitive.h"
+#include "shader/shader.h"
 #include "types/vector.h"
 
 bool findIntersection(Ray &ray, void * primitive) {
@@ -20,6 +21,24 @@ bool findIntersection(Ray &ray, void * primitive) {
     }
 }
 
+int getMaterial(void * primitive) {
+    if(!primitive) return {};
+    char flag = *((char*)primitive);
+    switch(flag) {
+        case CUBE:
+            return (*(Cube*)primitive).materialIdx;
+        case PLANE:
+            return (*(Plane*)primitive).materialIdx;
+        case TRIANGLE:
+            return (*(Triangle*)primitive).materialIdx;
+        case SPHERE:
+            return (*(Sphere*)primitive).materialIdx;
+        case OBJECT:
+            return (*(Object*)primitive).materialIdx;
+        default:
+            return {};
+    }
+}
 
 Vector3 minBounds(void * primitive) {
     if(!primitive) return {};

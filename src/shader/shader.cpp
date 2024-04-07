@@ -74,7 +74,7 @@ Vector3 emitShader(Ray &r) {
     float xi = fastRandom(r.randomState);
     if(xi < 1 - opacity) {
         r.terminated = t;
-        r.origin = r.origin + r.direction * (r.length + EPS *0.01f);
+        r.origin = r.origin + r.direction * (r.length + EPS);
         r.length = INFINITY;
         return {};
     }
@@ -138,7 +138,7 @@ Vector3 edgeShader(Ray & r) {
     if(fabs(cos) > info.intensity) edge = .0f;
     if(edge){
         r.terminated = true;
-        return {0,0,0};
+        return info.color2;
     }
     
 
@@ -149,9 +149,9 @@ Vector3 edgeShader(Ray & r) {
         float opacity = fgColor.w;
         float xi = fastRandom(r.randomState);
         if(xi < 1 - opacity) {
-            r.origin = r.origin + r.direction * (r.length + EPS *0.01f);
+            r.origin = r.origin + r.direction * (r.length + EPS);
             r.length = INFINITY;
-            return {};
+            return {0,0,0};
         }
         color = {fgColor.x, fgColor.y, fgColor.z};
     }
@@ -179,7 +179,7 @@ Vector3 shadowShader(Ray &r) {
         float opacity = fgColor.w;
         float xi = fastRandom(r.randomState);
         if(xi < 1 - opacity) {
-            r.origin = r.origin + r.direction * (r.length + EPS *0.01f);
+            r.origin = r.origin + r.direction * (r.length + EPS);
             r.length = INFINITY;
             return {};
         }
@@ -192,9 +192,8 @@ Vector3 shadowShader(Ray &r) {
     r.throughPut = r.throughPut * color *  fabsf(cos);
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomV3UnitHemisphere(r);
+    r.throughPut *= dotProduct(r.direction, r.normal);
     r.origin += r.direction*EPS;
     r.length = INFINITY;
     return {};
-
-
 }

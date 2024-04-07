@@ -20,6 +20,7 @@ struct Vector4 {
 };
 
 //-- Vector 3 --//
+float max(const Vector3 & v);
 float dotProduct(const Vector3 &v1, const Vector3 &v2);
 float length(const Vector3 &v);
 void normalize(Vector3 &v);
@@ -43,6 +44,7 @@ float getIndex(const Vector3 & vec, int i);
 void setIndex(Vector3 & vec, int i, float val);
 
 //-- Vector 2 --//
+float max(const Vector2 & v);
 float dotProduct(const Vector2 &v1, const Vector2 &v2);
 float length(const Vector2 &v);
 void normalize(Vector2 &v);
@@ -60,6 +62,7 @@ float getIndex(const Vector2 &vec, int i);
 void setIndex(Vector2 &vec, int i, float val);
 
 //-- Vector 4 --//
+float max(const Vector4 & v);
 float dotProduct(const Vector4 &v1, const Vector4 &v2);
 float length(const Vector4 &v);
 void normalize(Vector4 &v);

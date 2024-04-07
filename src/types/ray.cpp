@@ -11,8 +11,7 @@ Vector3 randomV3UnitHemisphere(Ray & r) {
     direction.x = sinTheta * cosf(phi);
     direction.y = sinTheta * sinf(phi);
     direction.z = theta;
-    //adding the normal to attain the final random direction in the hemisphere
+    direction = normalized(direction);
     if(dotProduct(r.normal, direction) < 0.0f) direction = -1*direction;
-    direction = normalized(direction + r.normal);
   return direction;
 }

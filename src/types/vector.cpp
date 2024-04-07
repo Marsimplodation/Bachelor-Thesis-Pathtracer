@@ -3,6 +3,10 @@
 #include <cmath>
 
 //--- Vector 3 ---//
+float max(const Vector3 & v) {
+    return fmaxf(v.x, fmaxf(v.y, v.z));
+}
+
 Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2) {
     return {
         .x = v1.y * v2.z - v1.z * v2.y,
@@ -139,6 +143,10 @@ void setIndex(Vector3 & vec, int i, float val) {
 }
 
 //-- Vector 2 --//
+float max(const Vector2 & v) {
+    return fmaxf(v.x, v.y);
+}
+
 float dotProduct(const Vector2 &v1, const Vector2 &v2) {
     return v1.x * v2.x + v1.y * v2.y;
 }
@@ -231,6 +239,11 @@ void setIndex(Vector2 &vec, int i, float val) {
 }
 
 //-- Vector 4 --//
+
+float max(const Vector4 & v) {
+    return fmaxf(v.x, fmaxf(v.y, fmaxf(v.z, v.w)));
+}
+
 float dotProduct(const Vector4 &v1, const Vector4 &v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
 }
