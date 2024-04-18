@@ -15,7 +15,7 @@ struct PrimitiveCompare {
 
 bool operator <(const PrimitiveCompare & p1, const PrimitiveCompare &p2);
 
-bool findIntersection(Ray & ray, void* primitive);
+bool findIntersection(Ray & ray, int idx);
 Vector3 minBounds(void *primitive);
 Vector3 maxBounds(void *primitive);
 int getMaterial(void* primitive);

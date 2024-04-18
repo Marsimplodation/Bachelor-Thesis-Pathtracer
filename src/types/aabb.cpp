@@ -19,6 +19,60 @@ Vector3 maxBounds(AABB &primitive){
     };
 }
 
+void loadPoints(AABB & primitive, Vector3 * points) {
+    if(!points) return;
+    if(sizeof(points)/sizeof(points[0]) != 8) return;
+    
+    points[0] = {
+        primitive.center.x - primitive.size.x / 2.0f,
+        primitive.center.y - primitive.size.y / 2.0f,
+        primitive.center.z - primitive.size.z / 2.0f,
+    };
+
+    points[1] = {
+        primitive.center.x + primitive.size.x / 2.0f,
+        primitive.center.y - primitive.size.y / 2.0f,
+        primitive.center.z - primitive.size.z / 2.0f,
+    };
+
+    points[2] = {
+        primitive.center.x - primitive.size.x / 2.0f,
+        primitive.center.y + primitive.size.y / 2.0f,
+        primitive.center.z - primitive.size.z / 2.0f,
+    };
+
+    points[3] = {
+        primitive.center.x - primitive.size.x / 2.0f,
+        primitive.center.y - primitive.size.y / 2.0f,
+        primitive.center.z + primitive.size.z / 2.0f,
+    };
+
+    points[4] = {
+        primitive.center.x + primitive.size.x / 2.0f,
+        primitive.center.y + primitive.size.y / 2.0f,
+        primitive.center.z - primitive.size.z / 2.0f,
+    };
+
+    points[5] = {
+        primitive.center.x - primitive.size.x / 2.0f,
+        primitive.center.y + primitive.size.y / 2.0f,
+        primitive.center.z + primitive.size.z / 2.0f,
+    };
+
+    points[6] = {
+        primitive.center.x + primitive.size.x / 2.0f,
+        primitive.center.y - primitive.size.y / 2.0f,
+        primitive.center.z + primitive.size.z / 2.0f,
+    };
+
+    points[7] = {
+        primitive.center.x + primitive.size.x / 2.0f,
+        primitive.center.y + primitive.size.y / 2.0f,
+        primitive.center.z + primitive.size.z / 2.0f,
+    };
+
+}
+
 bool findIntersection(Ray &ray, AABB & primitive) {
     Vector3 const minBound = minBounds(primitive);
     Vector3 const maxBound = maxBounds(primitive);

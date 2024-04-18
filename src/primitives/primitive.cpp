@@ -1,9 +1,11 @@
 #include "primitive.h"
+#include "scene/scene.h"
 #include "shader/shader.h"
 #include "types/vector.h"
 
-bool findIntersection(Ray &ray, void * primitive) {
-    if(!primitive) return false;
+bool findIntersection(Ray &ray, int idx) {
+    void * primitive = getPrimitive(idx);
+    if(!primitive) {return false;}
     char flag = *((char*)primitive);
     switch(flag) {
         case CUBE:

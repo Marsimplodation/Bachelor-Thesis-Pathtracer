@@ -12,18 +12,18 @@ struct BvhSettings {
 };
 
 struct BvhNode {
-    std::vector<int> indices;
+    int startIdx;
+    int endIdx;
     int splitAxis;
     int depth;
-    AABB box;
-    BvhNode *childLeft = 0x0;
-    BvhNode *childRight = 0x0;
+    int AABBIdx;
+    int childLeft;
+    int childRight;
 };
 
 BvhSettings *getBvhSettings();
-void destroyBVH(BvhNode *node);
-void calculateBoundingBox(BvhNode &node, bool isObject = false);
-void constructBVH(BvhNode &node, bool isObject = false);
-BvhNode constructBVH(int startIdx, int endIdx, bool isObject = false);
-void findBVHIntesection(Ray &ray, BvhNode *node, bool isObject = false);
+void destroyBVH();
+void calculateBoundingBox(BvhNode &node);
+int constructBVH(int startIdx, int endIdx, int nodeIdx = -1);
+void findBVHIntesection(Ray &ray, int nodeIdx);
 #endif // !BVH_H

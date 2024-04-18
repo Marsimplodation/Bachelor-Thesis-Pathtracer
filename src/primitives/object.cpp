@@ -4,8 +4,10 @@
 #include "cube.h"
 #include "shader/shader.h"
 #include "triangle.h"
+#include "primitive.h"
 #include "types/bvh.h"
 #include "types/texture.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -16,22 +18,20 @@
 
 bool findIntersection(Ray &ray, Object &primitive) {
     if(!primitive.active) return false;
-    Ray bRay = ray;
-    if (!findIntersection(bRay, primitive.boundingBox))
+    if (!findIntersection(ray, primitive.boundingBox))
         return false;
     
     bool hit = false;
     if(getIntersectMode() == BVH) {
         float l = ray.length;
-        findBVHIntesection(ray, &primitive.root, true);
+        findBVHIntesection(ray, primitive.root);
         hit |= ray.length != l;
     }
     
-    if(getIntersectMode() == ALL) {
-        auto vertices = getObjectBufferAtIdx(primitive.startIdx);
-        for (int i = 0; i < primitive.endIdx - primitive.startIdx; i++) {
+    if(getIntersectMode() != BVH) {
+        for (int i = primitive.startIdx; i > primitive.endIdx; i--) {
             ray.interSectionTests++;
-            hit |= findIntersection(ray, vertices[i]);
+            hit |= findIntersection(ray, i);
         }
     }
     if(hit) {
@@ -73,10 +73,11 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
    
     for (const auto &shape : shapes) {
         int startIdx = buffer->size();
+        int endIdx = buffer->size();
         printf("loaded: %s\n", shape.name.c_str());
         Vector3 verts[3];
         Vector3 normals[3];
-        Vector3 uvs[3];
+        Vector2 uvs[3];
         tinyobj::index_t idxs[3];
         int matIdx = shape.mesh.material_ids[0];
         if(matIdx >= 0)matIdx += firstMatIdx;
@@ -100,25 +101,28 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
                 uvs[j]={
                     attrib.texcoords[2 * idxs[j].texcoord_index + 0],
                     1.0f-attrib.texcoords[2 * idxs[j].texcoord_index + 1],
-                    0,
                 };
             }
             
+            int idx = buffer->size();
             buffer->push_back(createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
                                                    normals[2], uvs[0], uvs[1], uvs[2], matIdx));
+            if(i == 0)startIdx = idx;
+            endIdx = std::max(endIdx, idx);
         }
+        //mark the indices as object related
+        startIdx = -1*startIdx - 1;
+        endIdx = -1*endIdx - 1;
 
-
-        int endIdx = buffer->size();
         
         //boundingbox
-        auto vertices = getObjectBufferAtIdx(startIdx);
         Vector3 min, max{};
         Vector3 tmin, tmax{};
-        for (int i = 0; i < endIdx - startIdx; i++) {
-            tmin = minBounds(vertices[i]);
-            tmax = maxBounds(vertices[i]);
+        for (int i = startIdx; i > endIdx; i--) {
+            auto  vertice = (Triangle*)getPrimitive(i);
+            tmin = minBounds(*vertice);
+            tmax = maxBounds(*vertice);
             if (tmin.x < min.x) min.x = tmin.x;
             if (tmin.y < min.y) min.y = tmin.y;
             if (tmin.z < min.z) min.z = tmin.z;
@@ -145,7 +149,7 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             .endIdx = endIdx,
             .boundingBox =  {.center = center, .size=ssize},
             .materialIdx = matIdx,
-            .root = constructBVH(startIdx, endIdx, true),
+            .root = constructBVH(startIdx, endIdx),
             .active = true,
             .name = std::string(shape.name.c_str()),
         };

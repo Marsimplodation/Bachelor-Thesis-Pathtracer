@@ -62,7 +62,7 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, int materialIdx) {
     return t;
 }
 
-Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector3 uv0, Vector3 uv1, Vector3 uv2, int materialIdx) {
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector2 uv0, Vector2 uv1, Vector2 uv2, int materialIdx) {
     Triangle t{
         .type = TRIANGLE,
         .vertices = {v0, v1, v2},

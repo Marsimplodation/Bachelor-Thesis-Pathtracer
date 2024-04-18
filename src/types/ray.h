@@ -9,7 +9,7 @@ struct Ray {
     Vector3 direction;
     Vector3 throughPut;
     Vector3 normal;
-    Vector3 uv;
+    Vector2 uv;
     
     int depth;
     int interSectionTests;

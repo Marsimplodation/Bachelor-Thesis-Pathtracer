@@ -168,6 +168,7 @@ void displayObjects() {
     void *primitive;
     for (int n = 0; n < numP; n++) {
         primitive = getPrimitive(n);
+        if(!primitive) continue;
         char flag = *((char *)primitive);
         auto name = objectNames(flag, primitive, n);
         if (ImGui::Button(name.c_str(), ImVec2(windowWidth, 0))) {
@@ -221,6 +222,7 @@ void displayIntersectSettings() {
     }
     bool isBVH = getIntersectMode() == BVH;
     if(isBVH && ImGui::DragInt("Max BVH depth", &(getBvhSettings()->maxDepth))) {
+        resetScene();
         callReset();
     }
     ImGui::End();

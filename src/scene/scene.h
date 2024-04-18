@@ -10,7 +10,6 @@ void findOcclusion(Ray & r);
 void initScene();
 void destroyScene();
 
-Triangle *getObjectBufferAtIdx(int idx);
 std::vector<Triangle> *getObjectBuffer();
 
 int getNumPrimitives();

@@ -27,7 +27,7 @@ Material mirror{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=MIRRORSHADER};
 Material orange{.color={1.0f, 0.6f, 0.0f}, .shaderFlag=EMITSHADER, .intensity = 1.0f };
 Material glass{.color={1.0f, 1.0f, 1.0f}, .shaderFlag=REFRACTSHADER, .refractiveIdx1 = 1.0f, .refractiveIdx2=1.51f};
 Material normal{.shaderFlag=static_cast<char>(0xFF)};
-BvhNode root {};
+int root {};
 }
 
 //----- Container access----//
@@ -48,7 +48,14 @@ int getNumPrimitives() {
     return num;
 }
 
+//idx is 1 in the first bit if object idx
 void *getPrimitive(int idx) {
+    if(idx < 0 && -idx <= objectBuffer.size()) {
+        return &objectBuffer[-idx - 1];
+    } else if(idx < 0) {
+        return 0x0;
+    }
+
     if(idx < triangles.size()) {
         return &triangles[idx];
     }
@@ -72,6 +79,10 @@ void *getPrimitive(int idx) {
     if(idx < objects.size()) {
         return &objects[idx];
     }
+
+    idx -= objects.size();
+    
+
     return 0x0;
 }
 
@@ -106,6 +117,7 @@ void findIntersection(Ray &ray) {
     if(ray.terminated) return;
     float xi = (fastRandom(ray.randomState));
     float t = max(ray.throughPut);
+    if(t > 1) t = 1;
     if(ray.depth > 2 && xi*t < KILLCHANCE) {
         ray.terminated = true;
     } else if(ray.depth > 2)
@@ -113,17 +125,16 @@ void findIntersection(Ray &ray) {
     
     //bvh
     //
-    if(getIntersectMode()==BVH) findBVHIntesection(ray, &root);
+    if(getIntersectMode()==BVH) findBVHIntesection(ray, root);
     else {
     //normal
-    int num = triangles.size() + planes.size() + spheres.size() + cubes.size() + objects.size(); 
+    int num = getNumPrimitives(); 
     void * primitive;
     for (int i = 0; i < num; i++) {
         if(ray.terminated) return;
         int idx = i;
         ray.interSectionTests++;
-        primitive = getPrimitive(idx);
-        findIntersection(ray, primitive);
+        findIntersection(ray, idx);
     }
     }
 }
@@ -145,7 +156,8 @@ void initScene() {
     addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, addMaterial(emit)));*/
     loadObject("test.obj", {0,-220,50}, {200,200,200}, addMaterial(orange), &objects);
     
-    root = constructBVH(0, getNumPrimitives(), false);
+    root = constructBVH(0, getNumPrimitives());
+    printf("BVH root %d", root);
     
     Vector3 f{0.05f, -0.15f, 1.0f};
     Vector3 u{0.0f, 1.0f, 0.0f};
@@ -156,18 +168,18 @@ void initScene() {
 
 void resetScene() {
     if(!scenenInited) return;
-    constructBVH(root, false);
+    destroyBVH();
     for(int i = 0; i < objects.size(); i++) {
-        constructBVH(objects[i].root, true);
+        constructBVH(objects[i].startIdx, objects[i].endIdx);
     }
+    root = constructBVH(0, getNumPrimitives());
     //destroyBVH(root.childLeft);
     //destroyBVH(root.childRight);
     //root = constructBVH(0, getNumPrimitives(), false);
 }
 
 void destroyScene() {   
-    destroyBVH(root.childLeft);
-    destroyBVH(root.childRight);
+    destroyBVH();
 }
 
 

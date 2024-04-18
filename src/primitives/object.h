@@ -12,7 +12,7 @@ struct Object {
     int endIdx;
     AABB boundingBox;
     int materialIdx;
-    BvhNode root;
+    int root;
     bool active;
     std::string name;
 };
