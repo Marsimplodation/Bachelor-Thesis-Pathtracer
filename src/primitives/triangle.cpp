@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdio>
 
-bool findIntersection(Ray &ray, Triangle & primitive) {
+bool triangleIntersection(Ray &ray, Triangle & primitive) {
     if(!primitive.active) return false;
     // Determine two neighboring edge vectors
     Vector3 const edge1 =

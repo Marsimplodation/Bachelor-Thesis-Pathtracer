@@ -17,7 +17,7 @@ struct Object {
     std::string name;
 };
 
-bool findIntersection(Ray & ray, Object & primitive);
+bool objectIntersection(Ray & ray, Object & primitive);
 void loadObject(const char* fileName, Vector3 position, Vector3 size, int  materialIdx, void * oBuffer);
 Vector3 minBounds(Object &primitive);
 Vector3 maxBounds(Object &primitive);

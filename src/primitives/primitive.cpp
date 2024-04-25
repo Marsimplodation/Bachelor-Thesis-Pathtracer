@@ -6,6 +6,12 @@
 bool findIntersection(Ray &ray, int idx) {
     void * primitive = getPrimitive(idx);
     if(!primitive) {return false;}
+    if(idx < 0) {
+            return triangleIntersection(ray, *(Triangle*)primitive);
+    }
+    return objectIntersection(ray, *(Object*)primitive);
+    return false;
+
     char flag = *((char*)primitive);
     switch(flag) {
         case CUBE:
@@ -13,11 +19,11 @@ bool findIntersection(Ray &ray, int idx) {
         case PLANE:
             return findIntersection(ray, *(Plane*)primitive);
         case TRIANGLE:
-            return findIntersection(ray, *(Triangle*)primitive);
+            return triangleIntersection(ray, *(Triangle*)primitive);
         case SPHERE:
             return findIntersection(ray, *(Sphere*)primitive);
         case OBJECT:
-            return findIntersection(ray, *(Object*)primitive);
+    return objectIntersection(ray, *(Object*)primitive);
         default:
             return false;
     }

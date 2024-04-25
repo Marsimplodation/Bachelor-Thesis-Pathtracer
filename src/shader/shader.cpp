@@ -155,13 +155,15 @@ Vector3 edgeShader(Ray & r) {
         }
         color = {fgColor.x, fgColor.y, fgColor.z};
     }
+    r.terminated = true;
+    return color;
 
 
 
     //reset for next bounce
     r.throughPut = r.throughPut * color *  fabsf(cos);
     r.origin = r.origin + r.direction * r.length;
-    r.direction = randomV3UnitHemisphere(r);
+    r.direction = randomCosineWeightedDirection(r);
     r.origin += r.direction*EPS;
     r.length = INFINITY;
     return {};
@@ -189,10 +191,9 @@ Vector3 shadowShader(Ray &r) {
 
 
     //reset for next bounce
-    r.throughPut = r.throughPut * color *  fabsf(cos);
+    r.throughPut = r.throughPut * color;
     r.origin = r.origin + r.direction * r.length;
-    r.direction = randomV3UnitHemisphere(r);
-    r.throughPut *= dotProduct(r.direction, r.normal);
+    r.direction = randomCosineWeightedDirection(r);
     r.origin += r.direction*EPS;
     r.length = INFINITY;
     return {};

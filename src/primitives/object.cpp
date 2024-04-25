@@ -16,7 +16,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
-bool findIntersection(Ray &ray, Object &primitive) {
+bool objectIntersection(Ray &ray, Object &primitive) {
     if(!primitive.active) return false;
     if (!findIntersection(ray, primitive.boundingBox))
         return false;

@@ -22,5 +22,5 @@ struct Ray {
     //shaderinfo
     int materialIdx;
 };
-Vector3 randomV3UnitHemisphere(Ray & r);
+Vector3 randomCosineWeightedDirection(Ray & r);
 #endif // !RAY_H

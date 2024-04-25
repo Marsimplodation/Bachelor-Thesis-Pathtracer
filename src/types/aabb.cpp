@@ -95,5 +95,6 @@ bool findIntersection(Ray &ray, AABB & primitive) {
             if (tNear > tFar)
                 return false;
         }
-        return true;
+        if(tNear > ray.length)  return  false;  
+    return true;
 }

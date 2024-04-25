@@ -3,7 +3,7 @@
 #include <cmath>
 
 
-Vector3 randomV3UnitHemisphere(Ray & r) {
+Vector3 randomCosineWeightedDirection(Ray & r) {
     Vector3 direction;
     float theta = fastRandom(r.randomState); //=sinf(acosf(cos));
     float sinTheta = sqrtf(1-theta*theta);
