@@ -4,7 +4,7 @@
 #include "../primitives/triangle.h"
 #include <cstdlib>
 #include <vector>
-#define KILLCHANCE 0.1
+#define KILLCHANCE 0.7
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
 void initScene();

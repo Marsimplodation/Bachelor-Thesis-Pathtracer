@@ -150,6 +150,7 @@ void displayActiveObject() {
         Object *o = (Object *)activeObjectPtr;
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", o->name.c_str());
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
+        change |= ImGui::Checkbox("Active", &o->active);
         change |= ImGui::DragInt2("indices", &(o->startIdx));
         change |= DisplayMaterial(o->materialIdx);
     }
