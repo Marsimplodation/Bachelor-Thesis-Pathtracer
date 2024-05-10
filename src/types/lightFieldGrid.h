@@ -6,12 +6,13 @@
 #include "types/bvh.h"
 #include "types/vector.h"
 #include <vector>
+
 struct Grid {
     Vector3 min;
     Vector3 max;
     Vector2 size;
     //experiment with others later
-    std::vector<std::vector<int>> indices;  
+    std::vector<std::vector<int>> indices; 
 };
 void intersectGrid(Ray & r);
 void constructGrid();
