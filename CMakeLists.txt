@@ -8,7 +8,7 @@ project(pathtracer)
 
 # add_subdirectory(includes/sdl)
 find_package(SDL2 REQUIRED)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 option(PROFILE "Enable profiler" OFF)
@@ -43,7 +43,7 @@ file(GLOB_RECURSE SOURCES
 		"src/*.h"
 )
 # Add executable
-include_directories(src/ includes/singleHeaderLibs)
+include_directories(src/ includes/singleHeaderLibs includes/eigen/Eigen)
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} SDL2)
 target_link_libraries(${PROJECT_NAME} imgui)

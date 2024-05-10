@@ -24,7 +24,6 @@ def intersects(points: list[list[float]]) -> bool:
         if p[0] > 1 or p[1] > 1:
             continue
         inside = True
-
     return inside
 # Define your matrix M and vector p'
 # Matrix:

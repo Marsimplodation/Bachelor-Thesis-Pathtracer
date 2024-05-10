@@ -4,6 +4,7 @@
 #include "shader/shader.h"
 #include "types/camera.h"
 #include "types/bvh.h"
+#include "types/lightFieldGrid.h"
 #include "types/vector.h"
 #include <algorithm>
 #include <cmath>
@@ -46,6 +47,28 @@ std::vector<Triangle> *getObjectBuffer() {
 int getNumPrimitives() {
     int num = triangles.size() + planes.size() + spheres.size() + cubes.size() + objects.size();
     return num;
+}
+
+Vector3 getSceneMaxBounds() {
+    Vector3 max{-INFINITY,-INFINITY,-INFINITY};
+    for (int i=0; i < getNumPrimitives(); ++i) {
+        Vector3 pmax = maxBounds(getPrimitive(i)); 
+        max.x = std::fmaxf(max.x, pmax.x); 
+        max.y = std::fmaxf(max.y, pmax.y); 
+        max.z = std::fmaxf(max.z, pmax.z); 
+    }
+    return max;
+}
+
+Vector3 getSceneMinBounds() {
+    Vector3 min{+INFINITY,+INFINITY,+INFINITY};
+    for (int i=0; i < getNumPrimitives(); ++i) {
+        Vector3 pmin = minBounds(getPrimitive(i)); 
+        min.x = std::fminf(min.x, pmin.x); 
+        min.y = std::fminf(min.y, pmin.y); 
+        min.z = std::fminf(min.z, pmin.z); 
+    }
+    return min;
 }
 
 //idx is 1 in the first bit if object idx
@@ -126,7 +149,7 @@ void findIntersection(Ray &ray) {
     //bvh
     //
     if(getIntersectMode()==BVH) findBVHIntesection(ray, root);
-    else {
+    else if (getIntersectMode() == ALL) {
     //normal
     int num = getNumPrimitives(); 
     void * primitive;
@@ -136,6 +159,9 @@ void findIntersection(Ray &ray) {
         ray.interSectionTests++;
         findIntersection(ray, idx);
     }
+    }
+    else {
+        intersectGrid(ray);
     }
 }
 
@@ -157,6 +183,7 @@ void initScene() {
     loadObject("test.obj", {0,-220,50}, {200,200,200}, addMaterial(orange), &objects);
     
     root = constructBVH(0, getNumPrimitives());
+    constructGrid();
     printf("BVH root %d", root);
     
     Vector3 f{0.05f, -0.15f, 1.0f};

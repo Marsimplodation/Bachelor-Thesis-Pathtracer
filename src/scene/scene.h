@@ -2,6 +2,7 @@
 #define SCENE_H
 #include "../types/ray.h"
 #include "../primitives/triangle.h"
+#include "types/vector.h"
 #include <cstdlib>
 #include <vector>
 #define KILLCHANCE 0.7
@@ -15,6 +16,8 @@ std::vector<Triangle> *getObjectBuffer();
 int getNumPrimitives();
 void *getPrimitive(int idx);
 void removePrimitive(int idx);
+Vector3 getSceneMinBounds();
+Vector3 getSceneMaxBounds();
 
 void resetScene();
 #endif // !SCENE_H
