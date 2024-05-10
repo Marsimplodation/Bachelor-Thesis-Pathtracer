@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <Eigen>
+#include <iostream>
 
 
 namespace {
@@ -16,6 +17,7 @@ namespace {
 
 int getLUTIdx(int u, int v, int s, int t) {
     //??
+    return 0;
     
 }
 
@@ -61,7 +63,8 @@ void intersectGrid(Ray & r) {
 }
 
 bool triInUnitCube(Vector3* verts) {
-    //need to come up with that    
+    //need to come up with that
+    return false;
 }
 
 void constructChannel(float u, float v, float s, float t) { 
@@ -111,14 +114,13 @@ void constructChannel(float u, float v, float s, float t) {
 
     Eigen::Vector<float, 12> M1Fields = M0.colPivHouseholderQr().solve(newPoints); 
     Eigen::Matrix<float, 4, 4> M1;
-    M1 << M1Fields[0], M1Fields[1], M1Fields[2], M1Fields[3],
-        M1Fields[4], M1Fields[5], M1Fields[6], M1Fields[7],
-        M1Fields[8], M1Fields[9], M1Fields[10], M1Fields[11],
+    M1 << M1Fields(0), M1Fields(1), M1Fields(2), M1Fields(3),
+        M1Fields(4), M1Fields(5), M1Fields(6), M1Fields(7),
+        M1Fields(8), M1Fields(9), M1Fields(10), M1Fields(11),
         0,0,0,1.0f;
    
     //transform each triangle in local space and test it against a unit cube
     Vector3 transformed[3];
-    int startIdx = indicies.size();
     for(int i = 0; i < getObjectBuffer()->size(); ++i) {
         auto triangle = getObjectBuffer()->at(i);
         auto ov1 = triangle.vertices[0];
@@ -139,14 +141,39 @@ void constructChannel(float u, float v, float s, float t) {
         transformed[1] = {v2(0), v2(1), v2(2)};
         transformed[2] = {v3(0), v3(1), v3(2)};
         if (!triInUnitCube(transformed)) continue;
-        indicies.push_back(i); 
+        //indicies.push_back(i); 
     }
-    int endIdx = indicies.size();
     //todo save indices in lut 
+}
+
+void printProgressBar(double progress, int barWidth = 70) {
+    std::cout << "[";
+    int pos = static_cast<int>(barWidth * progress);
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
 }
 
 void constructGrid() {
     grid.size = {10,10};
+    float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
-    grid.max = getSceneMaxBounds(); 
+    grid.max = getSceneMaxBounds();
+    printf("building channel LUT\n");
+    int i = 1;
+    for(int u = 0; u<grid.size.x; u++) {
+        for(int v = 0; v<grid.size.y; v++) {
+            for(int s = 0; s<grid.size.x; s++) {
+                for(int t = 0; t<grid.size.y; t++) {
+                    constructChannel(u, v, s, t);
+                    printProgressBar(i++ / count);
+                }
+            }
+        }
+    }
+    printf("\ndone building channel LUT\n");
 }
