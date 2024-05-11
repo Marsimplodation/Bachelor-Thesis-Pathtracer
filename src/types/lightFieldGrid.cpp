@@ -1,5 +1,7 @@
 #include "lightFieldGrid.h"
 #include "common.h"
+#include "primitives/triangle.h"
+#include "primitives/primitive.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
 #include "types/vector.h"
@@ -12,13 +14,13 @@
 namespace {
     Grid grid{};
     std::vector<int> indicies(0); 
-    std::vector<int> gridLut(0); 
+    std::vector<int> gridLutStart(0); 
+    std::vector<int> gridLutEnd(0); 
 }
 
+// Calculate the flattened index of the 4D LUT based on the dimensions and indices
 int getLUTIdx(int u, int v, int s, int t) {
-    //??
-    return 0;
-    
+    return (u * grid.size.x * grid.size.y * grid.size.x) + (v * grid.size.x * grid.size.y) + (s * grid.size.x) + t;
 }
 
 void intersectGrid(Ray & r) {
@@ -33,11 +35,14 @@ void intersectGrid(Ray & r) {
     float iY = r.origin.y + d*r.direction.y;
     
     //get uv coordinates
-    float u = (iX - xRange.x)/xRange.y;
-    if(u < 0.0f || u >= 1.0f) return;
+    // Get uv coordinates
+    float u = (iX - xRange.x) / (xRange.y - xRange.x);
+    float v = (iY - yRange.x) / (yRange.y - yRange.x);
+
+    // Clamp u and v to [0, 1]
+    u = fmaxf(0.0f, fminf(u, 1.0f));
+    v = fmaxf(0.0f, fminf(v, 1.0f));
     u = (int)(u * grid.size.x);
-    float v = (iY - yRange.x)/yRange.y;
-    if(v < 0.0f || v >= 1.0f) return;
     v = (int)(v * grid.size.y);
 
     //distance the two planes have
@@ -51,20 +56,33 @@ void intersectGrid(Ray & r) {
     iY = r.origin.y + d*r.direction.y;
 
     //get st coordinates
-    float s = (iX - xRange.x)/xRange.y;
-    if(s < 0.0f || s >= 1.0f) return;
-    s = (int)(s * grid.size.x);
-    float t = (iY - yRange.x)/yRange.y;
-    if(t < 0.0f || t >= 1.0f) return;
-    t = (int)(t * grid.size.y);
+    float s = (iX - xRange.x) / (xRange.y - xRange.x);
+    float t = (iY - yRange.x) / (yRange.y - yRange.x);
+
+    // Clamp u and v to [0, 1]
+    s = fmaxf(0.0f, fminf(s, 1.0f));
+    t = fmaxf(0.0f, fminf(t, 1.0f));
+    t = (int)(s * grid.size.x);
+    s = (int)(t * grid.size.y);
     
     //ray is in channel uv,st
     //to do get all tris in the lut for uvst and loop over them
+    int lutIdx = getLUTIdx(u, v, s, t);
+    int startIdx = gridLutStart.at(lutIdx);
+    int endIdx = gridLutEnd.at(lutIdx);
+    
+    for (int i = startIdx; i < endIdx; ++i) {
+        int idx = indicies.at(i);
+        r.interSectionTests++;
+        Triangle & triangle = *getObjectBufferAtIdx(idx);
+        triangleIntersection(r, triangle); 
+    }
+
 }
 
 bool triInUnitCube(Vector3* verts) {
     //need to come up with that
-    return false;
+    return true;
 }
 
 void constructChannel(float u, float v, float s, float t) { 
@@ -120,6 +138,8 @@ void constructChannel(float u, float v, float s, float t) {
         0,0,0,1.0f;
    
     //transform each triangle in local space and test it against a unit cube
+    
+    int startIdx = indicies.size();
     Vector3 transformed[3];
     for(int i = 0; i < getObjectBuffer()->size(); ++i) {
         auto triangle = getObjectBuffer()->at(i);
@@ -141,9 +161,16 @@ void constructChannel(float u, float v, float s, float t) {
         transformed[1] = {v2(0), v2(1), v2(2)};
         transformed[2] = {v3(0), v3(1), v3(2)};
         if (!triInUnitCube(transformed)) continue;
-        //indicies.push_back(i); 
+        indicies.push_back(i);
     }
-    //todo save indices in lut 
+    u = (u)*(float)grid.size.x;
+    v = (v)*(float)grid.size.y;
+    s = (s)*(float)grid.size.x;
+    t = (t)*(float)grid.size.y;
+    int lutIdx = getLUTIdx(u, v, s, t);
+    int endIdx = indicies.size();
+    gridLutStart.at(lutIdx) = startIdx;
+    gridLutEnd.at(lutIdx) = endIdx;
 }
 
 void printProgressBar(double progress, int barWidth = 70) {
@@ -163,6 +190,10 @@ void constructGrid() {
     float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
     grid.max = getSceneMaxBounds();
+    
+    gridLutEnd.resize(count);
+    gridLutStart.resize(count);
+
     printf("building channel LUT\n");
     int i = 1;
     for(int u = 0; u<grid.size.x; u++) {

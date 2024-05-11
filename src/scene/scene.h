@@ -12,7 +12,7 @@ void initScene();
 void destroyScene();
 
 std::vector<Triangle> *getObjectBuffer();
-
+Triangle* getObjectBufferAtIdx(int idx);
 int getNumPrimitives();
 void *getPrimitive(int idx);
 void removePrimitive(int idx);
