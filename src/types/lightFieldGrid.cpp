@@ -5,6 +5,7 @@
 #include "scene/scene.h"
 #include "types/aabb.h"
 #include "types/vector.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <Eigen>
@@ -27,63 +28,79 @@ void intersectGrid(Ray & r) {
     //first intersect
     Vector2 xRange = {grid.min.x, grid.max.x};
     Vector2 yRange = {grid.min.y, grid.max.y};
-    float oz = r.origin.z - grid.min.z;
-    float d = 0;
-    if (fabs(oz) < EPS){}
-    else d = oz / r.direction.z;
-    float iX = r.origin.x + d*r.direction.x;
-    float iY = r.origin.y + d*r.direction.y;
-    
-    //get uv coordinates
+
+    // First intersect
+    float oz = -(r.origin.z - grid.min.z);
+    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction.z;
+    float iX = r.origin.x + d * r.direction.x;
+    float iY = r.origin.y + d * r.direction.y;
+
     // Get uv coordinates
     float u = (iX - xRange.x) / (xRange.y - xRange.x);
     float v = (iY - yRange.x) / (yRange.y - yRange.x);
 
-    // Clamp u and v to [0, 1]
+    // Check if uv coordinates are within range
     u = fmaxf(0.0f, fminf(u, 1.0f));
     v = fmaxf(0.0f, fminf(v, 1.0f));
-    u = (int)(u * grid.size.x);
-    v = (int)(v * grid.size.y);
+    if(u < 0 || u > 1 || v < 0 || v > 1) {
+        return;
+    }
 
-    //distance the two planes have
-    //intersect with far plane
-    float dGrid = grid.max.z - grid.min.z;
-    oz+=dGrid;
-    d = 0;
-    if (fabs(oz) < EPS){}
-    else d = oz / r.direction.z;
-    iX = r.origin.x + d*r.direction.x;
-    iY = r.origin.y + d*r.direction.y;
+    // Convert to grid indices
+    int uIndex = static_cast<int>(u * grid.size.x);
+    int vIndex = static_cast<int>(v * grid.size.y);
 
-    //get st coordinates
+    // Intersect with far plane
+    oz = -(r.origin.z - grid.max.z);
+    d = (fabs(oz) < EPS) ? 0 : oz / r.direction.z;
+    iX = r.origin.x + d * r.direction.x;
+    iY = r.origin.y + d * r.direction.y;
+
+    // Get st coordinates
     float s = (iX - xRange.x) / (xRange.y - xRange.x);
     float t = (iY - yRange.x) / (yRange.y - yRange.x);
-
-    // Clamp u and v to [0, 1]
     s = fmaxf(0.0f, fminf(s, 1.0f));
     t = fmaxf(0.0f, fminf(t, 1.0f));
-    t = (int)(s * grid.size.x);
-    s = (int)(t * grid.size.y);
-    
+
+
+    // Check if st coordinates are within range
+    if(s < 0 || s > 1 || t < 0 || t > 1)
+        return;
+
+    // Convert to grid indices
+    int sIndex = static_cast<int>(s * grid.size.x);
+    int tIndex = static_cast<int>(t * grid.size.y);
+   
     //ray is in channel uv,st
     //to do get all tris in the lut for uvst and loop over them
     int lutIdx = getLUTIdx(u, v, s, t);
     int startIdx = gridLutStart.at(lutIdx);
     int endIdx = gridLutEnd.at(lutIdx);
-    
     for (int i = startIdx; i < endIdx; ++i) {
+        if(r.terminated) break;;
         int idx = indicies.at(i);
         r.interSectionTests++;
         Triangle & triangle = *getObjectBufferAtIdx(idx);
-        triangleIntersection(r, triangle); 
+        if(triangleIntersection(r, triangle)) {}//break;; 
     }
 
 }
 
 bool triInUnitCube(Vector3* verts) {
     //need to come up with that
-    return true;
+    //just check if atleast one vert is in unit cube
+    bool inCube = false;
+    for (int i = 0; i < 3; i++) {
+        float x = verts[i].x;
+        float y = verts[i].y;
+        float z = verts[i].z;
+        if(x > 1 || y > 1 || z > 1) continue;
+        if(x < 0 || y < 0 || z < 0) continue;
+        inCube = true;
+    }
+    return inCube;
 }
+
 
 void constructChannel(float u, float v, float s, float t) { 
     u = (u)/(float)grid.size.x;
@@ -136,9 +153,8 @@ void constructChannel(float u, float v, float s, float t) {
         M1Fields(4), M1Fields(5), M1Fields(6), M1Fields(7),
         M1Fields(8), M1Fields(9), M1Fields(10), M1Fields(11),
         0,0,0,1.0f;
-   
+
     //transform each triangle in local space and test it against a unit cube
-    
     int startIdx = indicies.size();
     Vector3 transformed[3];
     for(int i = 0; i < getObjectBuffer()->size(); ++i) {
@@ -171,6 +187,18 @@ void constructChannel(float u, float v, float s, float t) {
     int endIdx = indicies.size();
     gridLutStart.at(lutIdx) = startIdx;
     gridLutEnd.at(lutIdx) = endIdx;
+
+    //reoder the indices based on distance
+    Vector3 frontCenter = 
+        {grid.min.x + deltaX * (u+0.5f), grid.min.y + deltaY * (v+0.5f), grid.min.z};
+    
+    auto comp = [frontCenter](int a, int b){
+        auto A = getObjectBuffer()->at(a);
+        auto B = getObjectBuffer()->at(b);
+        return length(frontCenter - minBounds(A)) <  length(frontCenter - minBounds(B));
+    };
+
+    //std::sort(indicies.begin() + startIdx, indicies.begin() + endIdx,comp);
 }
 
 void printProgressBar(double progress, int barWidth = 70) {
@@ -186,7 +214,7 @@ void printProgressBar(double progress, int barWidth = 70) {
 }
 
 void constructGrid() {
-    grid.size = {10,10};
+    grid.size = {15,15};
     float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
     grid.max = getSceneMaxBounds();

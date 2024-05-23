@@ -13,9 +13,9 @@ def pointIsideTriangle(triangle: list[list[float]], point: list[float]) -> bool:
 
 
 def intersects(points: list[list[float]]) -> bool:
-    for i in range(0,4):
-        if pointIsideTriangle(points[4:], points[i]):
-            return True
+    #for i in range(0,4):
+    #    if pointIsideTriangle(points[4:], points[i]):
+    #        return True
     ##check if triangle completly in cube/square
     inside = False
     for p in points[4:]:

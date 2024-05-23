@@ -209,6 +209,10 @@ void displayIntersectSettings() {
     ImGui::Begin("Trace Setttings");
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Intersections/sample: %f", getIntersectionCount());
     const char *items[] = {"ALL", "BVH", "GRID"};
+    if(ImGui::Button("rebuild structures")) {
+        buildAS();
+        callReset();
+    }
     if (ImGui::BeginCombo("intersect mode", items[getIntersectMode()])) {
         for (int i = 0; i < IM_ARRAYSIZE(items); i++) {
             bool isSelected = (getIntersectMode() == i);

@@ -51,8 +51,8 @@ int getNumPrimitives() {
 
 Vector3 getSceneMaxBounds() {
     Vector3 max{-INFINITY,-INFINITY,-INFINITY};
-    for (int i=0; i < getNumPrimitives(); ++i) {
-        Vector3 pmax = maxBounds(getPrimitive(i)); 
+    for (int i=0; i < objectBuffer.size(); ++i) {
+        Vector3 pmax = minBounds(objectBuffer.at(i)); 
         max.x = std::fmaxf(max.x, pmax.x); 
         max.y = std::fmaxf(max.y, pmax.y); 
         max.z = std::fmaxf(max.z, pmax.z); 
@@ -62,8 +62,8 @@ Vector3 getSceneMaxBounds() {
 
 Vector3 getSceneMinBounds() {
     Vector3 min{+INFINITY,+INFINITY,+INFINITY};
-    for (int i=0; i < getNumPrimitives(); ++i) {
-        Vector3 pmin = minBounds(getPrimitive(i)); 
+    for (int i=0; i < objectBuffer.size(); ++i) {
+        Vector3 pmin = minBounds(objectBuffer.at(i)); 
         min.x = std::fminf(min.x, pmin.x); 
         min.y = std::fminf(min.y, pmin.y); 
         min.z = std::fminf(min.z, pmin.z); 
@@ -186,11 +186,20 @@ void initScene() {
     constructGrid();
     printf("BVH root %d", root);
     
-    Vector3 f{0.05f, -0.15f, 1.0f};
+    Vector3 f{0.0f, 0.0f, 1.0f};
     Vector3 u{0.0f, 1.0f, 0.0f};
     cameraSetForward(f);
     cameraSetUp(u);
     scenenInited = true;
+}
+
+void buildAS() {
+    destroyBVH();
+    for(int i = 0; i < objects.size(); i++) {
+        constructBVH(objects[i].startIdx, objects[i].endIdx);
+    }
+    root = constructBVH(0, getNumPrimitives());
+    constructGrid();
 }
 
 void resetScene() {

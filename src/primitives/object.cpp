@@ -18,8 +18,8 @@
 
 bool objectIntersection(Ray &ray, Object &primitive) {
     if(!primitive.active) return false;
-    if (!findIntersection(ray, primitive.boundingBox))
-        return false;
+    //if (!findIntersection(ray, primitive.boundingBox))
+    //    return false;
     
     bool hit = false;
     if(getIntersectMode() == BVH) {
