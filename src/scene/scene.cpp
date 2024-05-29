@@ -60,6 +60,27 @@ Vector3 getSceneMaxBounds() {
     return max;
 }
 
+Vector3 getSceneYMaxPoint() {
+    Vector3 max{-INFINITY,-INFINITY,-INFINITY};
+    for (int i=0; i < objectBuffer.size(); ++i) {
+        Vector3 pmax = minBounds(objectBuffer.at(i)); 
+        if(pmax.y >= max.y) max = pmax;
+    }
+    return max;
+}
+
+
+
+Vector3 getSceneYMinPoint() {
+    Vector3 min{+INFINITY,+INFINITY,+INFINITY};
+    for (int i=0; i < objectBuffer.size(); ++i) {
+        Vector3 pmin = minBounds(objectBuffer.at(i));
+        if(pmin.y <= min.y) min = pmin;
+    }
+    return min;
+
+}
+
 Vector3 getSceneMinBounds() {
     Vector3 min{+INFINITY,+INFINITY,+INFINITY};
     for (int i=0; i < objectBuffer.size(); ++i) {
@@ -180,7 +201,7 @@ void initScene() {
     //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, addMaterial(white))); 
     addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, addMaterial(white)));
     addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, addMaterial(emit)));*/
-    loadObject("test.obj", {0,-220,50}, {200,200,200}, addMaterial(orange), &objects);
+    loadObject("test.obj", {0,-220,50}, {100,100,100}, addMaterial(orange), &objects);
     
     root = constructBVH(0, getNumPrimitives());
     constructGrid();

@@ -16,7 +16,7 @@ std::vector<AABB> boxes;
 std::vector<int> indices;
 std::vector<PrimitiveCompare> splits;
 BvhSettings settings{
-    .maxDepth = 12, 
+    .maxDepth = 2, 
 };
 }
 

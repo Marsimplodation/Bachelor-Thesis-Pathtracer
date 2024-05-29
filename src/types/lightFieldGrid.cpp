@@ -4,6 +4,7 @@
 #include "primitives/primitive.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
+#include "types/camera.h"
 #include "types/vector.h"
 #include <algorithm>
 #include <cmath>
@@ -40,8 +41,8 @@ void intersectGrid(Ray & r) {
     float v = (iY - yRange.x) / (yRange.y - yRange.x);
 
     // Check if uv coordinates are within range
-    u = fmaxf(0.0f, fminf(u, 1.0f));
-    v = fmaxf(0.0f, fminf(v, 1.0f));
+    //u = fmaxf(0.0f, fminf(u, 1.0f));
+    //v = fmaxf(0.0f, fminf(v, 1.0f));
     if(u < 0 || u > 1 || v < 0 || v > 1) {
         return;
     }
@@ -59,8 +60,8 @@ void intersectGrid(Ray & r) {
     // Get st coordinates
     float s = (iX - xRange.x) / (xRange.y - xRange.x);
     float t = (iY - yRange.x) / (yRange.y - yRange.x);
-    s = fmaxf(0.0f, fminf(s, 1.0f));
-    t = fmaxf(0.0f, fminf(t, 1.0f));
+    //s = fmaxf(0.0f, fminf(s, 1.0f));
+    //t = fmaxf(0.0f, fminf(t, 1.0f));
 
 
     // Check if st coordinates are within range
@@ -76,14 +77,18 @@ void intersectGrid(Ray & r) {
     int lutIdx = getLUTIdx(u, v, s, t);
     int startIdx = gridLutStart.at(lutIdx);
     int endIdx = gridLutEnd.at(lutIdx);
+    bool hit = false;
     for (int i = startIdx; i < endIdx; ++i) {
         if(r.terminated) break;;
         int idx = indicies.at(i);
         r.interSectionTests++;
         Triangle & triangle = *getObjectBufferAtIdx(idx);
-        if(triangleIntersection(r, triangle)) {}//break;; 
+        hit |= triangleIntersection(r, triangle); 
     }
-
+    if(hit) return;
+    r.length = 10;
+    r.materialIdx = 0;
+    r.throughPut = {1,1,1};
 }
 
 bool triInUnitCube(Vector3* verts) {
@@ -214,11 +219,27 @@ void printProgressBar(double progress, int barWidth = 70) {
 }
 
 void constructGrid() {
-    grid.size = {15,15};
+    grid.size = {20,20};
     float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
     grid.max = getSceneMaxBounds();
+   
+    //offset the min and max based on the camera
+    Vector3 minPoint = getSceneYMinPoint();
+    Vector3 maxPoint = getSceneYMaxPoint();
+    float cameraFarDistance = fabsf(getCamera()->origin.z - grid.max.z);
+    float cameraPointDistance = fabsf(getCamera()->origin.z - maxPoint.z);
+    float ratio = cameraFarDistance/cameraPointDistance;
+    Vector3 direction = normalized(maxPoint - getCamera()->origin);
+    grid.max.y += getCamera()->origin.y + (direction * (ratio / direction.z)).y;
+
+    cameraPointDistance = fabsf(getCamera()->origin.z - minPoint.z);
+    ratio = cameraFarDistance/cameraPointDistance;
+    direction = normalized(minPoint - getCamera()->origin);
+    grid.min.y += getCamera()->origin.y + (direction * (ratio / direction.z)).y;
     
+
+
     gridLutEnd.resize(count);
     gridLutStart.resize(count);
 

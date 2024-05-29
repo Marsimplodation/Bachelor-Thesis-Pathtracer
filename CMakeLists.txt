@@ -1,13 +1,11 @@
-
 cmake_minimum_required(VERSION 3.7)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
 
 # Project name
 project(pathtracer)
 
 # Set C++ standard (if it's a C++ project)
-
-# add_subdirectory(includes/sdl)
-find_package(SDL2 REQUIRED)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -16,6 +14,9 @@ if (PROFILE)
   set(CMAKE_CXX_FLAGS_DEBUG "-pg")
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# add_subdirectory(includes/sdl)
+find_package(SDL2 REQUIRED)
 set(imgui_SOURCE_DIR includes/imgui/)
 
 add_library(imgui

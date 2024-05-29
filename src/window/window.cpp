@@ -207,7 +207,7 @@ void displayCamera() {
 
 void displayIntersectSettings() {
     ImGui::Begin("Trace Setttings");
-    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Intersections/sample: %f", getIntersectionCount());
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Intersections/sample: %fM", getIntersectionCount());
     const char *items[] = {"ALL", "BVH", "GRID"};
     if(ImGui::Button("rebuild structures")) {
         buildAS();

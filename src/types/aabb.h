@@ -10,6 +10,5 @@ struct AABB{
 bool findIntersection(Ray & ray, AABB & primitive);
 Vector3 minBounds(AABB &primitive);
 Vector3 maxBounds(AABB &primitive);
-void loadPoints(AABB & primitive, Vector3 * points); 
 
 #endif // !AABB_H

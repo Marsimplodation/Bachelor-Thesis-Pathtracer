@@ -18,6 +18,8 @@ void *getPrimitive(int idx);
 void removePrimitive(int idx);
 Vector3 getSceneMinBounds();
 Vector3 getSceneMaxBounds();
+Vector3 getSceneYMaxPoint(); 
+Vector3 getSceneYMinPoint();
 
 void resetScene();
 void buildAS(); 
