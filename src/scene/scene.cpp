@@ -160,8 +160,7 @@ void findIntersection(Ray &ray) {
     //    float xi = ((float)rand()/RAND_MAX);
     if(ray.terminated) return;
     float xi = (fastRandom(ray.randomState));
-    float t = max(ray.throughPut);
-    if(t > 1) t = 1;
+
     if(ray.depth > 2 && xi < KILLCHANCE) {
         ray.terminated = true;
     } else if(ray.depth > 2)
@@ -201,7 +200,7 @@ void initScene() {
     //addToPrimitiveContainer(cubes, createCube({0,0,-5}, {10,10,0.1}, addMaterial(white))); 
     addToPrimitiveContainer(cubes, createCube({0,0,250}, {500,500,0.1}, addMaterial(white)));
     addToPrimitiveContainer(cubes, createCube({0,249,2}, {300,1.0f,300}, addMaterial(emit)));*/
-    loadObject("test.obj", {0,-220,50}, {100,100,100}, addMaterial(orange), &objects);
+    loadObject("cornel.obj", {0,-250,50}, {300,300,300}, addMaterial(orange), &objects);
     
     root = constructBVH(0, getNumPrimitives());
     constructGrid();

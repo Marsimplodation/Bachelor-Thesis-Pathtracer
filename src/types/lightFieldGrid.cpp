@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <Eigen>
 #include <iostream>
+#include <utility>
 
 
 namespace {
@@ -83,12 +84,9 @@ void intersectGrid(Ray & r) {
         int idx = indicies.at(i);
         r.interSectionTests++;
         Triangle & triangle = *getObjectBufferAtIdx(idx);
-        hit |= triangleIntersection(r, triangle); 
+        hit |= triangleIntersection(r, triangle);
+        if (hit) break;
     }
-    if(hit) return;
-    r.length = 10;
-    r.materialIdx = 0;
-    r.throughPut = {1,1,1};
 }
 
 bool triInUnitCube(Vector3* verts) {
@@ -203,7 +201,7 @@ void constructChannel(float u, float v, float s, float t) {
         return length(frontCenter - minBounds(A)) <  length(frontCenter - minBounds(B));
     };
 
-    //std::sort(indicies.begin() + startIdx, indicies.begin() + endIdx,comp);
+    std::sort(indicies.begin() + startIdx, indicies.begin() + endIdx,comp);
 }
 
 void printProgressBar(double progress, int barWidth = 70) {
@@ -219,26 +217,16 @@ void printProgressBar(double progress, int barWidth = 70) {
 }
 
 void constructGrid() {
-    grid.size = {20,20};
+    grid.size = {16,16};
     float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
     grid.max = getSceneMaxBounds();
    
     //offset the min and max based on the camera
-    Vector3 minPoint = getSceneYMinPoint();
-    Vector3 maxPoint = getSceneYMaxPoint();
-    float cameraFarDistance = fabsf(getCamera()->origin.z - grid.max.z);
-    float cameraPointDistance = fabsf(getCamera()->origin.z - maxPoint.z);
-    float ratio = cameraFarDistance/cameraPointDistance;
-    Vector3 direction = normalized(maxPoint - getCamera()->origin);
-    grid.max.y += getCamera()->origin.y + (direction * (ratio / direction.z)).y;
-
-    cameraPointDistance = fabsf(getCamera()->origin.z - minPoint.z);
-    ratio = cameraFarDistance/cameraPointDistance;
-    direction = normalized(minPoint - getCamera()->origin);
-    grid.min.y += getCamera()->origin.y + (direction * (ratio / direction.z)).y;
-    
-
+    grid.min.y *= grid.min.y < 0 ? 2 : 0.5f;
+    grid.min.x *= grid.min.x < 0 ? 2 : 0.5f;
+    grid.max.y *= 2;
+    grid.max.x *= 2;
 
     gridLutEnd.resize(count);
     gridLutStart.resize(count);

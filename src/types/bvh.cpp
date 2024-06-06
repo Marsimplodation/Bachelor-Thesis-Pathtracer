@@ -16,7 +16,7 @@ std::vector<AABB> boxes;
 std::vector<int> indices;
 std::vector<PrimitiveCompare> splits;
 BvhSettings settings{
-    .maxDepth = 2, 
+    .maxDepth = 8, 
 };
 }
 
@@ -27,6 +27,7 @@ void findBVHIntesection(Ray &ray, int nodeIdx) {
     bool leaf = (node.childLeft == -1 && node.childRight == -1);
     
     if(node.AABBIdx >= boxes.size()) return;
+    ray.interSectionTests++;
     if(!findIntersection(ray, boxes[node.AABBIdx])) return; 
     findBVHIntesection(ray, node.childLeft);
     findBVHIntesection(ray, node.childRight);
@@ -87,12 +88,14 @@ void calculateBoundingBox(BvhNode & node){
 int constructBVH(int startIdx, int endIdx, int nodeIdx) {
     bool isRoot = (nodeIdx == -1);
     bool isObject = (startIdx < 0 && endIdx < 0);
-    if (isObject) std::swap(startIdx, endIdx);
     //handle root construction
     if(isRoot) {
         nodeIdx = nodes.size();
         int sIdx = indices.size();
-        for(int idx = startIdx; idx < endIdx; idx++) {indices.push_back(idx);}
+        if(isObject) {
+            for(int idx = startIdx; idx > endIdx; idx--) {indices.push_back(idx);}
+        }
+        else for(int idx = startIdx; idx < endIdx; idx++) {indices.push_back(idx);}
         int eIdx = indices.size();
         nodes.push_back(BvhNode{
             .startIdx = sIdx,
@@ -100,7 +103,8 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx) {
             .depth = 0,
         });
     }
-
+    
+    if(nodeIdx >= nodes.size()) return -1;
     BvhNode & node = nodes.at(nodeIdx);
     calculateBoundingBox(node); 
     //chose split axis

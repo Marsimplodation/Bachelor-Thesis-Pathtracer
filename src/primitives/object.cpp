@@ -109,7 +109,7 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
                                                    normals[0], normals[1],
                                                    normals[2], uvs[0], uvs[1], uvs[2], matIdx));
             if(i == 0)startIdx = idx;
-            endIdx = std::max(endIdx, idx);
+            endIdx = std::max(endIdx, idx + 1);
         }
         //mark the indices as object related
         startIdx = -1*startIdx - 1;
