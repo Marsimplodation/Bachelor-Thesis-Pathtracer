@@ -28,7 +28,7 @@ bool objectIntersection(Ray &ray, Object &primitive) {
         hit |= ray.length != l;
     }
     
-    if(getIntersectMode() != BVH) {
+    if(getIntersectMode() == ALL) {
         for (int i = primitive.startIdx; i > primitive.endIdx; i--) {
             ray.interSectionTests++;
             hit |= findIntersection(ray, i);

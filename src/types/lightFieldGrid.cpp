@@ -75,7 +75,7 @@ void intersectGrid(Ray & r) {
    
     //ray is in channel uv,st
     //to do get all tris in the lut for uvst and loop over them
-    int lutIdx = getLUTIdx(u, v, s, t);
+    int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex);
     int startIdx = gridLutStart.at(lutIdx);
     int endIdx = gridLutEnd.at(lutIdx);
     bool hit = false;
@@ -85,7 +85,7 @@ void intersectGrid(Ray & r) {
         r.interSectionTests++;
         Triangle & triangle = *getObjectBufferAtIdx(idx);
         hit |= triangleIntersection(r, triangle);
-        if (hit) break;
+        //if (hit) break;
     }
 }
 
@@ -201,7 +201,7 @@ void constructChannel(float u, float v, float s, float t) {
         return length(frontCenter - minBounds(A)) <  length(frontCenter - minBounds(B));
     };
 
-    std::sort(indicies.begin() + startIdx, indicies.begin() + endIdx,comp);
+    //std::sort(indicies.begin() + startIdx, indicies.begin() + endIdx,comp);
 }
 
 void printProgressBar(double progress, int barWidth = 70) {
@@ -216,17 +216,34 @@ void printProgressBar(double progress, int barWidth = 70) {
     std::cout.flush();
 }
 
+
+void adjustGridSize() {
+    auto origin = getCamera()->origin;
+    float maxZ = grid.max.z - origin.z;
+    
+    //project the max point, which is on the far plane, on the near plane
+    auto maxPoint = grid.max; maxPoint.z = grid.min.z;
+    auto dir = normalized(maxPoint - origin);
+
+    //travel the direction untill reaching the farplane
+    grid.max.x = origin.x + dir.x * (maxZ / dir.z);
+    grid.max.y = origin.y + dir.y * (maxZ / dir.z);
+
+    //extend the minPoint to the farPlane with the same method
+    dir = normalized(grid.min - origin);
+    grid.min.x = origin.x + dir.x * (maxZ / dir.z);
+    grid.min.y = origin.y + dir.y * (maxZ / dir.z);
+}
+
+
 void constructGrid() {
-    grid.size = {16,16};
+    grid.size = {10,10};
     float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
     grid.max = getSceneMaxBounds();
    
     //offset the min and max based on the camera
-    grid.min.y *= grid.min.y < 0 ? 2 : 0.5f;
-    grid.min.x *= grid.min.x < 0 ? 2 : 0.5f;
-    grid.max.y *= 2;
-    grid.max.x *= 2;
+    adjustGridSize(); 
 
     gridLutEnd.resize(count);
     gridLutStart.resize(count);
