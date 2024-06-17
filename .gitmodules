@@ -1,6 +1,3 @@
-[submodule "includes/sdl"]
-	path = includes/sdl
-	url = https://github.com/libsdl-org/SDL.git
 [submodule "includes/imgui"]
 	path = includes/imgui
 	url = https://github.com/ocornut/imgui.git
