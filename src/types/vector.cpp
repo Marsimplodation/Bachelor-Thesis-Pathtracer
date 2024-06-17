@@ -2,6 +2,54 @@
 #include "ray.h"
 #include <cmath>
 
+//now it is getting fancy
+#include <immintrin.h>
+#include <xmmintrin.h>
+namespace {
+    float invSqrt(Vector3 & v) {
+    // Load vector components into an __m128 vector
+    __m128 a = _mm_set_ps(0.0f, v.z, v.y, v.x); // Load v.x, v.y, v.z into the lower part of a __m128
+
+    // Square each component
+    __m128 squared = _mm_mul_ps(a, a);
+
+    // Sum the squared components
+    __m128 sum = _mm_hadd_ps(squared, squared); // Horizontal add to sum all elements
+    sum = _mm_hadd_ps(sum, sum); // Horizontal add again to sum all elements
+
+    // Store the result in a float array
+    alignas(16) float result[4];
+    _mm_store_ps(result, sum);
+
+    // Calculate the inverse square root of the sum of squares
+    float inverseLength = 1.0f / sqrtf(result[0]);
+
+    return inverseLength;
+}
+
+// Function to calculate dot product of Vector3 v1 and Vector3 v2 using SSE
+float fastDot(const Vector3 & v1,const  Vector3 & v2) {
+    // Load vector components into __m128 vectors
+    __m128 vec1 = _mm_set_ps(0.0f, v1.z, v1.y, v1.x); // Load v1.x, v1.y, v1.z into the lower part of a __m128
+    __m128 vec2 = _mm_set_ps(0.0f, v2.z, v2.y, v2.x); // Load v2.x, v2.y, v2.z into the lower part of a __m128
+
+    // Multiply corresponding components of vec1 and vec2
+    __m128 product = _mm_mul_ps(vec1, vec2);
+
+    // Sum the products using horizontal addition
+    __m128 sum = _mm_hadd_ps(product, product); // Horizontal add to sum all elements
+    sum = _mm_hadd_ps(sum, sum); // Horizontal add again to sum all elements
+
+    // Store the result in a float array
+    alignas(16) float result[4];
+    _mm_store_ps(result, sum);
+
+    // Return the dot product (sum of the elements in the __m128 vector)
+    return result[0];
+}
+
+
+}
 //--- Vector 3 ---//
 float max(const Vector3 & v) {
     return fmaxf(v.x, fmaxf(v.y, v.z));
@@ -26,12 +74,14 @@ float length(const Vector3 &v) {
 
 void normalize(Vector3 &v) {
     float l = length(v);
+    //float l = invSqrt(v);
     v.z /= l;
     v.x /= l;
     v.y /= l;
 }
 
 float dotProduct(const Vector3 &v1, const Vector3 &v2) {
+    //return fastDot(v1, v2);
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 

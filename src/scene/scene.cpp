@@ -180,8 +180,12 @@ void findIntersection(Ray &ray) {
         findIntersection(ray, idx);
     }
     }
-    else {
+    else if (getIntersectMode() == GRID) {
         intersectGrid(ray);
+    }
+    else if (getIntersectMode() == HYBRID) {
+        if(ray.depth == 0) intersectGrid(ray);
+        else findBVHIntesection(ray, root);
     }
 }
 

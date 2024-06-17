@@ -22,7 +22,7 @@ bool objectIntersection(Ray &ray, Object &primitive) {
     //    return false;
     
     bool hit = false;
-    if(getIntersectMode() == BVH) {
+    if(getIntersectMode() != ALL) {
         float l = ray.length;
         findBVHIntesection(ray, primitive.root);
         hit |= ray.length != l;

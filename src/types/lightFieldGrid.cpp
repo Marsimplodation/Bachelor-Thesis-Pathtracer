@@ -320,7 +320,7 @@ void adjustGridSize() {
 
 
 void constructGrid() {
-    grid.size = {10,10};
+    grid.size = {20,20};
     float count = grid.size.x * grid.size.x * grid.size.y * grid.size.y;
     grid.min = getSceneMinBounds();
     grid.max = getSceneMaxBounds();

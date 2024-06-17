@@ -2,7 +2,7 @@
 #include <cstdint>
 
 namespace {
-    IntersectMode mode = ALL;
+    IntersectMode mode = BVH;
 }
 
 u32 hashCoords(int x, int y) {
