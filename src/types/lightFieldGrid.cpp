@@ -89,19 +89,97 @@ void intersectGrid(Ray & r) {
     }
 }
 
+
 bool triInUnitCube(Vector3* verts) {
-    //need to come up with that
-    //just check if atleast one vert is in unit cube
+    // Check if at least one vertex is inside the unit cube
     bool inCube = false;
     for (int i = 0; i < 3; i++) {
         float x = verts[i].x;
         float y = verts[i].y;
         float z = verts[i].z;
-        if(x > 1 || y > 1 || z > 1) continue;
-        if(x < 0 || y < 0 || z < 0) continue;
+        if (x > 0.5 || y > 0.5 || z > 0.5) continue;
+        if (x < -0.5 || y < -0.5 || z < -0.5) continue;
         inCube = true;
     }
-    return inCube;
+    if (inCube) return true;
+
+    // Unit cube spans from -0.5 to 0.5 in all axes
+    const float cubeMin = -0.5f;
+    const float cubeMax = 0.5f;
+
+    // Helper function to project a point onto an axis
+    auto projectPoint = [](const Vector3& p, const Vector3& axis) -> float {
+        return p.x * axis.x + p.y * axis.y + p.z * axis.z;
+    };
+
+    // Check overlap on the coordinate axes
+    for (int axis = 0; axis < 3; axis++) {
+        float triMin = INFINITY, triMax = -INFINITY;
+        float cubeMinProj = cubeMin, cubeMaxProj = cubeMax;
+
+        for (int i = 0; i < 3; i++) {
+            float proj;
+            switch (axis) {
+                case 0: proj = verts[i].x; break;
+                case 1: proj = verts[i].y; break;
+                case 2: proj = verts[i].z; break;
+            }
+            if (proj < triMin) triMin = proj;
+            if (proj > triMax) triMax = proj;
+        }
+
+        if (triMax < cubeMinProj || triMin > cubeMaxProj) return false;
+    }
+
+    // Edge vectors of the triangle and cube
+    Vector3 edges[3] = {
+        {verts[1].x - verts[0].x, verts[1].y - verts[0].y, verts[1].z - verts[0].z},
+        {verts[2].x - verts[1].x, verts[2].y - verts[1].y, verts[2].z - verts[1].z},
+        {verts[0].x - verts[2].x, verts[0].y - verts[2].y, verts[0].z - verts[2].z}
+    };
+    Vector3 cubeVerts[8] = {
+            {cubeMin, cubeMin, cubeMin}, {cubeMin, cubeMin, cubeMax},
+            {cubeMin, cubeMax, cubeMin}, {cubeMin, cubeMax, cubeMax},
+            {cubeMax, cubeMin, cubeMin}, {cubeMax, cubeMin, cubeMax},
+            {cubeMax, cubeMax, cubeMin}, {cubeMax, cubeMax, cubeMax}
+        };
+
+    // Create the 9 axis on which the test is performed
+    Vector3 testAxes[9];
+    int idx = 0;
+    for (int i = 0; i < 3; i++) {
+        for (int axis = 0; axis < 3; axis++) {
+            Vector3 coordAxis;
+            switch (axis) {
+                case 0: coordAxis = {1, 0, 0}; break;
+                case 1: coordAxis = {0, 1, 0}; break;
+                case 2: coordAxis = {0, 0, 1}; break;
+            }
+            testAxes[idx++] = crossProduct(edges[i], coordAxis);
+        }
+    }
+
+    //perform the SAT test
+    for (int i = 0; i < 9; i++) {
+        float triMin = INFINITY, triMax = -INFINITY;
+        float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
+
+        for (int j = 0; j < 3; j++) {
+            float proj = projectPoint(verts[j], testAxes[i]);
+            if (proj < triMin) triMin = proj;
+            if (proj > triMax) triMax = proj;
+        }
+
+        for (int j = 0; j < 8; j++) {
+            float proj = projectPoint(cubeVerts[j], testAxes[i]);
+            if (proj < cubeMinProj) cubeMinProj = proj;
+            if (proj > cubeMaxProj) cubeMaxProj = proj;
+        }
+
+        if (triMax < cubeMinProj || triMin > cubeMaxProj) return false;
+    }
+
+    return true;
 }
 
 
@@ -140,15 +218,16 @@ void constructChannel(float u, float v, float s, float t) {
     }
 
     //the points that are supposed to come out
-    //0,0,0
-    //1,1,0
-    //0,1,1
-    //1,0,1
+    //-0.5,-0.5,-0.5
+    //0.5,0.5,-0.5
+    //-0.5,0.5,0.5
+    //0.5,-0.5,0.5
+    //this is because this is supposed to be a unit cube with the center being 0,0,0
     Eigen::Vector<float, 12> newPoints;
-    newPoints <<0,0,0,
-        1,1,0,
-        0,1,1,
-        1,0,1;
+    newPoints <<-0.5f,-0.5f,-0.5f,
+        0.5f,0.5f,-0.5f,
+        -0.5f,0.5f,0.5f,
+        0.5f,-0.5f,0.5f;
 
     Eigen::Vector<float, 12> M1Fields = M0.colPivHouseholderQr().solve(newPoints); 
     Eigen::Matrix<float, 4, 4> M1;
@@ -218,6 +297,10 @@ void printProgressBar(double progress, int barWidth = 70) {
 
 
 void adjustGridSize() {
+    //expand the grid just a tiny bit, to give wiggle room for floating errors during intersect testing
+    grid.min.z -= 0.5f;
+    grid.max.z += 0.5f;
+
     auto origin = getCamera()->origin;
     float maxZ = grid.max.z - origin.z;
     
