@@ -122,7 +122,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx) {
         int idx = indices.at(i);
         void * primitive = getPrimitive(idx);
         if(!primitive) continue;
-        float val = getIndex(minBounds(primitive), splitAxis); 
+        float val = minBounds(primitive)[splitAxis]; 
         splits.push_back({.idx = idx,.val = val});
     }
     //reorder indices

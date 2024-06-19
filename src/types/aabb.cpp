@@ -26,11 +26,11 @@ bool findIntersection(Ray &ray, AABB & primitive) {
     float tFar = +INFINITY;
     //pixars aabb test
     for (int a = 0; a < 3; a++) {
-            auto invD = 1 / getIndex(ray.direction, a);
-            auto orig = getIndex(ray.origin, a);
+            auto invD = 1 / ray.direction[a];
+            auto orig = ray.origin[a];
 
-            auto t0 = (getIndex(minBound, a) - orig) * invD;
-            auto t1 = (getIndex(maxBound, a) - orig) * invD;
+            auto t0 = (minBound[a] - orig) * invD;
+            auto t1 = (maxBound[a] - orig) * invD;
 
             if (invD < 0)
                 std::swap(t0, t1);

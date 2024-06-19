@@ -69,7 +69,7 @@ Vector3 normalized(const Vector3 &v) {
 }
 
 float length(const Vector3 &v) {
-    return std::sqrt(std::pow(v.x, 2) + std::pow(v.y, 2) + std::pow(v.z, 2));
+    return std::sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
 void normalize(Vector3 &v) {

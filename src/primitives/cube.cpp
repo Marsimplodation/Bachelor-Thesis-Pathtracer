@@ -11,11 +11,11 @@ bool findIntersection(Ray &ray, Cube & primitive) {
     int tNearIndex = 0;
     int tFarIndex = 0;
     for (int a = 0; a < 3; a++) {
-            auto invD = 1 / getIndex(ray.direction, a);
-            auto orig = getIndex(ray.origin, a);
+            auto invD = 1 / ray.direction[a];
+            auto orig = ray.origin[a];
 
-            auto t0 = (getIndex(minBound, a) - orig) * invD;
-            auto t1 = (getIndex(maxBound, a) - orig) * invD;
+            auto t0 = (minBound[a] - orig) * invD;
+            auto t1 = (maxBound[a] - orig) * invD;
 
             if (invD < 0)
                 std::swap(t0, t1);
@@ -45,7 +45,7 @@ bool findIntersection(Ray &ray, Cube & primitive) {
     if (ray.length < t)
         return false;
     ray.normal = {0, 0, 0};
-    setIndex(ray.normal, tIndex, std::copysignf(1.0f, getIndex(ray.direction, tIndex) * (tNear < 0.0f ? 1.0f : -1.0f)));
+    ray.normal[tIndex] = std::copysignf(1.0f, ray.direction[tIndex] * (tNear < 0.0f ? 1.0f : -1.0f));
     normalize(ray.normal);
     ray.length = t;
     ray.materialIdx = primitive.materialIdx;
