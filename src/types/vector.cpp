@@ -51,7 +51,8 @@ float fastDot(const Vector3 & v1,const  Vector3 & v2) {
 
 }
 //--- Vector 3 ---//
-float max(const Vector3 & v) {
+float max(const Vector3 & v, bool abs) {
+    if(abs) return fmaxf(fabsf(v.x), fmaxf(fabsf(v.y), fabsf(v.z)));
     return fmaxf(v.x, fmaxf(v.y, v.z));
 }
 

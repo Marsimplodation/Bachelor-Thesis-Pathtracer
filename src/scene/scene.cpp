@@ -210,17 +210,17 @@ void initScene() {
     constructGrid();
     printf("BVH root %d", root);
     
-    Vector3 f{0.0f, 0.0f, 1.0f};
+    /*Vector3 f{0.0f, 0.0f, 1.0f};
     Vector3 u{0.0f, 1.0f, 0.0f};
     cameraSetForward(f);
-    cameraSetUp(u);
+    cameraSetUp(u);*/
     scenenInited = true;
 }
 
 void buildAS() {
     destroyBVH();
     for(int i = 0; i < objects.size(); i++) {
-        constructBVH(objects[i].startIdx, objects[i].endIdx);
+        objects[i].root = constructBVH(objects[i].startIdx, objects[i].endIdx);
     }
     root = constructBVH(0, getNumPrimitives());
     constructGrid();

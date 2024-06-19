@@ -5,6 +5,12 @@ build:
 	cd build && make -j16
 	cd showcase && ../build/pathtracer
 
+debug:
+	cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug
+	cd build && make -j16
+	cd showcase && gdb ../build/pathtracer
+
+
 
 profile:
 	cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DPROFILE=ON

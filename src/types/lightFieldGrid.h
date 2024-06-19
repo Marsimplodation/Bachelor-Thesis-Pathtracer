@@ -13,9 +13,9 @@ struct Grid {
     Vector3 max;
     Vector2 size;
     //experiment with others later
-    std::vector<int> indicies; 
-    std::vector<int> gridLutStart; 
-    std::vector<int> gridLutEnd; 
+    std::vector<int> indicies = std::vector<int>(); 
+    std::vector<int> gridLutStart = std::vector<int>(); 
+    std::vector<int> gridLutEnd = std::vector<int>(); 
 };
 void intersectGrid(Ray & r);
 void constructGrid();

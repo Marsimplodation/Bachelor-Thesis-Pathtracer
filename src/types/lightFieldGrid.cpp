@@ -39,43 +39,55 @@ int getLUTIdx(int u, int v, int s, int t, int idx) {
     return (u * grids[idx].size.x * grids[idx].size.y * grids[idx].size.x) + (v * grids[idx].size.x * grids[idx].size.y) + (s * grids[idx].size.x) + t;
 }
 
-void intersectGrid(Ray & r) {
+void intersectGrid(Ray & r) {    
+    float maxDelta = max(r.direction, true);
+    int axis = (maxDelta == fabsf(r.direction[0])) ? 0 : (maxDelta == fabs(r.direction[1])) ? 1 : 2; 
+    auto axes = getGridAxes(axis);
+    int idxs[] = {axis, (int)axes[0], (int)axes[1]};
+    for (int it = 0; it < 3; ++it) {
+        int idx = idxs[it];
+        axis = idx;
+    auto axes = getGridAxes(axis);
+    int right = axes[0];
+    int up = axes[1];
+
     //first intersect
-    Vector2 xRange = {grids[2].min.x, grids[2].max.x};
-    Vector2 yRange = {grids[2].min.y, grids[2].max.y};
+    Vector2 rRange = {grids[idx].min[right], grids[idx].max[right]};
+    Vector2 uRange = {grids[idx].min[up], grids[idx].max[up]};
+
 
     // First intersect
-    float oz = -(r.origin.z - grids[2].min.z);
-    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction.z;
-    float iX = r.origin.x + d * r.direction.x;
-    float iY = r.origin.y + d * r.direction.y;
+    float oz = grids[idx].min[axis] - r.origin[axis];
+    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    float iX = r.origin[right] + d * r.direction[right];
+    float iY = r.origin[up] + d * r.direction[up];
 
     // Get uv coordinates
-    float u = (iX - xRange.x) / (xRange.y - xRange.x);
-    float v = (iY - yRange.x) / (yRange.y - yRange.x);
+    float u = (iX - rRange.x) / (rRange.y - rRange.x);
+    float v = (iY - uRange.x) / (uRange.y - uRange.x);
 
     // Check if uv coordinates are within range
-    //u = fmaxf(0.0f, fminf(u, 1.0f));
-    //v = fmaxf(0.0f, fminf(v, 1.0f));
+    u = fmaxf(0.0f, fminf(u, 1.0f));
+    v = fmaxf(0.0f, fminf(v, 1.0f));
     if(u < 0 || u > 1 || v < 0 || v > 1) {
         return;
     }
 
     // Convert to grid indices
-    int uIndex = static_cast<int>(u * grids[2].size.x);
-    int vIndex = static_cast<int>(v * grids[2].size.y);
+    int uIndex = static_cast<int>(u * grids[idx].size.x);
+    int vIndex = static_cast<int>(v * grids[idx].size.y);
 
     // Intersect with far plane
-    oz = -(r.origin.z - grids[2].max.z);
-    d = (fabs(oz) < EPS) ? 0 : oz / r.direction.z;
-    iX = r.origin.x + d * r.direction.x;
-    iY = r.origin.y + d * r.direction.y;
+    oz = -(r.origin[axis] - grids[idx].max[axis]);
+    d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    iX = r.origin[right] + d * r.direction[right];
+    iY = r.origin[up] + d * r.direction[up];
 
     // Get st coordinates
-    float s = (iX - xRange.x) / (xRange.y - xRange.x);
-    float t = (iY - yRange.x) / (yRange.y - yRange.x);
-    //s = fmaxf(0.0f, fminf(s, 1.0f));
-    //t = fmaxf(0.0f, fminf(t, 1.0f));
+    float s = (iX - rRange.x) / (rRange.y - rRange.x);
+    float t = (iY - uRange.x) / (uRange.y - uRange.x);
+    s = fmaxf(0.0f, fminf(s, 1.0f));
+    t = fmaxf(0.0f, fminf(t, 1.0f));
 
 
     // Check if st coordinates are within range
@@ -83,34 +95,45 @@ void intersectGrid(Ray & r) {
         return;
 
     // Convert to grid indices
-    int sIndex = static_cast<int>(s * grids[2].size.x);
-    int tIndex = static_cast<int>(t * grids[2].size.y);
+    int sIndex = static_cast<int>(s * grids[idx].size.x);
+    int tIndex = static_cast<int>(t * grids[idx].size.y);
    
     //ray is in channel uv,st
     //to do get all tris in the lut for uvst and loop over them
-    int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, 2);
-    int startIdx = grids[2].gridLutStart.at(lutIdx);
-    int endIdx = grids[2].gridLutEnd.at(lutIdx);
+    int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx);
+
+    //sanity check
+    if(lutIdx >= grids[idx].gridLutStart.size() || lutIdx >= grids[idx].gridLutEnd.size()) continue;
+    int startIdx = grids[idx].gridLutStart.at(lutIdx);
+    int endIdx = grids[idx].gridLutEnd.at(lutIdx);
     bool hit = false;
-    for (int i = startIdx; i < endIdx; ++i) {
-        if(r.terminated) break;;
-        int idx = grids[2].indicies.at(i);
+    for (unsigned int i = startIdx; i < endIdx; ++i) {
+        if(r.terminated) break;
+        //sanity check
+        if(i<= 0 || i >= grids[idx].indicies.size()) break;
+        int tIdx = grids[idx].indicies[i];
         r.interSectionTests++;
-        Triangle & triangle = *getObjectBufferAtIdx(idx);
+        Triangle & triangle = *getObjectBufferAtIdx(tIdx);
         hit |= triangleIntersection(r, triangle);
-        //if (hit) break;
+    }
+    //if(hit) return;
     }
 }
 
 
-void constructChannel(float u, float v, float s, float t) { 
-    u = (u)/(float)grids[2].size.x;
-    v = (v)/(float)grids[2].size.y;
-    s = (s)/(float)grids[2].size.x;
-    t = (t)/(float)grids[2].size.y;
+void constructChannel(float u, float v, float s, float t, int idx) { 
+    u = (u)/(float)grids[idx].size.x;
+    v = (v)/(float)grids[idx].size.y;
+    s = (s)/(float)grids[idx].size.x;
+    t = (t)/(float)grids[idx].size.y;
 
-    float deltaX = grids[2].max.x - grids[2].min.x;
-    float deltaY = grids[2].max.y - grids[2].min.y;
+    const auto axis = grids[idx].splitingAxis;
+    const auto axes = getGridAxes(axis);
+    const int right = axes[0];
+    const int up = axes[1];
+
+    float deltaX = grids[idx].max[right] - grids[idx].min[right];
+    float deltaY = grids[idx].max[up] - grids[idx].min[up];
     
     //the algorithm needs 4 points
     //choosen points:
@@ -119,10 +142,10 @@ void constructChannel(float u, float v, float s, float t) {
     //back left up s,t+1
     //back right bottom s+1,t
     Vector3 points[] = {
-        {grids[2].min.x + deltaX * u, grids[2].min.y + deltaY * v, grids[2].min.z},
-        {grids[2].min.x + deltaX * (u+1.0f), grids[2].min.y + deltaY * (v+1.0f), grids[2].min.z},
-        {grids[2].min.x + deltaX * s, grids[2].min.y + deltaY * (t+1.0f), grids[2].max.z},
-        {grids[2].min.x + deltaX * (s+1.0f), grids[2].min.y + deltaY * (t), grids[2].max.z},
+        {grids[idx].min.x + deltaX * u, grids[idx].min.y + deltaY * v, grids[idx].min.z},
+        {grids[idx].min.x + deltaX * (u+1.0f), grids[idx].min.y + deltaY * (v+1.0f), grids[idx].min.z},
+        {grids[idx].min.x + deltaX * s, grids[idx].min.y + deltaY * (t+1.0f), grids[idx].max.z},
+        {grids[idx].min.x + deltaX * (s+1.0f), grids[idx].min.y + deltaY * (t), grids[idx].max.z},
     };
 
     Eigen::Matrix<float, 12, 12> M0;
@@ -157,7 +180,7 @@ void constructChannel(float u, float v, float s, float t) {
         0,0,0,1.0f;
 
     //transform each triangle in local space and test it against a unit cube
-    int startIdx = grids[2].indicies.size();
+    int startIdx = grids[idx].indicies.size();
     Vector3 transformed[3];
     for(int i = 0; i < getObjectBuffer()->size(); ++i) {
         auto triangle = getObjectBuffer()->at(i);
@@ -179,28 +202,16 @@ void constructChannel(float u, float v, float s, float t) {
         transformed[1] = {v2(0), v2(1), v2(2)};
         transformed[2] = {v3(0), v3(1), v3(2)};
         if (!triInUnitCube(transformed)) continue;
-        grids[2].indicies.push_back(i);
+        grids[idx].indicies.push_back(i);
     }
-    u = (u)*(float)grids[2].size.x;
-    v = (v)*(float)grids[2].size.y;
-    s = (s)*(float)grids[2].size.x;
-    t = (t)*(float)grids[2].size.y;
-    int lutIdx = getLUTIdx(u, v, s, t, 2);
-    int endIdx = grids[2].indicies.size();
-    grids[2].gridLutStart.at(lutIdx) = startIdx;
-    grids[2].gridLutEnd.at(lutIdx) = endIdx;
-
-    //reoder the indices based on distance
-    Vector3 frontCenter = 
-        {grids[2].min.x + deltaX * (u+0.5f), grids[2].min.y + deltaY * (v+0.5f), grids[2].min.z};
-    
-    auto comp = [frontCenter](int a, int b){
-        auto A = getObjectBuffer()->at(a);
-        auto B = getObjectBuffer()->at(b);
-        return length(frontCenter - minBounds(A)) <  length(frontCenter - minBounds(B));
-    };
-
-    //std::sort(grids[2].indicies.begin() + startIdx, indicies.begin() + endIdx,comp);
+    u = (u)*(float)grids[idx].size.x;
+    v = (v)*(float)grids[idx].size.y;
+    s = (s)*(float)grids[idx].size.x;
+    t = (t)*(float)grids[idx].size.y;
+    int lutIdx = getLUTIdx(u, v, s, t, idx);
+    int endIdx = grids[idx].indicies.size();
+    grids[idx].gridLutStart.at(lutIdx) = startIdx;
+    grids[idx].gridLutEnd.at(lutIdx) = endIdx;
 }
 
 void printProgressBar(double progress, int barWidth = 70) {
@@ -227,6 +238,10 @@ void adjustGridSize(int idx) {
     grids[idx].max[axis] += 0.5f;
 
     auto origin = getCamera()->origin;
+
+    //move the camera origin so it is always outside of the grid, while maintaining distance
+    if(origin[axis] >= grids[idx].min[axis]) origin[axis] -= 2 * (origin[axis] - grids[idx].min[axis]);
+
     float farDistance = grids[idx].max[axis] - origin[axis];
     
     //project the max point, which is on the far plane, on the near plane
@@ -234,41 +249,43 @@ void adjustGridSize(int idx) {
     auto dir = normalized(maxPoint - origin);
 
     //travel the direction untill reaching the farplane
-    grids[idx].max[up] = origin[up] + dir[up] * (farDistance / dir[axis]);
-    grids[idx].max[right] = origin[right] + dir[right] * (farDistance / dir[axis]);
+    grids[idx].max[up] = fmaxf(grids[idx].max[up], origin[up] + dir[up] * (farDistance / dir[axis]));
+    grids[idx].max[right] = fmaxf(grids[idx].max[right], origin[right] + dir[right] * (farDistance / dir[axis]));
 
     //extend the minPoint to the farPlane with the same method
-    dir = normalized(grids[2].min - origin);
-    grids[idx].min[up] = origin[up] + dir[up] * (farDistance / dir[axis]);
-    grids[idx].min[right] = origin[right] + dir[right] * (farDistance / dir[axis]);
+    dir = normalized(grids[idx].min - origin);
+    grids[idx].min[up] = fminf(grids[idx].min[up], origin[up] + dir[up] * (farDistance / dir[axis]));
+    grids[idx].min[right] = fminf(grids[idx].min[right], origin[right] + dir[right] * (farDistance / dir[axis]));
 }
 
 
 void constructGrid() {
-    grids[2].size = {20,20};
-    float count = grids[2].size.x * grids[2].size.x * grids[2].size.y * grids[2].size.y;
-    grids[2].min = getSceneMinBounds();
-    grids[2].max = getSceneMaxBounds();
-   
-    //offset the min and max based on the camera
-    adjustGridSize(2); 
+    for(int idx = 0; idx < 3; ++idx) {
+        grids[idx].size = {10,10};
+        float count = grids[idx].size.x * grids[idx].size.x * grids[idx].size.y * grids[idx].size.y;
+        grids[idx].min = getSceneMinBounds();
+        grids[idx].max = getSceneMaxBounds();
+       
+        //offset the min and max based on the camera
+        adjustGridSize(idx); 
 
-    grids[2].gridLutEnd.resize(count);
-    grids[2].gridLutStart.resize(count);
+        grids[idx].gridLutEnd.resize(count);
+        grids[idx].gridLutStart.resize(count);
 
-    printf("building channel LUT\n");
-    int i = 1;
-    for(int u = 0; u<grids[2].size.x; u++) {
-        for(int v = 0; v<grids[2].size.y; v++) {
-            for(int s = 0; s<grids[2].size.x; s++) {
-                for(int t = 0; t<grids[2].size.y; t++) {
-                    constructChannel(u, v, s, t);
-                    printProgressBar(i++ / count);
+        printf("building channel LUT for Grid%d\n", idx);
+        int i = 1;
+        for(int u = 0; u<grids[idx].size.x; u++) {
+            for(int v = 0; v<grids[idx].size.y; v++) {
+                for(int s = 0; s<grids[idx].size.x; s++) {
+                    for(int t = 0; t<grids[idx].size.y; t++) {
+                        constructChannel(u, v, s, t, idx);
+                        printProgressBar(i++ / count);
+                    }
                 }
             }
         }
+        printf("\ndone building channel LUT\n");
     }
-    printf("\ndone building channel LUT\n");
 }
 
 

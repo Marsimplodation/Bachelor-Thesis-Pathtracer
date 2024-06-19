@@ -76,7 +76,7 @@ struct Vector4 {
 };
 
 //-- Vector 3 --//
-float max(const Vector3 & v);
+float max(const Vector3 & v, bool abs = false);
 float dotProduct(const Vector3 &v1, const Vector3 &v2);
 float length(const Vector3 &v);
 void normalize(Vector3 &v);
