@@ -2,9 +2,35 @@
 #define VECTOR_H
 
 #include <cstddef>
+
 struct Vector2 {
     float x;
     float y;
+
+      // Overload the [] operator for non-const objects
+    float& operator[](size_t index) {
+        switch (index) {
+            case 0:
+                return x;
+            case 1:
+                return y;
+            default:
+                return x;
+        }
+    }
+
+     // Overload the [] operator for const objects
+    const float& operator[](size_t index) const {
+        switch (index) {
+            case 0:
+                return x;
+            case 1:
+                return y;
+            default:
+                return x;
+        }
+    }
+
 };
 
 struct Vector3 {
@@ -25,7 +51,6 @@ struct Vector3 {
                 return x;
         }
     }
-
      // Overload the [] operator for const objects
     const float& operator[](size_t index) const {
         switch (index) {
@@ -39,6 +64,7 @@ struct Vector3 {
                 return x;
         }
     }
+
 
 };
 
@@ -70,6 +96,8 @@ void operator*=(Vector3 & v, float s);
 Vector3 operator-(const Vector3 & v1, const Vector3 & v2);
 Vector3 operator+(const Vector3 & v1, const Vector3 & v2);
 void operator+=(Vector3 & v1, const Vector3 & v2);
+float getIndex(const Vector3 & vec, int i);
+void setIndex(Vector3 & vec, int i, float val);
 
 //-- Vector 2 --//
 float max(const Vector2 & v);
