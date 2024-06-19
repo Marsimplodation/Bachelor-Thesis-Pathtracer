@@ -56,7 +56,7 @@ Vector3 shade(Ray &r) {
 Vector3 mirrorShader(Ray & r) {
     r.origin = r.origin + r.direction * (r.length);
     r.direction = r.direction - 2.0f* dotProduct(r.direction, r.normal)*r.normal;
-    r.origin += r.direction * EPS;
+    r.origin += r.direction * 0.01f;
     r.length = INFINITY;
     return {};
 }
