@@ -2,6 +2,7 @@
 #define VECTOR_H
 
 #include <cstddef>
+#include <Eigen>
 
 struct Vector2 {
     float x;
@@ -34,38 +35,89 @@ struct Vector2 {
 };
 
 struct Vector3 {
-    float x;
-    float y;
-    float z;
+    Eigen::Vector3f vec;
 
-    // Overload the [] operator for non-const objects
-    float& operator[](size_t index) {
-        switch (index) {
-            case 0:
-                return x;
-            case 1:
-                return y;
-            case 2:
-                return z;
-            default:
-                return x;
+    Vector3(float x, float y, float z) : vec(x, y, z) {}
+    Vector3(const Vector3& v) : vec(v.vec) {}
+    Vector3() : vec(0,0,0) {}
+    Vector3(const Eigen::Vector3f& eigenVec) : vec(eigenVec) {}
+
+    float& x = vec[0];
+    float& y = vec[1];
+    float& z = vec[2];
+
+    float& operator[](size_t index) { return vec[index]; }
+    const float& operator[](size_t index) const { return vec[index];}
+
+    // Custom assignment operator to support initializer list
+    Vector3& operator=(std::initializer_list<float> list) {
+        if (list.size() == 3) {
+            auto it = list.begin();
+            vec[0] = *it++;
+            vec[1] = *it++;
+            vec[2] = *it;
         }
+        return *this;
     }
-     // Overload the [] operator for const objects
-    const float& operator[](size_t index) const {
-        switch (index) {
-            case 0:
-                return x;
-            case 1:
-                return y;
-            case 2:
-                return z;
-            default:
-                return x;
-        }
+    Vector3& operator=(const Vector3 & v){
+        vec[0] = v.vec[0];
+        vec[1] = v.vec[1];
+        vec[2] = v.vec[2];
+        return *this;
+    }
+// Arithmetic operators
+    friend Vector3 operator*(const Vector3& v, float s) {
+        return Vector3(v.vec * s);
     }
 
+    void operator*=(float s) {
+        vec *= s;
+    }
 
+    friend Vector3 operator*(float s, const Vector3& v) {
+        return v * s;
+    }
+
+    friend Vector3 operator-(const Vector3& v1, const Vector3& v2) {
+        return Vector3(v1.vec - v2.vec);
+    }
+
+    friend Vector3 operator+(const Vector3& v1, const Vector3& v2) {
+        return Vector3(v1.vec + v2.vec);
+    }
+
+    friend Vector3 operator/(const Vector3& v, float s) {
+        return Vector3(v.vec / s);
+    }
+
+    void operator+=(const Vector3& v) {
+        vec += v.vec;
+    }
+
+    friend Vector3 operator*(const Vector3& v1, const Vector3& v2) {
+        return Vector3(v1.vec.cwiseProduct(v2.vec));
+    }
+
+    friend Vector3 operator/(const Vector3& v1, const Vector3& v2) {
+        return Vector3(v1.vec.cwiseQuotient(v2.vec));
+    }
+
+    // Other operations as needed
+    
+    // Example of dot product using Eigen's dot() function
+    friend float dot(const Vector3& v1, const Vector3& v2) {
+        return v1.vec.dot(v2.vec);
+    }
+
+    // Example of normalization using Eigen's normalized() function
+    Vector3 normalized() const {
+        return Vector3(vec.normalized());
+    }
+
+    // Example of length (magnitude) using Eigen's norm() function
+    float norm() const {
+        return vec.norm();
+    }
 };
 
 struct Vector4 {
@@ -85,19 +137,6 @@ Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2);
 void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
                      Vector3 *buff);
 Vector3 clampToOne(const Vector3 & v);
-Vector3 linearRGBToNonLinear(const Vector3 & v, float gamma);
-
-Vector3 operator*(const Vector3 & v, float s);
-Vector3 operator*(const Vector3 & v1, const Vector3 & v2);
-Vector3 operator/(const Vector3 & v, float s);
-Vector3 operator/(const Vector3 & v1,const Vector3 &v2);
-Vector3 operator*(float s, const Vector3 & v);
-void operator*=(Vector3 & v, float s);
-Vector3 operator-(const Vector3 & v1, const Vector3 & v2);
-Vector3 operator+(const Vector3 & v1, const Vector3 & v2);
-void operator+=(Vector3 & v1, const Vector3 & v2);
-float getIndex(const Vector3 & vec, int i);
-void setIndex(Vector3 & vec, int i, float val);
 
 //-- Vector 2 --//
 float max(const Vector2 & v);

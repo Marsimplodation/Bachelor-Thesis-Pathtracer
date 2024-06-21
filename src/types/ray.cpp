@@ -11,7 +11,7 @@ Vector3 randomCosineWeightedDirection(Ray & r) {
     direction.x = sinTheta * cosf(phi);
     direction.y = sinTheta * sinf(phi);
     direction.z = theta;
-    direction = normalized(direction);
+    normalize(direction);
     if(dotProduct(r.normal, direction) < 0.0f) direction = -1*direction;
     return direction;
 }

@@ -2,54 +2,6 @@
 #include "ray.h"
 #include <cmath>
 
-//now it is getting fancy
-#include <immintrin.h>
-#include <xmmintrin.h>
-namespace {
-    float invSqrt(Vector3 & v) {
-    // Load vector components into an __m128 vector
-    __m128 a = _mm_set_ps(0.0f, v.z, v.y, v.x); // Load v.x, v.y, v.z into the lower part of a __m128
-
-    // Square each component
-    __m128 squared = _mm_mul_ps(a, a);
-
-    // Sum the squared components
-    __m128 sum = _mm_hadd_ps(squared, squared); // Horizontal add to sum all elements
-    sum = _mm_hadd_ps(sum, sum); // Horizontal add again to sum all elements
-
-    // Store the result in a float array
-    alignas(16) float result[4];
-    _mm_store_ps(result, sum);
-
-    // Calculate the inverse square root of the sum of squares
-    float inverseLength = 1.0f / sqrtf(result[0]);
-
-    return inverseLength;
-}
-
-// Function to calculate dot product of Vector3 v1 and Vector3 v2 using SSE
-float fastDot(const Vector3 & v1,const  Vector3 & v2) {
-    // Load vector components into __m128 vectors
-    __m128 vec1 = _mm_set_ps(0.0f, v1.z, v1.y, v1.x); // Load v1.x, v1.y, v1.z into the lower part of a __m128
-    __m128 vec2 = _mm_set_ps(0.0f, v2.z, v2.y, v2.x); // Load v2.x, v2.y, v2.z into the lower part of a __m128
-
-    // Multiply corresponding components of vec1 and vec2
-    __m128 product = _mm_mul_ps(vec1, vec2);
-
-    // Sum the products using horizontal addition
-    __m128 sum = _mm_hadd_ps(product, product); // Horizontal add to sum all elements
-    sum = _mm_hadd_ps(sum, sum); // Horizontal add again to sum all elements
-
-    // Store the result in a float array
-    alignas(16) float result[4];
-    _mm_store_ps(result, sum);
-
-    // Return the dot product (sum of the elements in the __m128 vector)
-    return result[0];
-}
-
-
-}
 //--- Vector 3 ---//
 float max(const Vector3 & v, bool abs) {
     if(abs) return fmaxf(fabsf(v.x), fmaxf(fabsf(v.y), fabsf(v.z)));
@@ -57,10 +9,7 @@ float max(const Vector3 & v, bool abs) {
 }
 
 Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2) {
-    return {
-        .x = v1.y * v2.z - v1.z * v2.y,
-        .y = v1.z * v2.x - v1.x * v2.z,
-        .z = v1.x * v2.y - v1.y * v2.x};
+    return Vector3(v1.vec.cross(v2.vec));
 }
 
 Vector3 normalized(const Vector3 &v) {
@@ -70,20 +19,22 @@ Vector3 normalized(const Vector3 &v) {
 }
 
 float length(const Vector3 &v) {
-    return std::sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+    return v.vec.norm();
 }
 
 void normalize(Vector3 &v) {
-    float l = length(v);
+    v.vec.normalize();
+    //float l = length(v);
     //float l = invSqrt(v);
-    v.z /= l;
-    v.x /= l;
-    v.y /= l;
+    //v.z /= l;
+    //v.x /= l;
+    //v.y /= l;
 }
 
 float dotProduct(const Vector3 &v1, const Vector3 &v2) {
     //return fastDot(v1, v2);
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    return v1.vec.dot(v2.vec);
+    //return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 
 void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
@@ -98,9 +49,9 @@ Vector3 clampToOne(const Vector3 & v){
     float max = fmaxf(v.x, fmaxf(v.y, v.z));
     if(max < 1.0f) max = 1.0f;
     return {
-        .x = fminf(v.x/max, 1.0f),
-        .y = fminf(v.y/max, 1.0f),
-        .z = fminf(v.z/max, 1.0f),
+        fminf(v.x/max, 1.0f),
+        fminf(v.y/max, 1.0f),
+        fminf(v.z/max, 1.0f),
     };
 }
 
@@ -113,85 +64,7 @@ Vector3 linearRGBToNonLinear(const Vector3 & v, float gamma) {
 
 }
 
-//operators
-Vector3 operator*(const Vector3 & v, float s) {
-    return {
-        .x = v.x * s,
-        .y = v.y * s,
-        .z = v.z * s,
-    };
-}
 
-void operator*=(Vector3 & v, float s) {
-    v = v * s;
-}
-
-Vector3 operator*(float s, const Vector3 & v) {return v * s;}
-
-Vector3 operator-(const Vector3 & v1, const Vector3 & v2) {
-    return {
-        .x = v1.x - v2.x,
-        .y = v1.y - v2.y,
-        .z = v1.z - v2.z,
-    };
-}
-
-Vector3 operator+(const Vector3 & v1, const Vector3 & v2) {
-    return {
-        .x = v1.x + v2.x,
-        .y = v1.y + v2.y,
-        .z = v1.z + v2.z,
-    };
-}
-
-Vector3 operator/(const Vector3 & v, float s) {return v * (1.0f/s);}
-void operator+=(Vector3 & v1, const Vector3 & v2) {
-    v1.x += v2.x;
-    v1.y += v2.y;
-    v1.z += v2.z;
-}
-
-Vector3 operator*(const Vector3 & v1, const Vector3 & v2) {
-return {
-        .x = v1.x * v2.x,
-        .y = v1.y * v2.y,
-        .z = v1.z * v2.z,
-    };
-
-}
-
-Vector3 operator/(const Vector3 & v1,const Vector3 &v2) {
-    return {
-        .x = v1.x / v2.x,
-        .y = v1.y / v2.y,
-        .z = v1.z / v2.z,
-    };
-}
-
-float getIndex(const Vector3 & vec, int i) {
-    switch (i) {
-        case 0: return vec.x;
-        case 1: return vec.y;
-        case 2: return vec.z;
-        default: return -INFINITY; //blow up
-    }
-}
-
-void setIndex(Vector3 & vec, int i, float val) {
-    switch (i) {
-        case 0:
-            vec.x = val;
-            break;
-        case 1:
-            vec.y = val;
-            break;
-        case 2:
-            vec.z = val;
-            break;
-        default: break;
-    }
-
-}
 
 //-- Vector 2 --//
 float max(const Vector2 & v) {
@@ -222,15 +95,15 @@ Vector2 clampToOne(const Vector2 &v) {
     float max = fmaxf(v.x, v.y);
     if (max < 1.0f) max = 1.0f;
     return {
-        .x = fminf(v.x / max, 1.0f),
-        .y = fminf(v.y / max, 1.0f),
+        fminf(v.x / max, 1.0f),
+        fminf(v.y / max, 1.0f),
     };
 }
 
 Vector2 operator*(const Vector2 &v, float s) {
     return {
-        .x = v.x * s,
-        .y = v.y * s,
+        v.x * s,
+        v.y * s,
     };
 }
 
@@ -248,15 +121,15 @@ void operator*=(Vector2 &v, float s) {
 
 Vector2 operator-(const Vector2 &v1, const Vector2 &v2) {
     return {
-        .x = v1.x - v2.x,
-        .y = v1.y - v2.y,
+        v1.x - v2.x,
+         v1.y - v2.y,
     };
 }
 
 Vector2 operator+(const Vector2 &v1, const Vector2 &v2) {
     return {
-        .x = v1.x + v2.x,
-        .y = v1.y + v2.y,
+        v1.x + v2.x,
+        v1.y + v2.y,
     };
 }
 
@@ -321,10 +194,10 @@ Vector4 clampToOne(const Vector4 &v) {
     float max = fmaxf(v.x, fmaxf(v.y, fmaxf(v.z, v.w)));
     if (max < 1.0f) max = 1.0f;
     return {
-        .x = fminf(v.x / max, 1.0f),
-        .y = fminf(v.y / max, 1.0f),
-        .z = fminf(v.z / max, 1.0f),
-        .w = fminf(v.w / max, 1.0f),
+        fminf(v.x / max, 1.0f),
+        fminf(v.y / max, 1.0f),
+        fminf(v.z / max, 1.0f),
+        fminf(v.w / max, 1.0f),
     };
 }
 

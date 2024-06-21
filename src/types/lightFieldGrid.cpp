@@ -43,6 +43,7 @@ void intersectGrid(Ray & r) {
     float maxDelta = max(r.direction, true);
     int axis = (maxDelta == fabsf(r.direction[0])) ? 0 : (maxDelta == fabs(r.direction[1])) ? 1 : 2; 
     auto axes = getGridAxes(axis);
+    if(fabsf(axes[0]) < fabsf(axes[1])) std::swap(axes[0], axes[1]);
     int idxs[] = {axis, (int)axes[0], (int)axes[1]};
     for (int it = 0; it < 3; ++it) {
         int idx = idxs[it];
@@ -116,7 +117,7 @@ void intersectGrid(Ray & r) {
         Triangle & triangle = *getObjectBufferAtIdx(tIdx);
         hit |= triangleIntersection(r, triangle);
     }
-    //if(hit) return;
+    if(hit) return;
     }
 }
 
@@ -256,6 +257,12 @@ void adjustGridSize(int idx) {
     dir = normalized(grids[idx].min - origin);
     grids[idx].min[up] = fminf(grids[idx].min[up], origin[up] + dir[up] * (farDistance / dir[axis]));
     grids[idx].min[right] = fminf(grids[idx].min[right], origin[right] + dir[right] * (farDistance / dir[axis]));
+
+    //expand the grid just a tiny bit, to give wiggle room for floating errors during intersect testing
+    grids[idx].min[up] -= 0.5f;
+    grids[idx].min[right] -= 0.5f;
+    grids[idx].max[up] += 0.5f;
+    grids[idx].max[right] += 0.5f;
 }
 
 
@@ -269,7 +276,10 @@ void constructGrid() {
         //offset the min and max based on the camera
         adjustGridSize(idx); 
 
+        grids[idx].indicies.clear();
+        grids[idx].gridLutEnd.clear();
         grids[idx].gridLutEnd.resize(count);
+        grids[idx].gridLutStart.clear();
         grids[idx].gridLutStart.resize(count);
 
         printf("building channel LUT for Grid%d\n", idx);

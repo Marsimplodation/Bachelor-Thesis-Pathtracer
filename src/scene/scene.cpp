@@ -218,12 +218,15 @@ void initScene() {
 }
 
 void buildAS() {
+    auto const tmp = getIntersectMode();
+    setIntersectMode(ALL);
     destroyBVH();
     for(int i = 0; i < objects.size(); i++) {
         objects[i].root = constructBVH(objects[i].startIdx, objects[i].endIdx);
     }
     root = constructBVH(0, getNumPrimitives());
     constructGrid();
+    setIntersectMode(tmp);
 }
 
 void resetScene() {
