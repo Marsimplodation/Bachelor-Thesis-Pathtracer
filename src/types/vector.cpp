@@ -8,10 +8,6 @@ float max(const Vector3 & v, bool abs) {
     return fmaxf(v.x, fmaxf(v.y, v.z));
 }
 
-Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2) {
-    return Vector3(v1.vec.cross(v2.vec));
-}
-
 Vector3 normalized(const Vector3 &v) {
     Vector3 ret = v;
     normalize(ret);
@@ -22,20 +18,6 @@ float length(const Vector3 &v) {
     return v.vec.norm();
 }
 
-void normalize(Vector3 &v) {
-    v.vec.normalize();
-    //float l = length(v);
-    //float l = invSqrt(v);
-    //v.z /= l;
-    //v.x /= l;
-    //v.y /= l;
-}
-
-float dotProduct(const Vector3 &v1, const Vector3 &v2) {
-    //return fastDot(v1, v2);
-    return v1.vec.dot(v2.vec);
-    //return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-}
 
 void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
                      Vector3 *buff) {

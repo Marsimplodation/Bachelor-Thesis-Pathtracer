@@ -128,12 +128,29 @@ struct Vector4 {
 };
 
 //-- Vector 3 --//
+
+inline Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2) {
+    return Vector3(v1.vec.cross(v2.vec));
+}
+
+
+inline void normalize(Vector3 &v) {
+    v.vec.normalize();
+    //float l = length(v);
+    //float l = invSqrt(v);
+    //v.z /= l;
+    //v.x /= l;
+    //v.y /= l;
+}
+
+inline float dotProduct(const Vector3 &v1, const Vector3 &v2) {
+    //return fastDot(v1, v2);
+    return v1.vec.dot(v2.vec);
+    //return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
 float max(const Vector3 & v, bool abs = false);
-float dotProduct(const Vector3 &v1, const Vector3 &v2);
 float length(const Vector3 &v);
-void normalize(Vector3 &v);
 Vector3 normalized(const Vector3 &v);
-Vector3 crossProduct(const Vector3 &v1, const Vector3 &v2);
 void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
                      Vector3 *buff);
 Vector3 clampToOne(const Vector3 & v);
