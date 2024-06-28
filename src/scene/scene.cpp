@@ -161,10 +161,10 @@ void findIntersection(Ray &ray) {
     if(ray.terminated) return;
     float xi = (fastRandom(ray.randomState));
 
-    if(ray.depth > 2 && xi < KILLCHANCE) {
+    if(ray.depth > 2 && xi * max(ray.throughPut) < KILLCHANCE) {
         ray.terminated = true;
     } else if(ray.depth > 2)
-        ray.throughPut *= 1.0f/(1-KILLCHANCE);
+        ray.throughPut *= 1.0f/((1-KILLCHANCE)*max(ray.throughPut));
     
     //bvh
     //

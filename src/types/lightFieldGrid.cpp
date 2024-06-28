@@ -286,7 +286,7 @@ void adjustGridSize(int idx) {
 
 void constructGrid() {
     for (int idx = 0; idx < 3; ++idx) {
-        grids[idx].size = {40, 40};
+        grids[idx].size = {10, 10};
         float count = grids[idx].size.x * grids[idx].size.x *
                       grids[idx].size.y * grids[idx].size.y;
         grids[idx].min = getSceneMinBounds();

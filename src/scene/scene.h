@@ -5,7 +5,7 @@
 #include "types/vector.h"
 #include <cstdlib>
 #include <vector>
-#define KILLCHANCE 0.7
+#define KILLCHANCE 0.15
 void findIntersection(Ray & r);
 void findOcclusion(Ray & r);
 void initScene();

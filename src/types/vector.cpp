@@ -28,12 +28,10 @@ void orthoNormalized(const Vector3 &v1, const Vector3 &v2, const Vector3 &v3,
 
 
 Vector3 clampToOne(const Vector3 & v){
-    float max = fmaxf(v.x, fmaxf(v.y, v.z));
-    if(max < 1.0f) max = 1.0f;
     return {
-        fminf(v.x/max, 1.0f),
-        fminf(v.y/max, 1.0f),
-        fminf(v.z/max, 1.0f),
+        fminf(v.x, 1.0f),
+        fminf(v.y, 1.0f),
+        fminf(v.z, 1.0f),
     };
 }
 

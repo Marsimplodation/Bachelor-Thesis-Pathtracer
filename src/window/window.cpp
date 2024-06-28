@@ -17,12 +17,16 @@
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_sdlrenderer2.h>
 #include <chrono>
+#include <cmath>
 #include <imgui.h>
 #include <iostream>
 #include <ratio>
 #include <string>
 #include <vector>
 namespace {
+//INV_GAMMA = 1/2.2f
+#define INV_GAMMA 0.4545f 
+#define GAMMA 2.2f 
 std::vector<visualInformation> fields = std::vector<visualInformation>();
 auto tBegin = std::chrono::high_resolution_clock::now();
 std::string activeObject = "";
@@ -361,7 +365,13 @@ void createWindow() {
             for (int y = 0; y < HEIGHT; y++) {
                 auto c = tracerGetPixel((int)(x),
                                         (int)(y));
-                if (toneMapping)c = c / ( oneVector + c); // simple tonemapping 
+                if (toneMapping) {
+                    c = c / ( oneVector + c); // simple tonemapping
+                    // gamma correct
+                    c[0] = std::powf(c[0], INV_GAMMA);
+                    c[1] = std::powf(c[1], INV_GAMMA);
+                    c[2] = std::powf(c[2], INV_GAMMA);
+                }
                 c = clampToOne(c); // Assuming clampToOne ensures c is in [0,1]
                 // Convert to 0-255 range
                 unsigned char r = (unsigned char)(c.x * 255);
