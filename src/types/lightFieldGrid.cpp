@@ -26,6 +26,7 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
+#define SIZE 14
 } // namespace
 
 // Calculate the flattened index of the 4D LUT based on the dimensions and
@@ -271,7 +272,7 @@ void constructChannel(float u, float v, float s, float t, int idx,
 
     if (!isObject) {
         for (int i = 0; i < getNumPrimitives() * 3; i += 3) {
-            auto primitive = getPrimitive(i);
+            auto primitive = getPrimitive(i/3);
             auto minP = minBounds(primitive);
             auto maxP = maxBounds(primitive);
             // Construct all 8 vertices of the cube
@@ -410,7 +411,7 @@ void constructGrid() {
     for (int idx = 0; idx < getNumPrimitives(); ++idx) {
         for (int axis = 0; axis < 3; ++axis) {
             auto primitive = getPrimitive(idx);
-            objectGrids[idx * 3 + axis].size = {10, 10};
+            objectGrids[idx * 3 + axis].size = {SIZE, SIZE};
             objectGrids[idx * 3 + axis].splitingAxis = axis;
             float count =
                 objectGrids[idx * 3 + axis].size.x * objectGrids[idx].size.x *
@@ -446,7 +447,7 @@ void constructGrid() {
     }
 
     for (int idx = 0; idx < 3; ++idx) {
-        grids[idx].size = {10, 10};
+        grids[idx].size = {SIZE, SIZE};
         float count = grids[idx].size.x * grids[idx].size.x *
                       grids[idx].size.y * grids[idx].size.y;
         grids[idx].min = getSceneMinBounds();
@@ -624,7 +625,7 @@ bool CuboidInUnitCube(Vector3 *verts) {
         float triMin = INFINITY, triMax = -INFINITY;
         float cubeMinProj = cubeMin, cubeMaxProj = cubeMax;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 8; i++) {
             float proj;
             switch (axis) {
             case 0:
@@ -667,7 +668,7 @@ bool CuboidInUnitCube(Vector3 *verts) {
     };
 
     // Create test axes from cross products of edges
-    Vector3 testAxes[15];
+    Vector3 testAxes[36];
     int idx = 0;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 12; j++) {

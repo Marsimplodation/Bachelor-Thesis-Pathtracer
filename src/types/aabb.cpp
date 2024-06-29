@@ -5,17 +5,17 @@
 
 Vector3 minBounds(AABB &primitive){
     return {
-        primitive.center.x - primitive.size.x / 2.0f -0.1f,
-        primitive.center.y - primitive.size.y / 2.0f -0.1f,
-        primitive.center.z - primitive.size.z / 2.0f -0.1f,
+        primitive.center.x - primitive.size.x / 2.0f,
+        primitive.center.y - primitive.size.y / 2.0f,
+        primitive.center.z - primitive.size.z / 2.0f,
     };
 }
 
 Vector3 maxBounds(AABB &primitive){
     return {
-        primitive.center.x + primitive.size.x / 2.0f +0.1f,
-        primitive.center.y + primitive.size.y / 2.0f +0.1f,
-        primitive.center.z + primitive.size.z / 2.0f +0.1f,
+        primitive.center.x + primitive.size.x / 2.0f,
+        primitive.center.y + primitive.size.y / 2.0f,
+        primitive.center.z + primitive.size.z / 2.0f,
     };
 }
 

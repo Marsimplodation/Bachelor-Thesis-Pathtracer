@@ -33,7 +33,8 @@ std::string activeObject = "";
 void *activeObjectPtr = 0x0;
 char activeObjectFlag = 0x0;
 char pixels[4096 * 2160 * 4];
-bool quit, preview, toneMapping;
+bool quit, preview;
+bool toneMapping = true;
 
 } // namespace
 
