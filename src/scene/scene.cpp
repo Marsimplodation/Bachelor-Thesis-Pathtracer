@@ -13,10 +13,6 @@
 #include <vector>
 
 namespace {
-std::vector<Triangle> triangles={};
-std::vector<Plane> planes={};
-std::vector<Sphere> spheres={};
-std::vector<Cube> cubes={};
 std::vector<Triangle> objectBuffer={};
 std::vector<Object> objects={};
 
@@ -45,7 +41,7 @@ std::vector<Triangle> *getObjectBuffer() {
 }
 
 int getNumPrimitives() {
-    int num = triangles.size() + planes.size() + spheres.size() + cubes.size() + objects.size();
+    int num = objects.size();
     return num;
 }
 
@@ -100,26 +96,6 @@ void *getPrimitive(int idx) {
         return 0x0;
     }
 
-    if(idx < triangles.size()) {
-        return &triangles[idx];
-    }
-    
-    idx -= triangles.size();
-    if(idx < planes.size()) {
-        return &planes[idx];
-    }
-    
-    idx -= planes.size();
-    if(idx < spheres.size()) {
-        return &spheres[idx];
-    }
-
-    idx -= spheres.size();
-    if(idx < cubes.size()) {
-        return &cubes[idx];
-    }
-
-    idx -= cubes.size();
     if(idx < objects.size()) {
         return &objects[idx];
     }
@@ -131,26 +107,6 @@ void *getPrimitive(int idx) {
 }
 
 void removePrimitive(int idx) {
-    if(idx < triangles.size()) {
-        triangles[idx].active = false;
-    }
-    
-    idx -= triangles.size();
-    if(idx < planes.size()) {
-        planes[idx].active = false;
-    }
-    
-    idx -= planes.size();
-    if(idx < spheres.size()) {
-        spheres[idx].active = false;
-    }
-
-    idx -= spheres.size();
-    if(idx < cubes.size()) {
-        cubes[idx].active = false;
-    }
-
-    idx -= cubes.size();
     if(idx < objects.size()) {
         objects[idx].active = !objects[idx].active;
     }
