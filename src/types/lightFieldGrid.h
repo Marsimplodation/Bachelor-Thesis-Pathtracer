@@ -22,4 +22,5 @@ void constructGrid();
 
 //local functions
 bool triInUnitCube(Vector3* verts);
+bool CuboidInUnitCube(Vector3 *verts); 
 #endif // !LIGHT_FIELD_GRID_H
