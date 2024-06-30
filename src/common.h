@@ -4,6 +4,7 @@
 #define u32 unsigned int
 #define u64 uint64_t
 #define EPS 0.00001f
+#define u32 unsigned int
 #ifndef INFINITY
 #define INFINITY FLT_MAX
 #endif // !INFINITY

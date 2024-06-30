@@ -1,10 +1,6 @@
 #include "window.h"
 #include "common.h"
-#include "primitives/cube.h"
 #include "primitives/object.h"
-#include "primitives/plane.h"
-#include "primitives/sphere.h"
-#include "primitives/triangle.h"
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "tracer.h"
@@ -29,9 +25,7 @@ namespace {
 #define GAMMA 2.2f 
 std::vector<visualInformation> fields = std::vector<visualInformation>();
 auto tBegin = std::chrono::high_resolution_clock::now();
-std::string activeObject = "";
-void *activeObjectPtr = 0x0;
-char activeObjectFlag = 0x0;
+Object *selectedObject = 0x0;
 char pixels[4096 * 2160 * 4];
 bool quit, preview;
 bool toneMapping = true;
@@ -40,18 +34,10 @@ bool toneMapping = true;
 
 std::string objectNames(char flag, void* primitive, int n) {
     switch (flag) {
-    case CUBE:
-        return "cube" + std::to_string(n);
-    case PLANE:
-        return "plane" + std::to_string(n);
     case TRIANGLE:
         return "triangle" + std::to_string(n);
-    case SPHERE:
-        return "sphere" + std::to_string(n);
-    case OBJECT:
-        return ((Object*)primitive)->name;
     default:
-        return "cube" + std::to_string(n);
+        return ((Object*)primitive)->name;
     }
 }
 
@@ -67,7 +53,7 @@ bool DisplayMaterial(int & idx) {
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Material");
     change |= ImGui::Button("New Material");
     if(change) {
-       idx = addMaterial({}); 
+       //idx = addMaterial({}); 
     }
     
     std::vector<const char*> mats(0);
@@ -113,52 +99,17 @@ bool DisplayMaterial(int & idx) {
 
 void displayActiveObject() {
     ImGui::Begin("Object properties");
-    if (activeObject == "") {
+    if (!selectedObject) {
         ImGui::End();
         return;
     }
-    
     bool change = false;
-    if (activeObjectFlag == SPHERE) {
-        Sphere *s = (Sphere *)activeObjectPtr;
-        change |= ImGui::DragFloat3("Center", (float *)&(s->center));
-        change |= ImGui::DragFloat("Radius", &(s->radius));
-        change |= DisplayMaterial(s->materialIdx);
-    }
-
-    if (activeObjectFlag == CUBE) {
-        Cube *c = (Cube *)activeObjectPtr;
-        change |= ImGui::DragFloat3("Center", (float *)&(c->center));
-        change |= ImGui::DragFloat3("Size", (float *)&(c->size));
-        change |= DisplayMaterial(c->materialIdx);
-    }
-
-    if (activeObjectFlag == PLANE) {
-        Plane *p = (Plane *)activeObjectPtr;
-        change |= ImGui::DragFloat3("Center", (float *)&(p->center));
-        change |= ImGui::DragFloat3("normal", (float *)&(p->normal));
-        change |= DisplayMaterial(p->materialIdx);
-    }
-
-    if (activeObjectFlag == TRIANGLE) {
-        Triangle *t = (Triangle *)activeObjectPtr;
-        change |= ImGui::DragFloat3("vertex 0", (float *)&(t->vertices[0]));
-        change |= ImGui::DragFloat3("vertex 1", (float *)&(t->vertices[1]));
-        change |= ImGui::DragFloat3("vertex 2", (float *)&(t->vertices[2]));
-        change |= ImGui::DragFloat3("normal 0", (float *)&(t->normal[0]));
-        change |= ImGui::DragFloat3("normal 1", (float *)&(t->normal[1]));
-        change |= ImGui::DragFloat3("normal 2", (float *)&(t->normal[2]));
-        change |= DisplayMaterial(t->materialIdx);
-    }
-
-    if (activeObjectFlag == OBJECT) {
-        Object *o = (Object *)activeObjectPtr;
+        Object *o = selectedObject;
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "%s", o->name.c_str());
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
         change |= ImGui::Checkbox("Active", &o->active);
         change |= ImGui::DragInt2("indices", &(o->startIdx));
         change |= DisplayMaterial(o->materialIdx);
-    }
 
     if (change)
         callReset();
@@ -170,17 +121,12 @@ void displayObjects() {
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Objects");
     ImGui::BeginChild("Scrolling");
     float windowWidth = ImGui::GetWindowWidth();
-    int numP = getNumPrimitives();
-    void *primitive;
+    int numP = getObjects().size();
     for (int n = 0; n < numP; n++) {
-        primitive = getPrimitive(n);
-        if(!primitive) continue;
-        char flag = *((char *)primitive);
-        auto name = objectNames(flag, primitive, n);
+        auto &primitive = getObjects()[n];
+        auto name = primitive.name;
         if (ImGui::Button(name.c_str(), ImVec2(windowWidth, 0))) {
-            activeObjectPtr = primitive;
-            activeObject = name;
-            activeObjectFlag = flag;
+            selectedObject = &primitive;
         }
     }
     ImGui::EndChild();

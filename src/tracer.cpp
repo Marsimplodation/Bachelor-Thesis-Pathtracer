@@ -1,7 +1,5 @@
 #include "tracer.h"
 #include "common.h"
-#include "primitives/plane.h"
-#include "primitives/triangle.h"
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "types/camera.h"

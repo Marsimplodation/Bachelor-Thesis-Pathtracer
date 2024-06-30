@@ -1,7 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 #include "../types/ray.h"
-#include "../primitives/triangle.h"
+#include "../primitives/primitive.h"
 #include "types/vector.h"
 #include <cstdlib>
 #include <vector>
@@ -11,15 +11,14 @@ void findOcclusion(Ray & r);
 void initScene();
 void destroyScene();
 
-std::vector<Triangle> *getObjectBuffer();
-Triangle* getObjectBufferAtIdx(int idx);
-int getNumPrimitives();
-void *getPrimitive(int idx);
-void removePrimitive(int idx);
+
+std::vector<u32> & getIndicies();
+std::vector<Triangle> & getTris();
+std::vector<Object> & getObjects();
+
+void findIntersection(Ray &ray);
 Vector3 getSceneMinBounds();
 Vector3 getSceneMaxBounds();
-Vector3 getSceneYMaxPoint(); 
-Vector3 getSceneYMinPoint();
 
 void resetScene();
 void buildAS(); 

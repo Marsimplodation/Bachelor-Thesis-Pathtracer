@@ -1,6 +1,5 @@
 #ifndef BVH_H
 #define BVH_H
-#include "primitives/cube.h"
 #include "ray.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
@@ -23,7 +22,7 @@ struct BvhNode {
 
 BvhSettings *getBvhSettings();
 void destroyBVH();
-void calculateBoundingBox(BvhNode &node);
-int constructBVH(int startIdx, int endIdx, int nodeIdx = -1);
-void findBVHIntesection(Ray &ray, int nodeIdx);
+void calculateBoundingBox(BvhNode &node, bool isObject = false);
+int constructBVH(int startIdx, int endIdx, int nodeIdx = -1, bool isObject = false);
+void findBVHIntesection(Ray &ray, int nodeIdx, bool isObject = false);
 #endif // !BVH_H
