@@ -11,6 +11,8 @@
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <sys/types.h>
+#include <unordered_set>
 #include <utility>
 
 namespace {
@@ -121,6 +123,10 @@ void intersectGrid(Ray &r) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
+
+    //stop unnecessary checking same grids again and again
+    std::unordered_set<u32> visited = std::unordered_set<u32>();
+
     float maxDelta = max(r.direction, true);
     int axis = (maxDelta == fabsf(r.direction[0]))  ? 0
                : (maxDelta == fabs(r.direction[1])) ? 1
@@ -196,10 +202,16 @@ void intersectGrid(Ray &r) {
         for (unsigned int i = startIdx; i < endIdx; i += 3) {
             if (r.terminated)
                 break;
+
             // sanity check
             if (i <= 0 || i >= grids[idx].indicies.size())
                 break;
             int tIdx = grids[idx].indicies[i] / 3.0f;
+            if(visited.find(tIdx) != visited.end()) {
+                continue;
+            }
+            visited.insert(tIdx);
+
             r.interSectionTests++;
             Object &o = objectBuffer[tIdx];
             if (!findIntersection(r, o.boundingBox)) {
