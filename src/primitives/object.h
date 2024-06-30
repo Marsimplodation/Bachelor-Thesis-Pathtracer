@@ -3,7 +3,6 @@
 #include "../types/ray.h"
 #include "../types/vector.h"
 #include "types/aabb.h"
-#include "types/bvh.h"
 #include <string>
 #define OBJECT 0x01
 struct Object {
@@ -18,7 +17,7 @@ struct Object {
 };
 
 bool objectIntersection(Ray & ray, Object & primitive);
-void loadObject(const char* fileName, Vector3 position, Vector3 size, int  materialIdx, void * oBuffer);
+void loadObject(const char* fileName, Vector3 position, Vector3 size, int  materialIdx);
 Vector3 minBounds(Object &primitive);
 Vector3 maxBounds(Object &primitive);
 

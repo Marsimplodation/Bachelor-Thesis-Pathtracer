@@ -29,15 +29,19 @@ Vector2 getGridAxes(int idx) {
 #define SIZE 14
 } // namespace
 
-// Calculate the flattened index of the 4D LUT based on the dimensions and
-// indices
+// Calculate the flattened index of the 4D LUT based on the dimensions and indices
+// Calculate the flattened index of the 4D LUT based on the dimensions and indices
 int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
-    return (u * grid.size.x * grid.size.y * grid.size.x) +
-           (v * grid.size.x * grid.size.y) + (s * grid.size.x) + t;
+    return (u * grid.size.x * grid.size.y * grid.size.y) +
+           (v * grid.size.y * grid.size.y) + 
+           (s * grid.size.y) + t;
 }
 
 void intersectObjectGrid(Ray &r, int idx) {
+    auto & objectBuffer = getObjects();
+    auto & indicieBuffer = getIndicies();
+    auto & trisBuffer = getTris();
     auto &grid = objectGrids[idx];
     auto axis = grid.splitingAxis;
     auto axes = getGridAxes(axis);
@@ -59,8 +63,8 @@ void intersectObjectGrid(Ray &r, int idx) {
     float v = (iY - uRange.x) / (uRange.y - uRange.x);
 
     // Check if uv coordinates are within range
-    u = fmaxf(0.0f, fminf(u, 1.0f));
-    v = fmaxf(0.0f, fminf(v, 1.0f));
+    u = fmaxf(0.0f, fminf(u, 0.99f));
+    v = fmaxf(0.0f, fminf(v, 0.99f));
     if (u < 0 || u > 1 || v < 0 || v > 1) {
         return;
     }
@@ -78,8 +82,8 @@ void intersectObjectGrid(Ray &r, int idx) {
     // Get st coordinates
     float s = (iX - rRange.x) / (rRange.y - rRange.x);
     float t = (iY - uRange.x) / (uRange.y - uRange.x);
-    s = fmaxf(0.0f, fminf(s, 1.0f));
-    t = fmaxf(0.0f, fminf(t, 1.0f));
+    s = fmaxf(0.0f, fminf(s, 0.99f));
+    t = fmaxf(0.0f, fminf(t, 0.99f));
 
     // Check if st coordinates are within range
     if (s < 0 || s > 1 || t < 0 || t > 1)
@@ -108,12 +112,15 @@ void intersectObjectGrid(Ray &r, int idx) {
             break;
         int tIdx = grid.indicies[i];
         r.interSectionTests++;
-        Triangle &triangle = *((Triangle*)getPrimitive(tIdx));
+        Triangle &triangle = trisBuffer[tIdx];
         hit |= triangleIntersection(r, triangle);
     }
 }
 
 void intersectGrid(Ray &r) {
+    auto &objectBuffer = getObjects();
+    auto &indicieBuffer = getIndicies();
+    auto &trisBuffer = getTris();
     float maxDelta = max(r.direction, true);
     int axis = (maxDelta == fabsf(r.direction[0]))  ? 0
                : (maxDelta == fabs(r.direction[1])) ? 1
@@ -144,8 +151,8 @@ void intersectGrid(Ray &r) {
         float v = (iY - uRange.x) / (uRange.y - uRange.x);
 
         // Check if uv coordinates are within range
-        u = fmaxf(0.0f, fminf(u, 1.0f));
-        v = fmaxf(0.0f, fminf(v, 1.0f));
+        u = fmaxf(0.0f, fminf(u, 0.99f));
+        v = fmaxf(0.0f, fminf(v, 0.99f));
         if (u < 0 || u > 1 || v < 0 || v > 1) {
             return;
         }
@@ -163,8 +170,8 @@ void intersectGrid(Ray &r) {
         // Get st coordinates
         float s = (iX - rRange.x) / (rRange.y - rRange.x);
         float t = (iY - uRange.x) / (uRange.y - uRange.x);
-        s = fmaxf(0.0f, fminf(s, 1.0f));
-        t = fmaxf(0.0f, fminf(t, 1.0f));
+        s = fmaxf(0.0f, fminf(s, 0.99f));
+        t = fmaxf(0.0f, fminf(t, 0.99f));
 
         // Check if st coordinates are within range
         if (s < 0 || s > 1 || t < 0 || t > 1)
@@ -180,8 +187,9 @@ void intersectGrid(Ray &r) {
 
         // sanity check
         if (lutIdx >= grids[idx].gridLutStart.size() ||
-            lutIdx >= grids[idx].gridLutEnd.size())
+            lutIdx >= grids[idx].gridLutEnd.size()){
             continue;
+        }
         int startIdx = grids[idx].gridLutStart.at(lutIdx);
         int endIdx = grids[idx].gridLutEnd.at(lutIdx);
         bool hit = false;
@@ -193,7 +201,7 @@ void intersectGrid(Ray &r) {
                 break;
             int tIdx = grids[idx].indicies[i] / 3.0f;
             r.interSectionTests++;
-            Object &o = *((Object *)getPrimitive(tIdx));
+            Object &o = objectBuffer[tIdx];
             if (!findIntersection(r, o.boundingBox)) {
                 continue;
             }
@@ -207,7 +215,10 @@ void intersectGrid(Ray &r) {
 }
 
 void constructChannel(float u, float v, float s, float t, int idx,
-                      bool isObject = false, Object * obj = 0x0) {
+                      bool isObject = false, Object* obj = 0x0) {
+    auto &objectBuffer = getObjects();
+    auto &indicieBuffer = getIndicies();
+    auto &trisBuffer = getTris();
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
     u = (u) / (float)grid.size.x;
     v = (v) / (float)grid.size.y;
@@ -271,8 +282,8 @@ void constructChannel(float u, float v, float s, float t, int idx,
     Vector3 transformed[3];
 
     if (!isObject) {
-        for (int i = 0; i < getNumPrimitives() * 3; i += 3) {
-            auto primitive = getPrimitive(i/3);
+        for (int i = 0; i < objectBuffer.size() * 3; i += 3) {
+            auto & primitive = objectBuffer[i/3];
             auto minP = minBounds(primitive);
             auto maxP = maxBounds(primitive);
             // Construct all 8 vertices of the cube
@@ -302,10 +313,8 @@ void constructChannel(float u, float v, float s, float t, int idx,
         }
     } else {
         if(!obj) return;
-        for (int i = obj->startIdx; i > obj->endIdx; i--) {
-            auto primitive = getPrimitive(i);
-            if(!primitive) return;
-            auto triangle = *((Triangle*)primitive);
+        for (int i = obj->startIdx; i < obj->endIdx; ++i) {
+            auto & triangle = trisBuffer[i];
             auto ov1 = triangle.vertices[0];
             auto ov2 = triangle.vertices[1];
             auto ov3 = triangle.vertices[2];
@@ -406,11 +415,14 @@ void adjustGridSize(int idx, bool isObject = false) {
 }
 
 void constructGrid() {
+    auto &objectBuffer = getObjects();
+    auto &indicieBuffer = getIndicies();
+    auto &trisBuffer = getTris();
     // object grid
-    objectGrids.resize(getNumPrimitives() * 3);
-    for (int idx = 0; idx < getNumPrimitives(); ++idx) {
+    objectGrids.resize(objectBuffer.size() * 3);
+    for (int idx = 0; idx < objectBuffer.size(); ++idx) {
         for (int axis = 0; axis < 3; ++axis) {
-            auto primitive = getPrimitive(idx);
+            auto & primitive = objectBuffer[idx];
             objectGrids[idx * 3 + axis].size = {SIZE, SIZE};
             objectGrids[idx * 3 + axis].splitingAxis = axis;
             float count =
@@ -436,7 +448,7 @@ void constructGrid() {
                          s++) {
                         for (int t = 0; t < objectGrids[idx * 3 + axis].size.y;
                              t++) {
-                            constructChannel(u, v, s, t, idx * 3 + axis, true, (Object*)primitive);
+                            constructChannel(u, v, s, t, idx * 3 + axis, true, &primitive);
                             printProgressBar(i++ / count);
                         }
                     }

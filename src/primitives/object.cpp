@@ -1,7 +1,6 @@
 #include "object.h"
 #include "common.h"
 #include "scene/scene.h"
-#include "cube.h"
 #include "shader/shader.h"
 #include "triangle.h"
 #include "primitive.h"
@@ -18,20 +17,21 @@
 
 bool objectIntersection(Ray &ray, Object &primitive) {
     if(!primitive.active) return false;
+    auto & trisBuffer = getTris();
     //if (!findIntersection(ray, primitive.boundingBox))
     //    return false;
     
     bool hit = false;
     if(getIntersectMode() != ALL) {
         float l = ray.length;
-        findBVHIntesection(ray, primitive.root);
+        findBVHIntesection(ray, primitive.root, true);
         hit |= ray.length != l;
     }
     
     if(getIntersectMode() == ALL) {
-        for (int i = primitive.startIdx; i > primitive.endIdx; i--) {
+        for (int i = primitive.startIdx; i < primitive.endIdx; ++i) {
             ray.interSectionTests++;
-            hit |= findIntersection(ray, i);
+            hit |= triangleIntersection(ray, trisBuffer[i]);
         }
     }
     if(hit) {
@@ -40,8 +40,10 @@ bool objectIntersection(Ray &ray, Object &primitive) {
     return hit;
 }
 void loadObject(const char *fileName, Vector3 position, Vector3 size,
-                  int materialIdx, void *oBuffer) {
-    auto buffer = getObjectBuffer();
+                  int materialIdx) {
+    auto & objectBuffer = getObjects();
+    auto & indicieBuffer = getIndicies();
+    auto & trisBuffer = getTris();
     // load the triangles and normals
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -72,8 +74,8 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
     
    
     for (const auto &shape : shapes) {
-        int startIdx = buffer->size();
-        int endIdx = buffer->size();
+        int startIdx = trisBuffer.size();
+        int endIdx = trisBuffer.size();
         printf("loaded: %s\n", shape.name.c_str());
         Vector3 verts[3];
         Vector3 normals[3];
@@ -104,25 +106,22 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
                 };
             }
             
-            int idx = buffer->size();
-            buffer->push_back(createTriangle(verts[0], verts[1], verts[2],
+            int idx = trisBuffer.size();
+            trisBuffer.push_back(createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
                                                    normals[2], uvs[0], uvs[1], uvs[2], matIdx));
             if(i == 0)startIdx = idx;
             endIdx = std::max(endIdx, idx + 1);
         }
-        //mark the indices as object related
-        startIdx = -1*startIdx - 1;
-        endIdx = -1*endIdx - 1;
 
         
         //boundingbox
         Vector3 min, max{};
         Vector3 tmin, tmax{};
-        for (int i = startIdx; i > endIdx; i--) {
-            auto  vertice = (Triangle*)getPrimitive(i);
-            tmin = minBounds(*vertice);
-            tmax = maxBounds(*vertice);
+        for (int i = startIdx; i < endIdx; i++) {
+            auto & vertice = trisBuffer[i];
+            tmin = minBounds(vertice);
+            tmax = maxBounds(vertice);
             if (tmin.x < min.x) min.x = tmin.x;
             if (tmin.y < min.y) min.y = tmin.y;
             if (tmin.z < min.z) min.z = tmin.z;
@@ -149,11 +148,11 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             .endIdx = endIdx,
             .boundingBox =  {.center = center, .size=ssize},
             .materialIdx = matIdx,
-            .root = constructBVH(startIdx, endIdx),
+            .root = constructBVH(startIdx, endIdx, -1, true),
             .active = true,
             .name = std::string(shape.name.c_str()),
         };
-        ((std::vector<Object>*)oBuffer)->push_back(o);
+        objectBuffer.push_back(o);
     }
 }
 
