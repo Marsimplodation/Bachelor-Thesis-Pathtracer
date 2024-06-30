@@ -63,9 +63,20 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             .shaderFlag = SHADOWSHADER,
             .name = std::string(material.name.c_str()),
         };
-        if(material.illum != 0) {
+        auto emit = material.emission;
+        if(emit[0] != 0 || emit[1] != 0 || emit[2] != 0) {
             m.shaderFlag = EMITSHADER;
-            m.intensity = material.illum;
+            Vector3 c = {emit[0], emit[1], emit[2]};
+            float ma = max(c);
+            float i = 1;
+            if(ma >= 1) {
+                c[0]/=ma;
+                c[1]/=ma;
+                c[2]/=ma;
+                i=ma;
+            }
+            m.intensity = i;
+            m.color = c;
         }
         int idx = addMaterial(m);
         if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->texture, material.diffuse_texname);

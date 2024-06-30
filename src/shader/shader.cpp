@@ -202,7 +202,7 @@ Vector3 shadowShader(Ray &r) {
     gammaCorrect(color);
 
     // reset for next bounce
-    r.throughPut = r.throughPut * color * fabsf(cos);
+    r.throughPut = r.throughPut * color;
     r.origin = r.origin + r.direction * r.length;
     r.direction = randomCosineWeightedDirection(r);
     r.origin += r.direction * EPS;
