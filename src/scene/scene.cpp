@@ -103,7 +103,7 @@ void buildAS() {
     setIntersectMode(ALL);
     destroyBVH();
     for(int i = 0; i < objects.size(); i++) {
-        objects[i].root = constructBVH(objects[i].startIdx, objects[i].endIdx);
+        objects[i].root = constructBVH(objects[i].startIdx, objects[i].endIdx, -1, true);
     }
     root = constructBVH(0, objects.size());
     constructGrid();

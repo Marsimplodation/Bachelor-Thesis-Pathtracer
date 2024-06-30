@@ -452,7 +452,7 @@ void constructGrid() {
             objectGrids[idx * 3 + axis].gridLutStart.clear();
             objectGrids[idx * 3 + axis].gridLutStart.resize(count);
 
-            printf("building channel LUT for Object Grid %d\n", idx * 3 + axis);
+            printf("building channel LUT for %s Grid %d\n", primitive.name.c_str(), axis);
             int i = 1;
             for (int u = 0; u < objectGrids[idx * 3 + axis].size.x; u++) {
                 for (int v = 0; v < objectGrids[idx * 3 + axis].size.y; v++) {
