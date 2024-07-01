@@ -112,10 +112,13 @@ void intersectObjectGrid(Ray &r, int idx) {
         // sanity check
         if (i <= 0 || i >= grid.indicies.size())
             break;
-        int tIdx = grid.indicies[i];
+        int sIdx = grid.indicies[i];
+        int eIdx = grid.indicies[++i];
+        for(int j = sIdx; j < eIdx; j++) {
         r.interSectionTests++;
-        Triangle &triangle = trisBuffer[tIdx];
+        Triangle &triangle = trisBuffer[j];
         hit |= triangleIntersection(r, triangle);
+        }
     }
 }
 
@@ -325,6 +328,7 @@ void constructChannel(float u, float v, float s, float t, int idx,
         }
     } else {
         if(!obj) return;
+        int sIdx = -1;
         for (int i = obj->startIdx; i < obj->endIdx; ++i) {
             auto & triangle = trisBuffer[i];
             auto ov1 = triangle.vertices[0];
@@ -344,9 +348,18 @@ void constructChannel(float u, float v, float s, float t, int idx,
             transformed[0] = {v1(0), v1(1), v1(2)};
             transformed[1] = {v2(0), v2(1), v2(2)};
             transformed[2] = {v3(0), v3(1), v3(2)};
-            if (!triInUnitCube(transformed))
+            if (!triInUnitCube(transformed)) {
+                if(sIdx == -1) continue;
+                grid.indicies.push_back(sIdx);
+                grid.indicies.push_back(i);
+                sIdx = -1;
                 continue;
-            grid.indicies.push_back(i);
+            }
+            if(sIdx == -1) sIdx = i;
+        }
+        if(sIdx != -1) {
+            grid.indicies.push_back(sIdx);
+            grid.indicies.push_back(obj->endIdx);
         }
     }
 
