@@ -110,7 +110,7 @@ void intersectObjectGrid(Ray &r, int idx) {
         if (r.terminated)
             break;
         // sanity check
-        if (i <= 0 || i >= grid.indicies.size())
+        if (i < 0 || i >= grid.indicies.size())
             break;
         int tIdx = grid.indicies[i];
         r.interSectionTests++;
@@ -204,7 +204,7 @@ void intersectGrid(Ray &r) {
                 break;
 
             // sanity check
-            if (i <= 0 || i >= grids[idx].indicies.size())
+            if (i < 0 || i >= grids[idx].indicies.size())
                 break;
             int tIdx = grids[idx].indicies[i] / 3.0f;
             if(visited.find(tIdx) != visited.end()) {
@@ -386,44 +386,17 @@ void adjustGridSize(int idx, bool isObject = false) {
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
     const float offset = 0.5f;
-    grid.min[axis] -= offset;
-    grid.max[axis] += offset;
-
-    auto origin = getCamera()->origin;
-
-    // move the camera origin so it is always outside of the grid, while
-    // maintaining distance
-    if (origin[axis] >= grid.min[axis])
-        origin[axis] -= 2 * (origin[axis] - grid.min[axis]);
-
-    float farDistance = grid.max[axis] - origin[axis];
-
-    // project the max point, which is on the far plane, on the near plane
-    auto maxPoint = grid.max;
-    maxPoint[axis] = grid.min[axis];
-    auto dir = normalized(maxPoint - origin);
-
-    // travel the direction untill reaching the farplane
-    grid.max[up] =
-        fmaxf(grid.max[up], origin[up] + dir[up] * (farDistance / dir[axis]));
-    grid.max[right] =
-        fmaxf(grid.max[right],
-              origin[right] + dir[right] * (farDistance / dir[axis]));
-
-    // extend the minPoint to the farPlane with the same method
-    dir = normalized(grid.min - origin);
-    grid.min[up] =
-        fminf(grid.min[up], origin[up] + dir[up] * (farDistance / dir[axis]));
-    grid.min[right] =
-        fminf(grid.min[right],
-              origin[right] + dir[right] * (farDistance / dir[axis]));
-
+    float deltaF = grid.max[axis] - grid.min[axis];
+    float deltaU = grid.max[up] - grid.min[up];
+    float deltaR = grid.max[right] - grid.min[right];
+    grid.min[axis] -= offset + deltaR + deltaU;
+    grid.max[axis] += offset + deltaR + deltaU;
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    grid.min[up] -= offset;
-    grid.min[right] -= offset;
-    grid.max[up] += offset;
-    grid.max[right] += offset;
+    grid.min[up] -= offset + deltaF;
+    grid.min[right] -= offset + deltaF;
+    grid.max[up] += offset + deltaF;
+    grid.max[right] += offset + deltaF;
 }
 
 void constructGrid() {
