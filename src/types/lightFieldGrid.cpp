@@ -385,18 +385,18 @@ void adjustGridSize(int idx, bool isObject = false) {
 
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    const float offset = 0.5f;
+    const float offset = 0.1f;
     float deltaF = grid.max[axis] - grid.min[axis];
     float deltaU = grid.max[up] - grid.min[up];
     float deltaR = grid.max[right] - grid.min[right];
-    grid.min[axis] -= offset + deltaR + deltaU;
-    grid.max[axis] += offset + deltaR + deltaU;
+    grid.min[axis] -= offset + deltaR*2 + deltaU*2;
+    grid.max[axis] += offset + deltaR*2 + deltaU*2;
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    grid.min[up] -= offset + deltaF;
-    grid.min[right] -= offset + deltaF;
-    grid.max[up] += offset + deltaF;
-    grid.max[right] += offset + deltaF;
+    grid.min[up] -= offset + deltaF + deltaR;
+    grid.min[right] -= offset + deltaF + deltaU;
+    grid.max[up] += offset + deltaF + deltaR;
+    grid.max[right] += offset + deltaF + deltaU;
 }
 
 void constructGrid() {
