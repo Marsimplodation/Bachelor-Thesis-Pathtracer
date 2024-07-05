@@ -9,7 +9,9 @@
 
 #include <SDL2/SDL.h>
 #include <SDL_pixels.h>
+#include <SDL_image.h>
 #include <SDL_render.h>
+#include <SDL_surface.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_sdlrenderer2.h>
 #include <chrono>
@@ -31,6 +33,42 @@ bool quit, preview;
 bool toneMapping = true;
 
 } // namespace
+
+// https://stackoverflow.com/questions/34255820/save-sdl-textureImage
+void saveImage(const char* file_name, SDL_Renderer* renderer, SDL_Texture* texture) {
+    
+// Get the texture format and size
+    int width, height;
+    Uint32 format;
+    SDL_QueryTexture(texture, &format, NULL, &width, &height);
+    // Create a surface to store the texture data
+    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, format);
+    // Create a texture that is accessible for reading
+    SDL_Texture* targetTexture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_TARGET, width, height);
+    // Set the target texture to the renderer
+    SDL_SetRenderTarget(renderer, targetTexture);
+    // Copy the original texture to the target texture
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+
+    // Read the pixels from the target texture to the surface
+    SDL_RenderReadPixels(renderer, NULL, format, surface->pixels, surface->pitch);
+    // Reset the render target
+    SDL_SetRenderTarget(renderer, NULL);
+
+    // Save the surface to a BMP file
+    if (SDL_SaveBMP(surface, file_name) != 0) {
+        printf("SDL_SaveBMP failed: %s\n", SDL_GetError());
+        SDL_DestroyTexture(targetTexture);
+        SDL_FreeSurface(surface);
+        return;
+    }
+
+    // Clean up
+    SDL_DestroyTexture(targetTexture);
+    SDL_FreeSurface(surface);
+    return;
+}
+
 
 std::string objectNames(char flag, void* primitive, int n) {
     switch (flag) {
@@ -158,7 +196,7 @@ void displayCamera() {
 
 void displayIntersectSettings() {
     ImGui::Begin("Trace Setttings");
-    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Intersections/sample: %fM", getIntersectionCount());
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "samples: %lu", getIntersectionCount());
     const char *items[] = {"ALL", "BVH", "GRID", "Hybrid"};
     if(ImGui::Button("rebuild structures")) {
         buildAS();
@@ -185,16 +223,24 @@ void displayIntersectSettings() {
 
 }
 
-void displayMenu() {
+void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
     ImGui::Begin("Menu");
     float windowWidth = ImGui::GetWindowWidth();
     if (ImGui::Button("Quit", ImVec2(windowWidth, 0))) {
         destroyTracer();
         quit = true;
     }
+    const char *items[] = {"ALL.bmp", "BVH.bmp", "2Plane.bmp", "Hybrid.bmp"};
+    auto file_name = std::string("./render_") + items[getIntersectMode()];
+    if(ImGui::Button("Save")) saveImage(file_name.c_str(), renderer, texture);
     ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");
-    ImGui::Checkbox("Preview", &preview);
+    ImGui::Checkbox("Full Size", &preview);
     ImGui::Checkbox("Tonemapping", &toneMapping);
+    bool change = false;
+    change |= ImGui::DragInt("Max samples", &getMaxSampleCount());
+    
+    if(change) callReset();
+
     ImGui::End();
 
 }
@@ -237,6 +283,7 @@ void createWindow() {
     // Main loop
     SDL_Event e;
     ImVec2 previewSize(0, 0);
+    double elapsed_time_ms = 0.0;
     while (!quit) {
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
@@ -255,9 +302,10 @@ void createWindow() {
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
         // show rendering time
-        auto tNow = std::chrono::high_resolution_clock::now();
-        double elapsed_time_ms =
-            std::chrono::duration<double, std::milli>(tNow - tBegin).count();
+        if(!getfinishedRendering()) {
+            auto tNow = std::chrono::high_resolution_clock::now();
+            elapsed_time_ms = std::chrono::duration<double, std::milli>(tNow - tBegin).count();
+        }
         int seconds = (elapsed_time_ms) / 1000;
         int minutes = seconds / 60;
         seconds %= 60;
@@ -278,21 +326,17 @@ void createWindow() {
                            "Rendering Time: %02d:%02d:%02d", hours, minutes,
                            seconds);
         ImGui::End();
-        displayMenu(); 
         displayObjects();
         displayCamera();
         displayIntersectSettings();
 
         ImGui::Begin("Rendering", nullptr);
         if (preview) {
-            ImGuiWindowFlags previewFlags = ImGuiWindowFlags_NoDecoration;
+            ImGuiWindowFlags previewFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_Popup;
             ImVec2 renderingSize = ImGui::GetWindowSize();
             ImGui::End();
-            ImGui::Begin("Preview", nullptr);
-            ImVec2 previewSize = ImGui::GetWindowSize();
-            float factor = (float)previewSize.x / renderingSize.x;
-            ImGui::SetWindowSize(
-                "Preview", ImVec2(previewSize.x, renderingSize.y * factor));
+            ImGui::Begin("Render", nullptr);
+            ImGui::SetWindowSize("Render", ImVec2(1080, 720));
         }
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
@@ -338,6 +382,7 @@ void createWindow() {
         SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(char) * 4);
         ImGui::Image((void *)texture, ImVec2(WIDTH, HEIGHT));
         ImGui::End();
+        displayMenu(renderer, texture); 
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());

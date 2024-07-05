@@ -6,10 +6,12 @@
 #include "types/texture.h"
 #include "types/vector.h"
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <mutex>
 #include <thread>
 #include "window/window.h"
 
@@ -22,56 +24,54 @@ Texture image = createTexture(MAX_WIDTH, MAX_HEIGHT);
 int samples[MAX_WIDTH][MAX_HEIGHT];
 u32 randomStates[MAX_WIDTH][MAX_HEIGHT];
 WaveFrontEntry wavefront[16];
-int intersects[16];
+unsigned long intersects[16];
 std::thread threads[16];
 bool running = true;
+
+int MAX_SAMPLE_COUNT = INT_MAX;
+bool finishedRendering = false;
 } // namespace
 
-float getIntersectionCount() {
-    float tests = 0.0f;
+bool& getfinishedRendering() {
+    return finishedRendering;
+}
+
+int& getMaxSampleCount() {
+    return MAX_SAMPLE_COUNT;
+}
+unsigned long getIntersectionCount() {
+    unsigned long tests = 0;
     for (int i = 0; i < 16; i++) {
         tests+=intersects[i];
     }
-    return (float)tests / 1000000;
+    return tests;
 }
 
-void traceWF(int i) {
-    int x,y;
-    Vector3 color{0,0,0};
+void setupRay(Ray & ray, int x, int y) {
+    
     float xi1, xi2, xIn, yIn;
-    while (running) {
-        //if(onGoingReset) continue;
-        y = wavefront[i].y;
-        x = wavefront[i].x;
-        auto &ray = wavefront[i].ray;
-        if (ray.terminated) {
-            ray.randomState = randomStates[x][y];
-            xi1 = 2 * (fastRandom(ray.randomState)) - 1.0f;
-            xi2 = 2 * (fastRandom(ray.randomState)) - 1.0f;
-            xIn = 2.0f * ((float)(x + xi1) / (float)WIDTH) - 1.0f;
-            yIn = 2.0f * ((float)(y + xi2) / (float)HEIGHT) - 1.0f;
-            yIn = -yIn;
-            if (WIDTH >= HEIGHT)
-                yIn = (float)HEIGHT / (float)WIDTH * yIn;
-            else
-                xIn = (float)WIDTH / float(HEIGHT) * xIn;
-            color = {0.0f, 0.0f, 0.0f};
-            ray.throughPut = {1.0f, 1.0f, 1.0f};
-            ray.depth = 0;
-            createCameraRay(xIn, yIn, ray);
-        }
+    ray.randomState = randomStates[x][y];
+    xi1 = 2 * (fastRandom(ray.randomState)) - 1.0f;
+    xi2 = 2 * (fastRandom(ray.randomState)) - 1.0f;
+    xIn = 2.0f * ((float)(x + xi1) / (float)WIDTH) - 1.0f;
+    yIn = 2.0f * ((float)(y + xi2) / (float)HEIGHT) - 1.0f;
+    yIn = -yIn;
+    if (WIDTH >= HEIGHT)
+        yIn = (float)HEIGHT / (float)WIDTH * yIn;
+    else
+        xIn = (float)WIDTH / float(HEIGHT) * xIn;
+    ray.throughPut = {1.0f, 1.0f, 1.0f};
+    ray.depth = 0;
+    createCameraRay(xIn, yIn, ray);
+}
 
-        findIntersection(ray);
-        // float t = ray.throughPut;
-        color += shade(ray);
-        ray.depth++;
-
-        if (!ray.terminated)
-            continue;
+bool progressFront(Ray & ray,int i, int x, int y) {
+    for(int step = 0; step < (WIDTH /4)*(HEIGHT/4); ++step) {
         bool xOverFlow = x + 4 >= WIDTH;
         bool yOverFlow = y + 4 >= HEIGHT;
+
         if (xOverFlow && yOverFlow) {
-            intersects[i] = ray.interSectionTests;
+            intersects[i] += ray.interSectionTests;
             ray.interSectionTests = 0;
             wavefront[i].x = x + 4 - WIDTH;
             wavefront[i].y = y + 4 - HEIGHT;
@@ -81,22 +81,67 @@ void traceWF(int i) {
         } else {
             wavefront[i].x += 4;
         }
+        y = wavefront[i].y;
+        x = wavefront[i].x;
+        if(samples[x][y] < MAX_SAMPLE_COUNT) return true;
+    }
+    return false;
+}
+
+void traceWF(int i) {
+    int x,y;
+    Vector3 color{0,0,0};
+    while (running) {
+        //if(onGoingReset) continue;
+        y = wavefront[i].y;
+        x = wavefront[i].x;
+        auto &ray = wavefront[i].ray;
+        if (ray.terminated) {
+            setupRay(ray, x, y);
+            color = {0.0f, 0.0f, 0.0f};
+        }
+
+        findIntersection(ray);
+        // float t = ray.throughPut;
+        color += shade(ray);
+        ray.depth++;
+
+        if (!ray.terminated)
+            continue;
+
+        
+        samples[x][y]++;
+        randomStates[x][y] = ray.randomState;
+
         float currentSample = (float)samples[x][y];
         color += tracerGetPixel(x, y) * (float)currentSample;
         color = color / (currentSample + 1.0f);
         
         setPixel(x, y, color);
-        samples[x][y]++;
-        randomStates[x][y] = ray.randomState;
+        
+        if(!progressFront(ray, i, x, y)) break;
     }
 }
 
+std::mutex mtx;
+bool reinitTracer = true;
 void trace() {
-    for (int i = 0; i < 16; i++) {
-        threads[i] = std::thread(std::bind(traceWF, i));
-    }
-    for (int i = 0; i < 16; i++) {
-        threads[i].join();
+    while (true) {
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (!reinitTracer) continue;
+            reinitTracer = false;
+        }
+
+        for (int i = 0; i < 16; i++) {
+            threads[i] = std::thread(std::bind(traceWF, i));
+        }
+        finishedRendering = false;
+        for (int i = 0; i < 16; i++) {
+            threads[i].join();
+        }
+        finishedRendering = true;
+        if(!running) break;
     }
 }
 
@@ -110,6 +155,9 @@ void setPixel(int x, int y, Vector3 &c) {
 
 void reset() {
     Vector3 v{0, 0, 0};
+    const int tmpS = MAX_SAMPLE_COUNT;
+    MAX_SAMPLE_COUNT = 0;
+
     for (int x = 0; x < WIDTH; x++) {
         for (int y = 0; y < HEIGHT; y++) {
             setTextureAt(image, x, y, {});
@@ -122,6 +170,9 @@ void reset() {
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
     }
+
+    MAX_SAMPLE_COUNT = tmpS;
+    reinitTracer = true;
 }
 
 void setWindowSize(int x, int y) {
