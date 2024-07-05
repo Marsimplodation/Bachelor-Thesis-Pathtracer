@@ -21,5 +21,8 @@ void setPixel(int x, int y, Vector3 &c);
 void reset();
 void setWindowSize(int x, int y);
 Vector3 getWindowSize();
-float getIntersectionCount(); 
+unsigned long getIntersectionCount(); 
+
+int& getMaxSampleCount();
+bool& getfinishedRendering(); 
 #endif // !TRACER_H
