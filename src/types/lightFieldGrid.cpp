@@ -40,7 +40,7 @@ int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
            (s * grid.size.y) + t;
 }
 
-void intersectObjectGrid(Ray &r, int idx) {
+void intersectObjectGrid(Ray &r, int idx, int uIndex, int vIndex, int sIndex, int tIndex) {
     auto & objectBuffer = getObjects();
     auto & indicieBuffer = getIndicies();
     auto & trisBuffer = getTris();
@@ -49,52 +49,6 @@ void intersectObjectGrid(Ray &r, int idx) {
     auto axes = getGridAxes(axis);
     int right = axes[0];
     int up = axes[1];
-
-    // first intersect
-    Vector2 rRange = {grid.min[right], grid.max[right]};
-    Vector2 uRange = {grid.min[up], grid.max[up]};
-
-    // First intersect
-    float oz = grid.min[axis] - r.origin[axis];
-    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
-    float iX = r.origin[right] + d * r.direction[right];
-    float iY = r.origin[up] + d * r.direction[up];
-
-    // Get uv coordinates
-    float u = (iX - rRange.x) / (rRange.y - rRange.x);
-    float v = (iY - uRange.x) / (uRange.y - uRange.x);
-
-    // Check if uv coordinates are within range
-    u = fmaxf(0.0f, fminf(u, 0.99f));
-    v = fmaxf(0.0f, fminf(v, 0.99f));
-    if (u < 0 || u > 1 || v < 0 || v > 1) {
-        return;
-    }
-
-    // Convert to grid indices
-    int uIndex = static_cast<int>(u * grid.size.x);
-    int vIndex = static_cast<int>(v * grid.size.y);
-
-    // Intersect with far plane
-    oz = -(r.origin[axis] - grid.max[axis]);
-    d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
-    iX = r.origin[right] + d * r.direction[right];
-    iY = r.origin[up] + d * r.direction[up];
-
-    // Get st coordinates
-    float s = (iX - rRange.x) / (rRange.y - rRange.x);
-    float t = (iY - uRange.x) / (uRange.y - uRange.x);
-    s = fmaxf(0.0f, fminf(s, 0.99f));
-    t = fmaxf(0.0f, fminf(t, 0.99f));
-
-    // Check if st coordinates are within range
-    if (s < 0 || s > 1 || t < 0 || t > 1)
-        return;
-
-    // Convert to grid indices
-    int sIndex = static_cast<int>(s * grid.size.x);
-    int tIndex = static_cast<int>(t * grid.size.y);
-
     // ray is in channel uv,st
     // to do get all tris in the lut for uvst and loop over them
     int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx, true);
@@ -113,12 +67,9 @@ void intersectObjectGrid(Ray &r, int idx) {
         if (i < 0 || i >= grid.indicies.size())
             break;
         int sIdx = grid.indicies[i];
-        int eIdx = grid.indicies[++i];
-        for(int j = sIdx; j < eIdx; j++) {
         r.interSectionTests++;
-        Triangle &triangle = trisBuffer[j];
+        Triangle &triangle = trisBuffer[sIdx];
         hit |= triangleIntersection(r, triangle);
-        }
     }
 }
 
@@ -126,9 +77,6 @@ void intersectGrid(Ray &r) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
-
-    //stop unnecessary checking same grids again and again
-    std::unordered_set<u32> visited = std::unordered_set<u32>();
 
     float maxDelta = max(r.direction, true);
     int axis = (maxDelta == fabsf(r.direction[0]))  ? 0
@@ -210,19 +158,14 @@ void intersectGrid(Ray &r) {
             if (i < 0 || i >= grids[idx].indicies.size())
                 break;
             int tIdx = grids[idx].indicies[i] / 3.0f;
-            if(visited.find(tIdx) != visited.end()) {
-                continue;
-            }
-            visited.insert(tIdx);
 
             r.interSectionTests++;
             Object &o = objectBuffer[tIdx];
             if (!findIntersection(r, o.boundingBox)) {
                 continue;
             }
-            intersectObjectGrid(r, tIdx * 3 + 0);
-            intersectObjectGrid(r, tIdx * 3 + 1);
-            intersectObjectGrid(r, tIdx * 3 + 2);
+
+            intersectObjectGrid(r, tIdx * 3 + axis, uIndex, vIndex, sIndex, tIndex);
         }
         // if (hit)
         //     return;
@@ -349,17 +292,9 @@ void constructChannel(float u, float v, float s, float t, int idx,
             transformed[1] = {v2(0), v2(1), v2(2)};
             transformed[2] = {v3(0), v3(1), v3(2)};
             if (!triInUnitCube(transformed)) {
-                if(sIdx == -1) continue;
-                grid.indicies.push_back(sIdx);
-                grid.indicies.push_back(i);
-                sIdx = -1;
                 continue;
             }
-            if(sIdx == -1) sIdx = i;
-        }
-        if(sIdx != -1) {
-            grid.indicies.push_back(sIdx);
-            grid.indicies.push_back(obj->endIdx);
+            grid.indicies.push_back(i);
         }
     }
 
@@ -426,8 +361,8 @@ void constructGrid() {
             float count =
                 objectGrids[idx * 3 + axis].size.x * objectGrids[idx].size.x *
                 objectGrids[idx * 3 + axis].size.y * objectGrids[idx].size.y;
-            objectGrids[idx * 3 + axis].min = minBounds(primitive);
-            objectGrids[idx * 3 + axis].max = maxBounds(primitive);
+            objectGrids[idx * 3 + axis].min = getSceneMinBounds();
+            objectGrids[idx * 3 + axis].max = getSceneMaxBounds();
 
             // offset the min and max based on the camera
             adjustGridSize(idx * 3 + axis, true);
@@ -492,23 +427,9 @@ void constructGrid() {
 //----------- Math stuff -----------//
 bool triInUnitCube(Vector3 *verts) {
     // Check if at least one vertex is inside the unit cube
-    bool inCube = false;
-    for (int i = 0; i < 3; i++) {
-        float x = verts[i].x;
-        float y = verts[i].y;
-        float z = verts[i].z;
-        if (x > 0.5 || y > 0.5 || z > 0.5)
-            continue;
-        if (x < -0.5 || y < -0.5 || z < -0.5)
-            continue;
-        inCube = true;
-    }
-    if (inCube)
-        return true;
-
     // Unit cube spans from -0.5 to 0.5 in all axes
-    const float cubeMin = -0.5f;
-    const float cubeMax = 0.5f;
+    const float cubeMin = -0.52f;
+    const float cubeMax = 0.52f;
 
     // Helper function to project a point onto an axis
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
@@ -606,24 +527,9 @@ bool triInUnitCube(Vector3 *verts) {
 }
 
 bool CuboidInUnitCube(Vector3 *verts) {
-    // Check if at least one vertex is inside the unit cube
-    bool inCube = false;
-    for (int i = 0; i < 8; i++) {
-        float x = verts[i].x;
-        float y = verts[i].y;
-        float z = verts[i].z;
-        if (x > 0.5 || y > 0.5 || z > 0.5)
-            continue;
-        if (x < -0.5 || y < -0.5 || z < -0.5)
-            continue;
-        inCube = true;
-    }
-    if (inCube)
-        return true;
-
     // Unit cube spans from -0.5 to 0.5 in all axes
-    const float cubeMin = -0.5f;
-    const float cubeMax = 0.5f;
+    const float cubeMin = -0.52f;
+    const float cubeMax = 0.52f;
 
     // Helper function to project a point onto an axis
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
