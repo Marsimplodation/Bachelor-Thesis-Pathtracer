@@ -34,10 +34,9 @@ bool toneMapping = true;
 
 } // namespace
 
-// https://stackoverflow.com/questions/34255820/save-sdl-textureImage
 void saveImage(const char* file_name, SDL_Renderer* renderer, SDL_Texture* texture) {
     
-// Get the texture format and size
+    // Get the texture format and size
     int width, height;
     Uint32 format;
     SDL_QueryTexture(texture, &format, NULL, &width, &height);
