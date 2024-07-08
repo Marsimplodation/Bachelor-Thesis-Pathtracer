@@ -32,7 +32,6 @@ Vector2 getGridAxes(int idx) {
 } // namespace
 
 // Calculate the flattened index of the 4D LUT based on the dimensions and indices
-// Calculate the flattened index of the 4D LUT based on the dimensions and indices
 int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
     return (u * grid.size.x * grid.size.y * grid.size.y) +
@@ -108,10 +107,8 @@ void intersectGrid(Ray &r) {
         float v = (iY - uRange.x) / (uRange.y - uRange.x);
 
         // Check if uv coordinates are within range
-        u = fmaxf(0.0f, fminf(u, 0.99f));
-        v = fmaxf(0.0f, fminf(v, 0.99f));
-        if (u < 0 || u > 1 || v < 0 || v > 1) {
-            return;
+        if (u < 0 || u >= 1 || v < 0 || v >= 1) {
+            continue;
         }
 
         // Convert to grid indices
@@ -127,12 +124,10 @@ void intersectGrid(Ray &r) {
         // Get st coordinates
         float s = (iX - rRange.x) / (rRange.y - rRange.x);
         float t = (iY - uRange.x) / (uRange.y - uRange.x);
-        s = fmaxf(0.0f, fminf(s, 0.99f));
-        t = fmaxf(0.0f, fminf(t, 0.99f));
 
         // Check if st coordinates are within range
-        if (s < 0 || s > 1 || t < 0 || t > 1)
-            return;
+        if (s < 0 || s >= 1 || t < 0 || t >= 1)
+            continue;;
 
         // Convert to grid indices
         int sIndex = static_cast<int>(s * grids[idx].size.x);
@@ -168,7 +163,7 @@ void intersectGrid(Ray &r) {
             intersectObjectGrid(r, tIdx * 3 + axis, uIndex, vIndex, sIndex, tIndex);
         }
         // if (hit)
-        //     return;
+        return;
     }
 }
 
@@ -188,22 +183,31 @@ void constructChannel(float u, float v, float s, float t, int idx,
     const int right = axes[0];
     const int up = axes[1];
 
-    float deltaX = grid.max[right] - grid.min[right];
-    float deltaY = grid.max[up] - grid.min[up];
+    float deltaR = grid.max[right] - grid.min[right];
+    float deltaU = grid.max[up] - grid.min[up];
     // the algorithm needs 4 points
     // choosen points:
     // front left bottom u,v
     // from right up u+1,v+1
     // back left up s,t+1
     // back right bottom s+1,t
-    Vector3 points[] = {
-        {grid.min.x + deltaX * u, grid.min.y + deltaY * v, grid.min.z},
-        {grid.min.x + deltaX * (u + 1.0f), grid.min.y + deltaY * (v + 1.0f),
-         grid.min.z},
-        {grid.min.x + deltaX * s, grid.min.y + deltaY * (t + 1.0f), grid.max.z},
-        {grid.min.x + deltaX * (s + 1.0f), grid.min.y + deltaY * (t),
-         grid.max.z},
-    };
+    Vector3 points[4] = {};
+    points[0][axis] = grid.min[axis];
+    points[0][right] = grid.min[right] + deltaR * u;
+    points[0][up] = grid.min[up] + deltaU * v;
+
+    points[1][axis] = grid.min[axis];
+    points[1][right] = grid.min[right] + deltaR * (u + 1.0f);
+    points[1][up] = grid.min[up] + deltaU * (v + 1.0f);
+    
+    points[2][axis] = grid.max[axis];
+    points[2][right] = grid.min[right] + deltaR * s; 
+    points[2][up] = grid.min[up] + deltaU * (t + 1.0f);
+    
+    points[3][axis] = grid.max[axis];
+    points[3][right] = grid.min[right] + deltaR * (s + 1.0f); 
+    points[3][up] = grid.min[up] + deltaU * (t);
+
 
     Eigen::Matrix<float, 12, 12> M0;
     M0.fill(0.0f);
@@ -224,9 +228,26 @@ void constructChannel(float u, float v, float s, float t, int idx,
     // 0.5,-0.5,0.5
     // this is because this is supposed to be a unit cube with the center being
     // 0,0,0
+    points[0][axis]  = -0.5f;
+    points[0][right]  = -0.5f;
+    points[0][up]  = -0.5f;
+
+    points[1][axis]  = -0.5f;
+    points[1][right]  = 0.5f;
+    points[1][up]  = 0.5f;
+    
+    points[2][axis]  = 0.5f;
+    points[2][right]  = -0.5f;
+    points[2][up]  = 0.5f;
+    
+    points[3][axis]  = 0.5f;
+    points[3][right]  = 0.5f;
+    points[3][up]  = -0.5f;
     Eigen::Vector<float, 12> newPoints;
-    newPoints << -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f,
-        0.5f, -0.5f, 0.5f;
+    newPoints << points[0].x, points[0].y, points[0].z, 
+                points[1].x, points[1].y, points[1].z,
+                points[2].x, points[2].y, points[2].z,
+                points[3].x, points[3].y, points[3].z;
 
     Eigen::Vector<float, 12> M1Fields =
         M0.colPivHouseholderQr().solve(newPoints);
@@ -253,7 +274,7 @@ void constructChannel(float u, float v, float s, float t, int idx,
             
             v[4] = {minP[0], minP[1], maxP[2]}; // (minX, minY, maxZ)
             v[5] = {maxP[0], minP[1], maxP[2]}; // (maxX, minY, maxZ)
-            v[7] = {minP[0], maxP[1], maxP[2]}; // (minX, maxY, maxZ)
+            v[6] = {minP[0], maxP[1], maxP[2]}; // (minX, maxY, maxZ)
             v[7] = {maxP[0], maxP[1], maxP[2]}; // (maxX, maxY, maxZ)
 
             Eigen::Vector<float, 4> vi;
@@ -263,15 +284,15 @@ void constructChannel(float u, float v, float s, float t, int idx,
                 v[i] = {vi(0), vi(1), vi(2)};
             }
 
-            if (!CuboidInUnitCube(v))
+            if (!CuboidInUnitCube(v)) {
                 continue;
+            }
             grid.indicies.push_back(i);
             grid.indicies.push_back(i + 1);
             grid.indicies.push_back(i + 2);
         }
     } else {
         if(!obj) return;
-        int sIdx = -1;
         for (int i = obj->startIdx; i < obj->endIdx; ++i) {
             auto & triangle = trisBuffer[i];
             auto ov1 = triangle.vertices[0];
@@ -334,11 +355,11 @@ void adjustGridSize(int idx, bool isObject = false) {
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
     const float offset = 0.1f;
+    grid.min[axis] -= offset;
+    grid.max[axis] += offset;
     float deltaF = grid.max[axis] - grid.min[axis];
     float deltaU = grid.max[up] - grid.min[up];
     float deltaR = grid.max[right] - grid.min[right];
-    grid.min[axis] -= offset + deltaR*2 + deltaU*2;
-    grid.max[axis] += offset + deltaR*2 + deltaU*2;
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
     grid.min[up] -= offset + deltaF + deltaR;
