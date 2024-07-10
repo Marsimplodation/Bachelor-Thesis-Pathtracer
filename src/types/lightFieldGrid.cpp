@@ -29,14 +29,20 @@ Vector2 getGridAxes(int idx) {
     }
 }
 #define SIZE 14
+
+struct GridBound {
+Vector3 min;
+Vector3 max;
+};
+GridBound gridBounds[3];
 } // namespace
 
 // Calculate the flattened index of the 4D LUT based on the dimensions and indices
 int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
-    return (u * grid.size.x * grid.size.y * grid.size.y) +
-           (v * grid.size.y * grid.size.y) + 
-           (s * grid.size.y) + t;
+    return (u * SIZE * SIZE * SIZE) +
+           (v * SIZE * SIZE) + 
+           (s * SIZE) + t;
 }
 
 void intersectObjectGrid(Ray &r, int idx, int uIndex, int vIndex, int sIndex, int tIndex) {
@@ -91,47 +97,47 @@ void intersectGrid(Ray &r) {
         auto axes = getGridAxes(axis);
         int right = axes[0];
         int up = axes[1];
+        auto b = gridBounds[axis];
 
-        // first intersect
-        Vector2 rRange = {grids[idx].min[right], grids[idx].max[right]};
-        Vector2 uRange = {grids[idx].min[up], grids[idx].max[up]};
 
         // First intersect
-        float oz = grids[idx].min[axis] - r.origin[axis];
+        float oz = b.min[axis] - r.origin[axis];
         float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
         float iX = r.origin[right] + d * r.direction[right];
         float iY = r.origin[up] + d * r.direction[up];
 
         // Get uv coordinates
-        float u = (iX - rRange.x) / (rRange.y - rRange.x);
-        float v = (iY - uRange.x) / (uRange.y - uRange.x);
+        float u = (iX - b.min[right]) / (b.max[right] - b.min[right]);
+        float v = (iY - b.min[up]) / (b.max[up] - b.min[up]);
 
         // Check if uv coordinates are within range
-        if (u < 0 || u >= 1 || v < 0 || v >= 1) {
+        if (u < 0 || u > 1 || v < 0 || v > 1) {
             continue;
         }
 
         // Convert to grid indices
-        int uIndex = static_cast<int>(u * grids[idx].size.x);
-        int vIndex = static_cast<int>(v * grids[idx].size.y);
+        int uIndex = static_cast<int>(u * SIZE);
+        int vIndex = static_cast<int>(v * SIZE);
 
         // Intersect with far plane
-        oz = -(r.origin[axis] - grids[idx].max[axis]);
+        oz = -(r.origin[axis] - b.max[axis]);
         d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
         iX = r.origin[right] + d * r.direction[right];
         iY = r.origin[up] + d * r.direction[up];
 
         // Get st coordinates
-        float s = (iX - rRange.x) / (rRange.y - rRange.x);
-        float t = (iY - uRange.x) / (uRange.y - uRange.x);
+        float s = (iX - b.min[right]) / (b.max[right] - b.min[right]);
+        float t = (iY - b.min[up]) / (b.max[up] - b.min[up]);
 
         // Check if st coordinates are within range
-        if (s < 0 || s >= 1 || t < 0 || t >= 1)
-            continue;;
+        if (s < 0 || s > 1 || t < 0 || t > 1) {
+            continue;
+        }
 
         // Convert to grid indices
-        int sIndex = static_cast<int>(s * grids[idx].size.x);
-        int tIndex = static_cast<int>(t * grids[idx].size.y);
+        int sIndex = static_cast<int>(s * SIZE);
+        int tIndex = static_cast<int>(t * SIZE);
+
 
         // ray is in channel uv,st
         // to do get all tris in the lut for uvst and loop over them
@@ -173,18 +179,19 @@ void constructChannel(float u, float v, float s, float t, int idx,
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
-    u = (u) / (float)grid.size.x;
-    v = (v) / (float)grid.size.y;
-    s = (s) / (float)grid.size.x;
-    t = (t) / (float)grid.size.y;
+    u = (u) / (float)SIZE;
+    v = (v) / (float)SIZE;
+    s = (s) / (float)SIZE;
+    t = (t) / (float)SIZE;
 
     const auto axis = grid.splitingAxis;
     const auto axes = getGridAxes(axis);
     const int right = axes[0];
     const int up = axes[1];
+    auto b = gridBounds[axis];
 
-    float deltaR = grid.max[right] - grid.min[right];
-    float deltaU = grid.max[up] - grid.min[up];
+    float deltaR = b.max[right] - b.min[right];
+    float deltaU = b.max[up] - b.min[up];
     // the algorithm needs 4 points
     // choosen points:
     // front left bottom u,v
@@ -192,21 +199,21 @@ void constructChannel(float u, float v, float s, float t, int idx,
     // back left up s,t+1
     // back right bottom s+1,t
     Vector3 points[4] = {};
-    points[0][axis] = grid.min[axis];
-    points[0][right] = grid.min[right] + deltaR * u;
-    points[0][up] = grid.min[up] + deltaU * v;
+    points[0][axis] = b.min[axis];
+    points[0][right] = b.min[right] + deltaR * u;
+    points[0][up] = b.min[up] + deltaU * v;
 
-    points[1][axis] = grid.min[axis];
-    points[1][right] = grid.min[right] + deltaR * (u + 1.0f);
-    points[1][up] = grid.min[up] + deltaU * (v + 1.0f);
+    points[1][axis] = b.min[axis];
+    points[1][right] = b.min[right] + deltaR * (u + 1.0f);
+    points[1][up] = b.min[up] + deltaU * (v + 1.0f);
     
-    points[2][axis] = grid.max[axis];
-    points[2][right] = grid.min[right] + deltaR * s; 
-    points[2][up] = grid.min[up] + deltaU * (t + 1.0f);
+    points[2][axis] = b.max[axis];
+    points[2][right] = b.min[right] + deltaR * s; 
+    points[2][up] = b.min[up] + deltaU * (t + 1.0f);
     
-    points[3][axis] = grid.max[axis];
-    points[3][right] = grid.min[right] + deltaR * (s + 1.0f); 
-    points[3][up] = grid.min[up] + deltaU * (t);
+    points[3][axis] = b.max[axis];
+    points[3][right] = b.min[right] + deltaR * (s + 1.0f); 
+    points[3][up] = b.min[up] + deltaU * (t);
 
 
     Eigen::Matrix<float, 12, 12> M0;
@@ -319,10 +326,10 @@ void constructChannel(float u, float v, float s, float t, int idx,
         }
     }
 
-    u = (u) * (float)grid.size.x;
-    v = (v) * (float)grid.size.y;
-    s = (s) * (float)grid.size.x;
-    t = (t) * (float)grid.size.y;
+    u = (u) * (float)SIZE;
+    v = (v) * (float)SIZE;
+    s = (s) * (float)SIZE;
+    t = (t) * (float)SIZE;
     int lutIdx = getLUTIdx(u, v, s, t, idx, isObject);
     int endIdx = grid.indicies.size();
     grid.gridLutStart.at(lutIdx) = startIdx;
@@ -344,49 +351,52 @@ void printProgressBar(double progress, int barWidth = 70) {
     std::cout.flush();
 }
 
-void adjustGridSize(int idx, bool isObject = false) {
-    Grid &grid = isObject ? objectGrids[idx] : grids[idx];
+void adjustGridSize(int idx) {
+    auto & b = gridBounds[idx];
     // Use grid to access the Grid object
-    const auto axis = grid.splitingAxis;
+    const auto axis = idx;
     const auto axes = getGridAxes(axis);
     const int right = axes[0];
     const int up = axes[1];
 
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    const float offset = 0.1f;
-    grid.min[axis] -= offset;
-    grid.max[axis] += offset;
-    float deltaF = grid.max[axis] - grid.min[axis];
-    float deltaU = grid.max[up] - grid.min[up];
-    float deltaR = grid.max[right] - grid.min[right];
-    // expand the grid just a tiny bit, to give wiggle room for floating errors
+    const float offset = 0.5f;
+    b.min[axis] -= offset;
+    b.max[axis] += offset;
+    float deltaF = b.max[axis] - b.min[axis];
+    float deltaU = b.max[up] - b.min[up];
+    float deltaR = b.max[right] - b.min[right];
+    // expand the b just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    grid.min[up] -= offset + deltaF + deltaR;
-    grid.min[right] -= offset + deltaF + deltaU;
-    grid.max[up] += offset + deltaF + deltaR;
-    grid.max[right] += offset + deltaF + deltaU;
+    b.min[up] -= offset + deltaF;
+    b.min[right] -= offset + deltaF;
+    b.max[up] += offset + deltaF;
+    b.max[right] += offset + deltaF;
 }
 
 void constructGrid() {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
+    
+
+    for(int idx = 0; idx < 3; ++idx) {
+        auto & b = gridBounds[idx];
+        b.min = getSceneMinBounds();
+        b.max = getSceneMaxBounds();
+        adjustGridSize(idx);
+    }
+    float count = SIZE * SIZE * SIZE * SIZE;
+
     // object grid
     objectGrids.resize(objectBuffer.size() * 3);
     for (int idx = 0; idx < objectBuffer.size(); ++idx) {
         for (int axis = 0; axis < 3; ++axis) {
             auto & primitive = objectBuffer[idx];
-            objectGrids[idx * 3 + axis].size = {SIZE, SIZE};
             objectGrids[idx * 3 + axis].splitingAxis = axis;
-            float count =
-                objectGrids[idx * 3 + axis].size.x * objectGrids[idx].size.x *
-                objectGrids[idx * 3 + axis].size.y * objectGrids[idx].size.y;
-            objectGrids[idx * 3 + axis].min = getSceneMinBounds();
-            objectGrids[idx * 3 + axis].max = getSceneMaxBounds();
 
             // offset the min and max based on the camera
-            adjustGridSize(idx * 3 + axis, true);
 
             objectGrids[idx * 3 + axis].indicies.clear();
             objectGrids[idx * 3 + axis].gridLutEnd.clear();
@@ -396,12 +406,10 @@ void constructGrid() {
 
             printf("building channel LUT for %s Grid %d\n", primitive.name.c_str(), axis);
             int i = 1;
-            for (int u = 0; u < objectGrids[idx * 3 + axis].size.x; u++) {
-                for (int v = 0; v < objectGrids[idx * 3 + axis].size.y; v++) {
-                    for (int s = 0; s < objectGrids[idx * 3 + axis].size.x;
-                         s++) {
-                        for (int t = 0; t < objectGrids[idx * 3 + axis].size.y;
-                             t++) {
+            for (int u = 0; u < SIZE; u++) {
+                for (int v = 0; v < SIZE; v++) {
+                    for (int s = 0; s < SIZE; s++) {
+                        for (int t = 0; t < SIZE; t++) {
                             constructChannel(u, v, s, t, idx * 3 + axis, true, &primitive);
                             printProgressBar(i++ / count);
                         }
@@ -413,15 +421,6 @@ void constructGrid() {
     }
 
     for (int idx = 0; idx < 3; ++idx) {
-        grids[idx].size = {SIZE, SIZE};
-        float count = grids[idx].size.x * grids[idx].size.x *
-                      grids[idx].size.y * grids[idx].size.y;
-        grids[idx].min = getSceneMinBounds();
-        grids[idx].max = getSceneMaxBounds();
-
-        // offset the min and max based on the camera
-        adjustGridSize(idx);
-
         grids[idx].indicies.clear();
         grids[idx].gridLutEnd.clear();
         grids[idx].gridLutEnd.resize(count);
@@ -430,10 +429,10 @@ void constructGrid() {
 
         printf("building channel LUT for Grid %d\n", idx);
         int i = 1;
-        for (int u = 0; u < grids[idx].size.x; u++) {
-            for (int v = 0; v < grids[idx].size.y; v++) {
-                for (int s = 0; s < grids[idx].size.x; s++) {
-                    for (int t = 0; t < grids[idx].size.y; t++) {
+        for (int u = 0; u < SIZE; u++) {
+            for (int v = 0; v < SIZE; v++) {
+                for (int s = 0; s < SIZE; s++) {
+                    for (int t = 0; t < SIZE; t++) {
                         constructChannel(u, v, s, t, idx);
                         printProgressBar(i++ / count);
                     }
