@@ -8,9 +8,6 @@
 
 struct Grid {
     int splitingAxis;
-    Vector3 min;
-    Vector3 max;
-    Vector2 size;
     //experiment with others later
     std::vector<int> indicies = std::vector<int>(); 
     std::vector<int> gridLutStart = std::vector<int>(); 
