@@ -31,7 +31,7 @@ std::vector<Object> & getObjects() {return objects;}
 Vector3 getSceneMaxBounds() {
     Vector3 max{-INFINITY,-INFINITY,-INFINITY};
     for (int i=0; i < objects.size(); ++i) {
-        Vector3 pmax = minBounds(objects.at(i)); 
+        Vector3 pmax = maxBounds(objects[i]); 
         max.x = std::fmaxf(max.x, pmax.x); 
         max.y = std::fmaxf(max.y, pmax.y); 
         max.z = std::fmaxf(max.z, pmax.z); 
@@ -42,7 +42,7 @@ Vector3 getSceneMaxBounds() {
 Vector3 getSceneMinBounds() {
     Vector3 min{+INFINITY,+INFINITY,+INFINITY};
     for (int i=0; i < objects.size(); ++i) {
-        Vector3 pmin = minBounds(objects.at(i)); 
+        Vector3 pmin = minBounds(objects[i]); 
         min.x = std::fminf(min.x, pmin.x); 
         min.y = std::fminf(min.y, pmin.y); 
         min.z = std::fminf(min.z, pmin.z); 

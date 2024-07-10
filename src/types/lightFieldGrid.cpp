@@ -111,10 +111,6 @@ void intersectGrid(Ray &r) {
         float v = (iY - b.min[up]) / (b.max[up] - b.min[up]);
 
         // Check if uv coordinates are within range
-        if(u >= 1) u = 0.99f;
-        if(v >= 1) v = 0.99f;
-        if(u < 0) u = 0;
-        if(v < 0) v = 0;
         if (u < 0 || u > 1 || v < 0 || v > 1) {
             continue;
         }
@@ -132,10 +128,6 @@ void intersectGrid(Ray &r) {
         // Get st coordinates
         float s = (iX - b.min[right]) / (b.max[right] - b.min[right]);
         float t = (iY - b.min[up]) / (b.max[up] - b.min[up]);
-        if(s >= 1) s = 0.99f;
-        if(t >= 1) t = 0.99f;
-        if(s < 0) s = 0;
-        if(t < 0) t = 0;
 
         // Check if st coordinates are within range
         if (s < 0 || s > 1 || t < 0 || t > 1) {
@@ -328,7 +320,7 @@ void constructChannel(float u, float v, float s, float t, int idx,
             transformed[1] = {v2(0), v2(1), v2(2)};
             transformed[2] = {v3(0), v3(1), v3(2)};
             if (!triInUnitCube(transformed)) {
-                //continue;
+                continue;
             }
             grid.indicies.push_back(i);
         }
