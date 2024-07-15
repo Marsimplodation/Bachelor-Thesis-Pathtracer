@@ -213,11 +213,6 @@ void displayIntersectSettings() {
         }
         ImGui::EndCombo();
     }
-    bool isBVH = getIntersectMode() == BVH;
-    if(isBVH && ImGui::DragInt("Max BVH depth", &(getBvhSettings()->maxDepth))) {
-        resetScene();
-        callReset();
-    }
     ImGui::End();
 
 }
@@ -233,7 +228,7 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
     auto file_name = std::string("./render_") + items[getIntersectMode()];
     if(ImGui::Button("Save")) saveImage(file_name.c_str(), renderer, texture);
     ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");
-    ImGui::Checkbox("Full Size", &preview);
+    ImGui::Checkbox("Test Size", &preview);
     ImGui::Checkbox("Tonemapping", &toneMapping);
     bool change = false;
     change |= ImGui::DragInt("Max samples", &getMaxSampleCount());
@@ -335,7 +330,7 @@ void createWindow() {
             ImVec2 renderingSize = ImGui::GetWindowSize();
             ImGui::End();
             ImGui::Begin("Render", nullptr);
-            ImGui::SetWindowSize("Render", ImVec2(1080, 720));
+            ImGui::SetWindowSize("Render", ImVec2(1280, 720));
         }
         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
         ImVec2 canvasPos = ImGui::GetCursorScreenPos();
