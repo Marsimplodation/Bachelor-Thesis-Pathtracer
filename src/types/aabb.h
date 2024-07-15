@@ -10,5 +10,7 @@ struct AABB{
 bool findIntersection(Ray & ray, AABB & primitive);
 Vector3 minBounds(AABB &primitive);
 Vector3 maxBounds(AABB &primitive);
+bool cuboidInAABB(AABB & aabb, Vector3 *verts);
+bool triInAABB(AABB & aabb, Vector3 *verts);
 
 #endif // !AABB_H
