@@ -45,7 +45,7 @@ int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
            (s * SIZE) + t;
 }
 
-void intersectObjectGrid(Ray &r, int idx, int uIndex, int vIndex, int sIndex, int tIndex) {
+void intersectObjectGrid(Ray &r, int idx) {
     auto & objectBuffer = getObjects();
     auto & indicieBuffer = getIndicies();
     auto & trisBuffer = getTris();
@@ -54,6 +54,45 @@ void intersectObjectGrid(Ray &r, int idx, int uIndex, int vIndex, int sIndex, in
     auto axes = getGridAxes(axis);
     int right = axes[0];
     int up = axes[1];
+
+        // First intersect
+    float oz = grid.min[axis] - r.origin[axis];
+    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    float iX = r.origin[right] + d * r.direction[right];
+    float iY = r.origin[up] + d * r.direction[up];
+
+    // Get uv coordinates
+    float u = (iX - grid.min[right]) / (grid.max[right] - grid.min[right]);
+    float v = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
+
+    // Check if uv coordinates are within range
+    if (u < 0 || u > 1 || v < 0 || v > 1) {
+        return;
+    }
+
+    // Convert to grid indices
+    int uIndex = static_cast<int>(u * SIZE);
+    int vIndex = static_cast<int>(v * SIZE);
+
+    // Intersect with far plane
+    oz = -(r.origin[axis] - grid.max[axis]);
+    d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    iX = r.origin[right] + d * r.direction[right];
+    iY = r.origin[up] + d * r.direction[up];
+
+    // Get st coordinates
+    float s = (iX - grid.min[right]) / (grid.max[right] - grid.min[right]);
+    float t = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
+
+    // Check if st coordinates are within range
+    if (s < 0 || s > 1 || t < 0 || t > 1) {
+        return;
+    }
+
+    // Convert to grid indices
+    int sIndex = static_cast<int>(s * SIZE);
+    int tIndex = static_cast<int>(t * SIZE);
+
     // ray is in channel uv,st
     // to do get all tris in the lut for uvst and loop over them
     int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx, true);
@@ -87,89 +126,79 @@ void intersectGrid(Ray &r) {
     int axis = (maxDelta == fabsf(r.direction[0]))  ? 0
                : (maxDelta == fabs(r.direction[1])) ? 1
                                                     : 2;
+    int idx = axis;
     auto axes = getGridAxes(axis);
-    if (fabsf(axes[0]) < fabsf(axes[1]))
-        std::swap(axes[0], axes[1]);
-    int idxs[] = {axis, (int)axes[0], (int)axes[1]};
-    for (int it = 0; it < 3; ++it) {
-        int idx = idxs[it];
-        axis = idx;
-        auto axes = getGridAxes(axis);
-        int right = axes[0];
-        int up = axes[1];
-        auto b = gridBounds[axis];
+    int right = axes[0];
+    int up = axes[1];
 
 
-        // First intersect
-        float oz = b.min[axis] - r.origin[axis];
-        float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
-        float iX = r.origin[right] + d * r.direction[right];
-        float iY = r.origin[up] + d * r.direction[up];
+    // First intersect
+    float oz = grids[idx].min[axis] - r.origin[axis];
+    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    float iX = r.origin[right] + d * r.direction[right];
+    float iY = r.origin[up] + d * r.direction[up];
 
-        // Get uv coordinates
-        float u = (iX - b.min[right]) / (b.max[right] - b.min[right]);
-        float v = (iY - b.min[up]) / (b.max[up] - b.min[up]);
+    // Get uv coordinates
+    float u = (iX - grids[idx].min[right]) / (grids[idx].max[right] - grids[idx].min[right]);
+    float v = (iY - grids[idx].min[up]) / (grids[idx].max[up] - grids[idx].min[up]);
 
-        // Check if uv coordinates are within range
-        if (u < 0 || u > 1 || v < 0 || v > 1) {
-            continue;
-        }
+    // Check if uv coordinates are within range
+    if (u < 0 || u > 1 || v < 0 || v > 1) {
+        return;
+    }
 
-        // Convert to grid indices
-        int uIndex = static_cast<int>(u * SIZE);
-        int vIndex = static_cast<int>(v * SIZE);
+    // Convert to grid indices
+    int uIndex = static_cast<int>(u * SIZE);
+    int vIndex = static_cast<int>(v * SIZE);
 
-        // Intersect with far plane
-        oz = -(r.origin[axis] - b.max[axis]);
-        d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
-        iX = r.origin[right] + d * r.direction[right];
-        iY = r.origin[up] + d * r.direction[up];
+    // Intersect with far plane
+    oz = -(r.origin[axis] - grids[idx].max[axis]);
+    d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    iX = r.origin[right] + d * r.direction[right];
+    iY = r.origin[up] + d * r.direction[up];
 
-        // Get st coordinates
-        float s = (iX - b.min[right]) / (b.max[right] - b.min[right]);
-        float t = (iY - b.min[up]) / (b.max[up] - b.min[up]);
+    // Get st coordinates
+    float s = (iX - grids[idx].min[right]) / (grids[idx].max[right] - grids[idx].min[right]);
+    float t = (iY - grids[idx].min[up]) / (grids[idx].max[up] - grids[idx].min[up]);
 
-        // Check if st coordinates are within range
-        if (s < 0 || s > 1 || t < 0 || t > 1) {
-            continue;
-        }
+    // Check if st coordinates are within range
+    if (s < 0 || s > 1 || t < 0 || t > 1) {
+        return;
+    }
 
-        // Convert to grid indices
-        int sIndex = static_cast<int>(s * SIZE);
-        int tIndex = static_cast<int>(t * SIZE);
+    // Convert to grid indices
+    int sIndex = static_cast<int>(s * SIZE);
+    int tIndex = static_cast<int>(t * SIZE);
 
 
-        // ray is in channel uv,st
-        // to do get all tris in the lut for uvst and loop over them
-        int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx);
+    // ray is in channel uv,st
+    // to do get all tris in the lut for uvst and loop over them
+    int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx);
+
+    // sanity check
+    if (lutIdx >= grids[idx].gridLutStart.size() ||
+        lutIdx >= grids[idx].gridLutEnd.size()){
+        return;
+    }
+    int startIdx = grids[idx].gridLutStart.at(lutIdx);
+    int endIdx = grids[idx].gridLutEnd.at(lutIdx);
+    bool hit = false;
+    for (unsigned int i = startIdx; i < endIdx; i += 3) {
+        if (r.terminated)
+            break;
 
         // sanity check
-        if (lutIdx >= grids[idx].gridLutStart.size() ||
-            lutIdx >= grids[idx].gridLutEnd.size()){
+        if (i < 0 || i >= grids[idx].indicies.size())
+            break;
+        int tIdx = grids[idx].indicies[i] / 3.0f;
+
+        r.interSectionTests++;
+        Object &o = objectBuffer[tIdx];
+        if (!findIntersection(r, o.boundingBox)) {
             continue;
         }
-        int startIdx = grids[idx].gridLutStart.at(lutIdx);
-        int endIdx = grids[idx].gridLutEnd.at(lutIdx);
-        bool hit = false;
-        for (unsigned int i = startIdx; i < endIdx; i += 3) {
-            if (r.terminated)
-                break;
 
-            // sanity check
-            if (i < 0 || i >= grids[idx].indicies.size())
-                break;
-            int tIdx = grids[idx].indicies[i] / 3.0f;
-
-            r.interSectionTests++;
-            Object &o = objectBuffer[tIdx];
-            if (!findIntersection(r, o.boundingBox)) {
-                continue;
-            }
-
-            intersectObjectGrid(r, tIdx * 3 + axis, uIndex, vIndex, sIndex, tIndex);
-        }
-        // if (hit)
-        return;
+        intersectObjectGrid(r, tIdx * 3 + axis);
     }
 }
 
@@ -188,10 +217,9 @@ void constructChannel(float u, float v, float s, float t, int idx,
     const auto axes = getGridAxes(axis);
     const int right = axes[0];
     const int up = axes[1];
-    auto b = gridBounds[axis];
 
-    float deltaR = b.max[right] - b.min[right];
-    float deltaU = b.max[up] - b.min[up];
+    float deltaR = grid.max[right] - grid.min[right];
+    float deltaU = grid.max[up] - grid.min[up];
     // the algorithm needs 4 points
     // choosen points:
     // front left bottom u,v
@@ -199,21 +227,21 @@ void constructChannel(float u, float v, float s, float t, int idx,
     // back left up s,t+1
     // back right bottom s+1,t
     Vector3 points[4] = {};
-    points[0][axis] = b.min[axis];
-    points[0][right] = b.min[right] + deltaR * u;
-    points[0][up] = b.min[up] + deltaU * v;
+    points[0][axis] = grid.min[axis];
+    points[0][right] = grid.min[right] + deltaR * u;
+    points[0][up] = grid.min[up] + deltaU * v;
 
-    points[1][axis] = b.min[axis];
-    points[1][right] = b.min[right] + deltaR * (u + 1.0f);
-    points[1][up] = b.min[up] + deltaU * (v + 1.0f);
+    points[1][axis] = grid.min[axis];
+    points[1][right] = grid.min[right] + deltaR * (u + 1.0f);
+    points[1][up] = grid.min[up] + deltaU * (v + 1.0f);
     
-    points[2][axis] = b.max[axis];
-    points[2][right] = b.min[right] + deltaR * s; 
-    points[2][up] = b.min[up] + deltaU * (t + 1.0f);
+    points[2][axis] = grid.max[axis];
+    points[2][right] = grid.min[right] + deltaR * s; 
+    points[2][up] = grid.min[up] + deltaU * (t + 1.0f);
     
-    points[3][axis] = b.max[axis];
-    points[3][right] = b.min[right] + deltaR * (s + 1.0f); 
-    points[3][up] = b.min[up] + deltaU * (t);
+    points[3][axis] = grid.max[axis];
+    points[3][right] = grid.min[right] + deltaR * (s + 1.0f); 
+    points[3][up] = grid.min[up] + deltaU * (t);
 
 
     Eigen::Matrix<float, 12, 12> M0;
@@ -351,10 +379,10 @@ void printProgressBar(double progress, int barWidth = 70) {
     std::cout.flush();
 }
 
-void adjustGridSize(int idx) {
-    auto & b = gridBounds[idx];
+void adjustGridSize(int idx, bool isObject = false) {
+    Grid &grid = isObject ? objectGrids[idx] : grids[idx];
     // Use grid to access the Grid object
-    const auto axis = idx;
+    const auto axis = grid.splitingAxis;
     const auto axes = getGridAxes(axis);
     const int right = axes[0];
     const int up = axes[1];
@@ -362,31 +390,23 @@ void adjustGridSize(int idx) {
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
     const float offset = 0.5f;
-    b.min[axis] -= offset;
-    b.max[axis] += offset;
-    float deltaF = b.max[axis] - b.min[axis];
-    float deltaU = b.max[up] - b.min[up];
-    float deltaR = b.max[right] - b.min[right];
+    grid.min[axis] -= offset;
+    grid.max[axis] += offset;
+    float deltaF = grid.max[axis] - grid.min[axis];
+    float deltaU = grid.max[up] - grid.min[up];
+    float deltaR = grid.max[right] - grid.min[right];
     // expand the b just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    b.min[up] -= offset + deltaF;
-    b.min[right] -= offset + deltaF;
-    b.max[up] += offset + deltaF;
-    b.max[right] += offset + deltaF;
+    grid.min[up] -= offset + deltaF;
+    grid.min[right] -= offset + deltaF;
+    grid.max[up] += offset + deltaF;
+    grid.max[right] += offset + deltaF;
 }
 
 void constructGrid() {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
-    
-
-    for(int idx = 0; idx < 3; ++idx) {
-        auto & b = gridBounds[idx];
-        b.min = getSceneMinBounds();
-        b.max = getSceneMaxBounds();
-        adjustGridSize(idx);
-    }
     float count = SIZE * SIZE * SIZE * SIZE;
 
     // object grid
@@ -397,6 +417,9 @@ void constructGrid() {
             objectGrids[idx * 3 + axis].splitingAxis = axis;
 
             // offset the min and max based on the camera
+            objectGrids[idx * 3 + axis].max = maxBounds(primitive);
+            objectGrids[idx * 3 + axis].min = minBounds(primitive);
+            adjustGridSize(idx * 3 + axis, true);
 
             objectGrids[idx * 3 + axis].indicies.clear();
             objectGrids[idx * 3 + axis].gridLutEnd.clear();
@@ -426,6 +449,11 @@ void constructGrid() {
         grids[idx].gridLutEnd.resize(count);
         grids[idx].gridLutStart.clear();
         grids[idx].gridLutStart.resize(count);
+        grids[idx].min = getSceneMinBounds();
+        grids[idx].max = getSceneMaxBounds();
+
+        // offset the min and max based on the camera
+        adjustGridSize(idx);
 
         printf("building channel LUT for Grid %d\n", idx);
         int i = 1;

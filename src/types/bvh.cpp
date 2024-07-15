@@ -17,12 +17,8 @@ std::vector<BvhNode> nodes;
 std::vector<AABB> boxes;
 std::vector<int> indices;
 std::vector<PrimitiveCompare> splits;
-BvhSettings settings{
-    .maxDepth = 8, 
-};
 }
 
-BvhSettings *getBvhSettings() {return &settings;}
 
 void findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
     if(nodeIdx < 0 || nodeIdx >= nodes.size()) return;
@@ -121,7 +117,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     //chose split axis
     int splitAxis = std::rand() % 3; 
    //hanlde leaf
-    if((node.endIdx - node.startIdx) < 2 || node.depth >= settings.maxDepth) {
+    if((node.endIdx - node.startIdx) < 8) { 
         node.childLeft = -1;
         node.childRight = -1;
         node.splitAxis = splitAxis;
