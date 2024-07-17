@@ -236,31 +236,57 @@ void constructGrid(const int gridIdx) {
     grid.gridLutStart.clear();
     grid.gridLutStart.resize(count);
     
-    if(grid.indicies.size() > 100) {
+    if(grid.indicies.size() > 50) {
         //split grid in 2
         int splitAxis=grid.splitingAxis;
         objectGrids.push_back(Grid{.splitingAxis = splitAxis});
         objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
         u32 size = objectGrids.size();
+        Vector3 permutations[8] = {
+            {1,1,1},
+            {-1,1,1},
+            {1,-1,1},
+            {-1,-1,1},
+            {1,1,-1},
+            {-1,1,-1},
+            {1,-1,-1},
+            {-1,-1,-1},
+        };
         
         //why do I need this?
         auto & grid = objectGrids[gridIdx];
         auto indicies(grid.indicies);
         grid.indicies.clear();
         grid.hasTris = false;
-        grid.indicies = {size -2, size - 1};
+        grid.indicies = {
+            size - 1,
+            size - 2,
+            size - 3,
+            size - 4,
+            size - 5,
+            size - 6,
+            size - 7,
+            size - 8,
+        };
         
-        for(int i = size -2; i < size; ++i) {
-            auto & child = objectGrids[i];
-            int axis = getGridAxes(grid.splitingAxis)[1];
+        for(int i = 0; i < 8; ++i) {
+            auto & child = objectGrids[size - i - 1];
             Vector3 offset{};
             //split in the middle of the aabb
-            offset[axis] = grid.aabb.size[axis] / 4 * (i %2 == 0 ? 1 : -1);
+            auto op = permutations[i];
+            offset[0] = grid.aabb.size[0] / 4 * op[0];
+            offset[1] = grid.aabb.size[1] / 4 * op[1];
+            offset[2] = grid.aabb.size[2] / 4 * op[2];
             child.aabb = {
                 .center = grid.aabb.center + offset, 
-                .size = grid.aabb.size + Vector3{EPS, EPS, EPS},
+                .size = grid.aabb.size * 0.5f + Vector3{EPS, EPS, EPS},
             };
-            child.aabb.size[axis] *= 0.5f;
             //push relevant indicies
             for(auto idx : indicies) {
                 if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
@@ -269,8 +295,13 @@ void constructGrid(const int gridIdx) {
             }
         }
         //recursively build grid tree
-        constructGrid(size-2);
         constructGrid(size-1);
+        constructGrid(size-2);
+        constructGrid(size-4);
+        constructGrid(size-5);
+        constructGrid(size-6);
+        constructGrid(size-7);
+        constructGrid(size-8);
 
     } else {
         grid.hasTris = true;
