@@ -2,6 +2,7 @@
 #define LIGHT_FIELD_GRID_H
 
 
+#include "types/aabb.h"
 #include "types/bvh.h"
 #include "types/vector.h"
 #include <vector>
@@ -9,9 +10,9 @@
 struct Grid {
     bool hasTris; 
     int splitingAxis;
-    u32 AABBIDx;
     Vector3 min;
     Vector3 max;
+    AABB aabb;
     //experiment with others later
     std::vector<u32> indicies = std::vector<u32>(); 
     std::vector<u32> gridLutStart = std::vector<u32>(); 
@@ -19,6 +20,5 @@ struct Grid {
 };
 void intersectGrid(Ray & r);
 void constructGrid();
-void constructChannel(float u, float v, float s, float t, int idx,
-                      bool isObject = false, Object *obj = 0x0);
+void constructChannel(float u, float v, float s, float t, int idx, std::vector<u32> indicies, bool isObject = false);
 #endif // !LIGHT_FIELD_GRID_H
