@@ -10,6 +10,7 @@
 struct Grid {
     bool hasTris; 
     int splitingAxis;
+    u32 size;
     Vector3 min;
     Vector3 max;
     AABB aabb;
