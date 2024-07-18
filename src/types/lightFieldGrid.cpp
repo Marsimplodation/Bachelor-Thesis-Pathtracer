@@ -33,7 +33,7 @@ Vector2 getGridAxes(int idx) {
 }
 #define TRIS_GRID_SIZE 5
 #define GRID_SIZE 2
-#define MAX_TRIS_IN_CHANNEL 40
+#define MAX_TRIS_IN_CHANNEL 200
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
 int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
