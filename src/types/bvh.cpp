@@ -51,8 +51,18 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
             return findBVHIntesection(ray, node.childLeft, isObject);
         } else {
             bool hit = false;
-            hit |= findBVHIntesection(ray, node.childLeft, isObject);
-            hit |= findBVHIntesection(ray, node.childRight, isObject);
+            auto & left = nodes[node.childLeft];
+            auto & right = nodes[node.childRight];
+            auto minLeft = minBounds(boxes[left.AABBIdx])[node.splitAxis];
+            auto minRight = minBounds(boxes[right.AABBIdx])[node.splitAxis];
+            float dir = ray.direction[node.splitAxis];
+            
+            int first = node.childLeft;
+            int second = node.childRight;
+            if(dir > 0) std::swap(first, second);
+
+            hit |= findBVHIntesection(ray, first, isObject);
+            if(!hit) hit |= findBVHIntesection(ray, second, isObject);
             return hit;    
         }
         return false;
@@ -62,7 +72,7 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
     for (int i = node.startIdx; i < node.endIdx; i++) {
         if (i >= indicies.size())
             continue;
-        int idx = indicies.at(i);
+        int idx = indicies[i];
         ray.interSectionTests++;
         if (isObject)
             hit |= triangleIntersection(ray, trisBuffer[idx]);
@@ -150,8 +160,8 @@ float evaluateSplit(bool isObject, int split, Vector3 & min1, Vector3 & max1) {
                        extent2.x * extent2.z);
     float areaRoot = 3 * (extent3.x * extent3.y + extent3.y * extent3.z +
                           extent3.x * extent3.z);
-    float cTrav = 1.0f;
-    float cInter = 10.0f;
+    float cTrav = 1000.0f;
+    float cInter = 1.0f;
     if(primitiveCount1 * primitiveCount2 == 0) return INFINITY;
 
     return cTrav + (area1 / areaRoot) * cInter * primitiveCount1 +
