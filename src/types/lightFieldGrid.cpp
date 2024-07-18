@@ -31,8 +31,9 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 7
+#define TRIS_GRID_SIZE 5
 #define GRID_SIZE 2
+#define MAX_TRIS_IN_CHANNEL 40
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
 int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
@@ -231,7 +232,7 @@ void constructGrid(const int gridIdx) {
     
     //set defaults
     
-    if(grid.indicies.size() > 30) {
+    if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL) {
         //split grid in 2
         int splitAxis=grid.splitingAxis;
         objectGrids.push_back(Grid{.splitingAxis = splitAxis});
@@ -303,7 +304,9 @@ void constructGrid(const int gridIdx) {
     } else {
         Grid & grid = objectGrids[gridIdx];
         grid.hasTris = true;
-        grid.size = TRIS_GRID_SIZE;
+        int tris = grid.indicies.size();
+        if(tris < 10/MAX_TRIS_IN_CHANNEL) grid.size = 1;
+        else grid.size = TRIS_GRID_SIZE; 
     }
     Grid & newGrid = objectGrids[gridIdx];
     float count = newGrid.size * newGrid.size * newGrid.size * newGrid.size;
