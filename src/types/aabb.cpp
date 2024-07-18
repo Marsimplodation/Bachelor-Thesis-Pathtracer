@@ -204,7 +204,7 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
         {max.x, max.y, min.z},
         {max.x, max.y, max.z}};
     // perform the SAT test
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < 36; i++) {
         float triMin = INFINITY, triMax = -INFINITY;
         float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
 
