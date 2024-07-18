@@ -59,7 +59,7 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
             
             int first = node.childLeft;
             int second = node.childRight;
-            if(dir > 0) std::swap(first, second);
+            if(dir < 0) std::swap(first, second);
 
             hit |= findBVHIntesection(ray, first, isObject);
             if(!hit) hit |= findBVHIntesection(ray, second, isObject);
@@ -255,15 +255,9 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
             for (int j = node.startIdx; j < node.endIdx; j++) {
                 int idx = indicies.at(j);
                 if (!isObject) {
-                    Vector3 min = minBounds(objectBuffer[idx]);
-                    Vector3 max = maxBounds(objectBuffer[idx]);
-                    Vector3 cubeVerts[8] = {
-                        {min.x, min.y, min.z}, {min.x, min.y, max.z},
-                        {min.x, max.y, min.z}, {min.x, max.y, max.z},
-                        {max.x, min.y, min.z}, {max.x, min.y, max.z},
-                        {max.x, max.y, min.z}, {max.x, max.y, max.z}};
-                    if (cuboidInAABB(bin.aabb, cubeVerts))
+                    if (aabbInAABB(bestAABB, objectBuffer[idx].boundingBox)) {
                         bin.indicies.push_back(idx);
+                    }
                 } else if (triInAABB(bin.aabb, trisBuffer[idx].vertices)) {
                     bin.indicies.push_back(idx);
                 }
@@ -299,16 +293,8 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
 
     for (int j = node.startIdx; j < node.endIdx; j++) {
         int idx = indicies.at(j);
-        float val;
         if (!isObject) {
-            Vector3 min = minBounds(objectBuffer[idx]);
-            Vector3 max = maxBounds(objectBuffer[idx]);
-            Vector3 cubeVerts[8] = {
-                {min.x, min.y, min.z}, {min.x, min.y, max.z},
-                {min.x, max.y, min.z}, {min.x, max.y, max.z},
-                {max.x, min.y, min.z}, {max.x, min.y, max.z},
-                {max.x, max.y, min.z}, {max.x, max.y, max.z}};
-            if (cuboidInAABB(bestAABB, cubeVerts)) {
+            if (aabbInAABB(bestAABB, objectBuffer[idx].boundingBox)) {
                 idxL.push_back(idx);
             } else {
                 idxR.push_back(idx);

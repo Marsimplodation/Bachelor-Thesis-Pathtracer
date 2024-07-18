@@ -230,3 +230,87 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
 
     return true;
 }
+
+
+bool aabbInAABB(AABB & aabbA, AABB & aabbB) { 
+    // Check if at least one vertex is inside the unit cube
+    // Unit cube spans from -0.5 to 0.5 in all axes
+    // Helper function to project a point onto an axis
+    auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
+        return p.x * axis.x + p.y * axis.y + p.z * axis.z;
+    };
+    Vector3 minA = minBounds(aabbA); 
+    Vector3 maxA = maxBounds(aabbA); 
+    Vector3 minB = minBounds(aabbB); 
+    Vector3 maxB = maxBounds(aabbB); 
+
+    // Check overlap on the coordinate axes
+    for (int axis = 0; axis < 3; axis++) {
+        float cubeMinProj = minA[axis], cubeMaxProj = maxB[axis];
+        float triMin = minB[axis], triMax = maxB[axis];
+
+
+        if (triMax < cubeMinProj || triMin > cubeMaxProj)
+            return false;
+    }
+
+    // Edges of the AABB (only need 3 edges since they are axis-aligned)
+    Vector3 edgesA[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    Vector3 edgesB[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+
+
+    // Create test axes from cross products of edges
+    Vector3 testAxes[9];
+    int idx = 0;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            testAxes[idx++] = crossProduct(edgesA[i], edgesB[j]);
+        }
+    }
+
+    Vector3 cubeAVerts[8] = {
+        {minA.x, minA.y, minA.z},
+        {minA.x, minA.y, maxA.z},
+        {minA.x, maxA.y, minA.z},
+        {minA.x, maxA.y, maxA.z},
+        {maxA.x, minA.y, minA.z},
+        {maxA.x, minA.y, maxA.z},
+        {maxA.x, maxA.y, minA.z},
+        {maxA.x, maxA.y, maxA.z}};
+    
+    Vector3 cubeBVerts[8] = {
+        {minB.x, minB.y, minB.z},
+        {minB.x, minB.y, maxB.z},
+        {minB.x, maxB.y, minB.z},
+        {minB.x, maxB.y, maxB.z},
+        {maxB.x, minB.y, minB.z},
+        {maxB.x, minB.y, maxB.z},
+        {maxB.x, maxB.y, minB.z},
+        {maxB.x, maxB.y, maxB.z}};
+    // perform the SAT test
+    for (int i = 0; i < 9; i++) {
+        float triMin = INFINITY, triMax = -INFINITY;
+        float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
+
+        for (int j = 0; j < 8; j++) {
+            float proj = projectPoint(cubeAVerts[j], testAxes[i]);
+            if (proj < triMin)
+                triMin = proj;
+            if (proj > triMax)
+                triMax = proj;
+        }
+
+        for (int j = 0; j < 8; j++) {
+            float proj = projectPoint(cubeBVerts[j], testAxes[i]);
+            if (proj < cubeMinProj)
+                cubeMinProj = proj;
+            if (proj > cubeMaxProj)
+                cubeMaxProj = proj;
+        }
+
+        if (triMax < cubeMinProj || triMin > cubeMaxProj)
+            return false;
+    }
+
+    return true;
+}
