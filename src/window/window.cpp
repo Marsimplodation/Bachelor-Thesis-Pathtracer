@@ -232,7 +232,12 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
     ImGui::Checkbox("Tonemapping", &toneMapping);
     bool change = false;
     change |= ImGui::DragInt("Max samples", &getMaxSampleCount());
-    
+    change |= ImGui::Checkbox("Debug", &getDebugView());
+   
+    if(getDebugView()){
+        change |= ImGui::DragInt("Debug Visual", &getDebugScale());
+    }
+
     if(change) callReset();
 
     ImGui::End();

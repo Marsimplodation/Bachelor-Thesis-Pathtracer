@@ -40,7 +40,7 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
 u32 randomState;
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
-    if (r.length == INFINITY)
+    if (r.tmax == INFINITY)
         return black;
     int idx = r.materialIdx;
     switch (materials[idx].shaderFlag) {
@@ -60,11 +60,14 @@ Vector3 shade(Ray &r) {
 }
 
 Vector3 mirrorShader(Ray &r) {
-    r.origin = r.origin + r.direction * (r.length);
+    r.origin = r.origin + r.direction * (r.tmax);
     r.direction =
         r.direction - 2.0f * dotProduct(r.direction, r.normal) * r.normal;
     r.origin += r.direction * 0.01f;
-    r.length = INFINITY;
+    r.tmax = INFINITY;
+    r.inv_dir[0] = 1.0f/r.direction[0];
+    r.inv_dir[1] = 1.0f/r.direction[1];
+    r.inv_dir[2] = 1.0f/r.direction[2];
     return {};
 }
 
@@ -82,8 +85,8 @@ Vector3 emitShader(Ray &r) {
     float xi = fastRandom(r.randomState);
     if (xi < 1 - opacity) {
         r.terminated = t;
-        r.origin = r.origin + r.direction * (r.length + 0.01f);
-        r.length = INFINITY;
+        r.origin = r.origin + r.direction * (r.tmax + 0.01f);
+        r.tmax = INFINITY;
         return {};
     }
     Vector3 color = {fgColor.x, fgColor.y, fgColor.z};
@@ -132,9 +135,12 @@ Vector3 refractionShader(Ray &r) {
         // r.throughPut *= 1.0f / (1-reflectance);
     }
 
-    r.origin = r.origin + r.direction * (r.length) + refractDirection * EPS;
+    r.origin = r.origin + r.direction * (r.tmax) + refractDirection * EPS;
     r.direction = refractDirection;
-    r.length = INFINITY;
+    r.tmax = INFINITY;
+    r.inv_dir[0] = 1.0f/r.direction[0];
+    r.inv_dir[1] = 1.0f/r.direction[1];
+    r.inv_dir[2] = 1.0f/r.direction[2];
     // r.colorMask = r.colorMask * info->color;
 
     return {};
@@ -162,8 +168,8 @@ Vector3 edgeShader(Ray &r) {
         float opacity = fgColor.w;
         float xi = fastRandom(r.randomState);
         if (xi < 1 - opacity) {
-            r.origin = r.origin + r.direction * (r.length + 0.01f);
-            r.length = INFINITY;
+            r.origin = r.origin + r.direction * (r.tmax + 0.01f);
+            r.tmax = INFINITY;
             return {0, 0, 0};
         }
         color = {fgColor.x, fgColor.y, fgColor.z};
@@ -174,10 +180,13 @@ Vector3 edgeShader(Ray &r) {
 
     // reset for next bounce
     r.throughPut = r.throughPut * color * fabsf(cos);
-    r.origin = r.origin + r.direction * r.length;
+    r.origin = r.origin + r.direction * r.tmax;
     r.direction = randomCosineWeightedDirection(r);
     r.origin += r.direction * EPS;
-    r.length = INFINITY;
+    r.tmax = INFINITY;
+    r.inv_dir[0] = 1.0f/r.direction[0];
+    r.inv_dir[1] = 1.0f/r.direction[1];
+    r.inv_dir[2] = 1.0f/r.direction[2];
     return {};
 }
 
@@ -193,8 +202,8 @@ Vector3 shadowShader(Ray &r) {
         float opacity = fgColor.w;
         float xi = fastRandom(r.randomState);
         if (xi < 1 - opacity) {
-            r.origin = r.origin + r.direction * (r.length + 0.01f);
-            r.length = INFINITY;
+            r.origin = r.origin + r.direction * (r.tmax + 0.01f);
+            r.tmax = INFINITY;
             return {};
         }
         color = {fgColor.x, fgColor.y, fgColor.z};
@@ -203,9 +212,12 @@ Vector3 shadowShader(Ray &r) {
 
     // reset for next bounce
     r.throughPut = r.throughPut * color;
-    r.origin = r.origin + r.direction * r.length;
+    r.origin = r.origin + r.direction * r.tmax;
     r.direction = randomCosineWeightedDirection(r);
     r.origin += r.direction * EPS;
-    r.length = INFINITY;
+    r.tmax = INFINITY;
+    r.inv_dir[0] = 1.0f/r.direction[0];
+    r.inv_dir[1] = 1.0f/r.direction[1];
+    r.inv_dir[2] = 1.0f/r.direction[2];
     return {};
 }

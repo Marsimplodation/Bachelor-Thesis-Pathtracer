@@ -2,47 +2,46 @@
 #include "types/vector.h"
 #include <cmath>
 #include <utility>
+#include <algorithm>
 
-Vector3 minBounds(AABB &primitive){
-    return {
-        primitive.center.x - primitive.size.x / 2.0f,
-        primitive.center.y - primitive.size.y / 2.0f,
-        primitive.center.z - primitive.size.z / 2.0f,
+
+
+bool findIntersection(const Ray &r, const AABB &b) {
+    // calculate intersection intervals
+    float tx1 = (b.min.x - r.origin.x) * r.inv_dir.x;
+    float tx2 = (b.max.x - r.origin.x) * r.inv_dir.x;
+    float ty1 = (b.min.y - r.origin.y) * r.inv_dir.y;
+    float ty2 = (b.max.y - r.origin.y) * r.inv_dir.y;
+    float tz1 = (b.min.z - r.origin.z) * r.inv_dir.z;
+    float tz2 = (b.max.z - r.origin.z) * r.inv_dir.z;
+    // find min and max intersection t’s
+    using std::max;
+    using std::min;
+    float tres[2] = {
+        max(max(max(min(tx1, tx2), min(ty1, ty2)), min(tz1, tz2)), r.tmin),
+        min(min(min(max(tx1, tx2), max(ty1, ty2)), max(tz1, tz2)), r.tmax)
     };
+    // return result
+    return tres[0] <= tres[1];
 }
 
-Vector3 maxBounds(AABB &primitive){
-    return {
-        primitive.center.x + primitive.size.x / 2.0f,
-        primitive.center.y + primitive.size.y / 2.0f,
-        primitive.center.z + primitive.size.z / 2.0f,
+float getIntersectDistance(const Ray &r, const AABB &b) {
+    // calculate intersection intervals
+    float tx1 = (b.min.x - r.origin.x) * r.inv_dir.x;
+    float tx2 = (b.max.x - r.origin.x) * r.inv_dir.x;
+    float ty1 = (b.min.y - r.origin.y) * r.inv_dir.y;
+    float ty2 = (b.max.y - r.origin.y) * r.inv_dir.y;
+    float tz1 = (b.min.z - r.origin.z) * r.inv_dir.z;
+    float tz2 = (b.max.z - r.origin.z) * r.inv_dir.z;
+    // find min and max intersection t’s
+    using std::max;
+    using std::min;
+    float tres[2] = {
+        max(max(max(min(tx1, tx2), min(ty1, ty2)), min(tz1, tz2)), r.tmin),
+        min(min(min(max(tx1, tx2), max(ty1, ty2)), max(tz1, tz2)), r.tmax)
     };
-}
-
-bool findIntersection(Ray &ray, AABB & primitive) {
-    Vector3 const minBound = minBounds(primitive);
-    Vector3 const maxBound = maxBounds(primitive);
-    float tNear = -INFINITY;
-    float tFar = +INFINITY;
-    //pixars aabb test
-    for (int a = 0; a < 3; a++) {
-            auto invD = 1 / ray.direction[a];
-            auto orig = ray.origin[a];
-
-            auto t0 = (minBound[a] - orig) * invD;
-            auto t1 = (maxBound[a] - orig) * invD;
-
-            if (invD < 0)
-                std::swap(t0, t1);
-
-            if (t0 > tNear) tNear = t0;
-            if (t1 < tFar) tFar = t1;
-
-            if (tNear > tFar)
-                return false;
-        }
-        if(tNear > ray.length)  return  false;  
-    return true;
+    // return result
+    return tres[0] <= tres[1] ? tres[0] : INFINITY;
 }
 
 //----------- Math stuff -----------//
@@ -53,8 +52,8 @@ bool triInAABB(AABB & aabb, Vector3 *verts) {
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
         return p.x * axis.x + p.y * axis.y + p.z * axis.z;
     };
-    Vector3 min = minBounds(aabb); 
-    Vector3 max = maxBounds(aabb); 
+    Vector3 min = aabb.min; 
+    Vector3 max = aabb.max; 
 
     // Check overlap on the coordinate axes
     for (int axis = 0; axis < 3; axis++) {
@@ -146,8 +145,8 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
         return p.x * axis.x + p.y * axis.y + p.z * axis.z;
     };
-    Vector3 min = minBounds(aabb); 
-    Vector3 max = maxBounds(aabb); 
+    Vector3 min = aabb.min; 
+    Vector3 max = aabb.max; 
 
     // Check overlap on the coordinate axes
     for (int axis = 0; axis < 3; axis++) {
@@ -204,7 +203,7 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
         {max.x, max.y, min.z},
         {max.x, max.y, max.z}};
     // perform the SAT test
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < 36; i++) {
         float triMin = INFINITY, triMax = -INFINITY;
         float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
 
@@ -229,4 +228,97 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
     }
 
     return true;
+}
+
+
+bool aabbInAABB(AABB & aabbA, AABB & aabbB) { 
+    // Check if at least one vertex is inside the unit cube
+    // Unit cube spans from -0.5 to 0.5 in all axes
+    // Helper function to project a point onto an axis
+    auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
+        return p.x * axis.x + p.y * axis.y + p.z * axis.z;
+    };
+    Vector3 minA = aabbA.min; 
+    Vector3 maxA = aabbA.max; 
+    Vector3 minB = aabbB.min; 
+    Vector3 maxB = aabbB.max; 
+
+    // Check overlap on the coordinate axes
+    for (int axis = 0; axis < 3; axis++) {
+        float cubeMinProj = minA[axis], cubeMaxProj = maxB[axis];
+        float triMin = minB[axis], triMax = maxB[axis];
+
+
+        if (triMax < cubeMinProj || triMin > cubeMaxProj)
+            return false;
+    }
+
+    // Edges of the AABB (only need 3 edges since they are axis-aligned)
+    Vector3 edgesA[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    Vector3 edgesB[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+
+
+    // Create test axes from cross products of edges
+    Vector3 testAxes[9];
+    int idx = 0;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            testAxes[idx++] = crossProduct(edgesA[i], edgesB[j]);
+        }
+    }
+
+    Vector3 cubeAVerts[8] = {
+        {minA.x, minA.y, minA.z},
+        {minA.x, minA.y, maxA.z},
+        {minA.x, maxA.y, minA.z},
+        {minA.x, maxA.y, maxA.z},
+        {maxA.x, minA.y, minA.z},
+        {maxA.x, minA.y, maxA.z},
+        {maxA.x, maxA.y, minA.z},
+        {maxA.x, maxA.y, maxA.z}};
+    
+    Vector3 cubeBVerts[8] = {
+        {minB.x, minB.y, minB.z},
+        {minB.x, minB.y, maxB.z},
+        {minB.x, maxB.y, minB.z},
+        {minB.x, maxB.y, maxB.z},
+        {maxB.x, minB.y, minB.z},
+        {maxB.x, minB.y, maxB.z},
+        {maxB.x, maxB.y, minB.z},
+        {maxB.x, maxB.y, maxB.z}};
+    // perform the SAT test
+    for (int i = 0; i < 9; i++) {
+        float triMin = INFINITY, triMax = -INFINITY;
+        float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
+
+        for (int j = 0; j < 8; j++) {
+            float proj = projectPoint(cubeAVerts[j], testAxes[i]);
+            if (proj < triMin)
+                triMin = proj;
+            if (proj > triMax)
+                triMax = proj;
+        }
+
+        for (int j = 0; j < 8; j++) {
+            float proj = projectPoint(cubeBVerts[j], testAxes[i]);
+            if (proj < cubeMinProj)
+                cubeMinProj = proj;
+            if (proj > cubeMaxProj)
+                cubeMaxProj = proj;
+        }
+
+        if (triMax < cubeMinProj || triMin > cubeMaxProj)
+            return false;
+    }
+
+    return true;
+}
+
+bool pointInAABB(AABB &aabb, Vector3 v){
+    Vector3 min = aabb.min; 
+    Vector3 max = aabb.max; 
+    if ((min.x <= v.x && v.x <= max.x) && 
+        (min.y <= v.y && v.y <= max.y) && 
+        (min.z <= v.z && v.z <= max.z)) return true; 
+    return false;
 }

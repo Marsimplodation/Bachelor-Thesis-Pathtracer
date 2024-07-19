@@ -23,9 +23,9 @@ bool objectIntersection(Ray &ray, Object &primitive) {
     
     bool hit = false;
     if(getIntersectMode() != ALL) {
-        float l = ray.length;
+        float l = ray.tmax;
         findBVHIntesection(ray, primitive.root, true);
-        hit |= ray.length != l;
+        hit |= ray.tmax != l;
     }
     
     if(getIntersectMode() == ALL) {
@@ -140,24 +140,11 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             if (tmax.y > max.y) max.y = tmax.y;
             if (tmax.z > max.z) max.z = tmax.z;
         }
-
-        // Calculate the center and size of the bounding box
-        Vector3 center = {
-            (min.x + max.x) * 0.5f,
-            (min.y + max.y) * 0.5f,
-            (min.z + max.z) * 0.5f
-        };
-        
-        Vector3 ssize = {
-            max.x - min.x,
-            max.y - min.y,
-            max.z - min.z
-        };
         Object o{
             .type = OBJECT,
             .startIdx = startIdx,
             .endIdx = endIdx,
-            .boundingBox =  {.center = center, .size=ssize},
+            .boundingBox =  {.min = min, .max=max},
             .materialIdx = matIdx,
             .root = constructBVH(startIdx, endIdx, -1, true),
             .active = true,
@@ -165,11 +152,4 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
         };
         objectBuffer.push_back(o);
     }
-}
-
-Vector3 minBounds(Object &primitive) {
-    return minBounds(primitive.boundingBox);
-}
-Vector3 maxBounds(Object &primitive) {
-    return maxBounds(primitive.boundingBox);
 }
