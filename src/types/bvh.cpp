@@ -58,10 +58,9 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
             
             int first = node.childLeft;
             int second = node.childRight;
-            if(dir < 0) std::swap(first, second);
 
             hit |= findBVHIntesection(ray, first, isObject);
-            if(!hit) hit |= findBVHIntesection(ray, second, isObject);
+            hit |= findBVHIntesection(ray, second, isObject);
             return hit;    
         }
         return false;
@@ -149,18 +148,15 @@ float evaluateSplit(bool isObject, Vector3 & min1, Vector3 & max1) {
     Vector3 extent1 = max1 - min1;
     Vector3 extent2 = max2 - min2;
     Vector3 extent3 = max3 - min3;
-    float area1 = 2 * (extent1.x * extent1.y + extent1.y * extent1.z +
-                       extent1.x * extent1.z);
-    float area2 = 2 * (extent2.x * extent2.y + extent2.y * extent2.z +
-                       extent2.x * extent2.z);
-    float areaRoot = 2 * (extent3.x * extent3.y + extent3.y * extent3.z +
-                          extent3.x * extent3.z);
+    float area1 = extent1.x * (extent1.y + extent1.x) + extent1.y * extent1.z;
+    float area2 = extent2.x * (extent2.y + extent2.x) + extent2.y * extent2.z;
+    float area3 = extent3.x * (extent3.y + extent3.x) + extent3.y * extent3.z;
     float cTrav = 1.0f;
     float cInter = 10.0f;
-    if(primitiveCount1 * primitiveCount2 == 0) return INFINITY;
+    if(primitiveCount1 * primitiveCount2 == 0) return -INFINITY;
 
-    return cTrav + (area1 / areaRoot) * cInter * primitiveCount1 +
-           (area2 / areaRoot) * cInter * primitiveCount2;
+    return cTrav + (area1/area3) * cInter * primitiveCount1 +
+           (area2/area3) * cInter * primitiveCount2;
 }
 
 void calculateBoundingBox(BvhNode &node, bool isObject) {
@@ -241,11 +237,11 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     bool split = false;
     auto nodeMax = maxBounds(nodeAABB);
     auto nodeMin = minBounds(nodeAABB);
+    #define SPLITS 12
     for (int axis = 0; axis < 3; ++axis) {
         // build bins
-        #define SPLITS 5
         float delta = nodeMax[axis] - nodeMin[axis];
-        for (int i = 1; i < SPLITS - 1; ++i) {
+        for (int i = 2; i < SPLITS - 2; ++i) {
             
             float splitPos = nodeMin[axis] + delta * ((float)i)/(float)SPLITS;
 
@@ -257,12 +253,12 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
                 int idx = indicies.at(j);
                 if (!isObject) {
                     Vector3 min = minBounds(objectBuffer[idx]);
-                    if(min[axis] <= splitPos) {
+                    if(min[axis] < splitPos) {
                         bins[0].indicies.push_back(idx);
                     } else bins[1].indicies.push_back(idx);
                 } else {
                     Vector3 min = minBounds(trisBuffer[idx]);
-                    if(min[axis] <= splitPos) {
+                    if(min[axis] < splitPos) {
                         bins[0].indicies.push_back(idx);
                     } else bins[1].indicies.push_back(idx);
                 }
@@ -271,7 +267,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
             Vector3 lMin{INFINITY, INFINITY, INFINITY};
             Vector3 lMax{-INFINITY, -INFINITY, -INFINITY};
             float cost = evaluateSplit(isObject, lMin, lMax);
-            if (cost >= bestSAHScore)
+            if (cost > bestSAHScore)
                 continue;
             bestSAHScore = cost;
             bestAxis = axis;
@@ -283,12 +279,6 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
             };
         }
     }
-        if(!split) {
-            node.childLeft = -1;
-            node.childRight = -1;
-            node.splitAxis = 0;
-            return nodeIdx;
-        }
 
     std::vector<u32> idxL(0);
     std::vector<u32> idxR(0);
@@ -301,15 +291,22 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         int idx = indicies.at(j);
         if (!isObject) {
             Vector3 min = minBounds(objectBuffer[idx]);
-            if(min[bestAxis] <= splitPos) {
+            if(min[bestAxis] < splitPos) {
                 idxL.push_back(idx);
             } else idxR.push_back(idx);
         } else {
             Vector3 min = minBounds(trisBuffer[idx]);
-            if(min[bestAxis] <= splitPos) {
+            if(min[bestAxis] < splitPos) {
                 idxL.push_back(idx);
             } else idxR.push_back(idx);
         }
+    }
+    //no split necessary
+    if(!split || idxL.size() * idxR.size() == 0) {
+        node.childLeft = -1;
+        node.childRight = -1;
+        node.splitAxis = 0;
+        return nodeIdx;
     }
     node.splitAxis = bestAxis;
 
