@@ -166,7 +166,7 @@ float evaluateSplit(bool isObject) {
     float area1 = extent1.x * (extent1.y + extent1.x) + extent1.y * extent1.z;
     float area2 = extent2.x * (extent2.y + extent2.x) + extent2.y * extent2.z;
     float area3 = extent3.x * (extent3.y + extent3.x) + extent3.y * extent3.z;
-    float cTrav = 1.0f;
+    float cTrav = 100.0f;
     float cInter = 1.0f;
     //this should not be necessary
     //if(primitiveCount1 * primitiveCount2 == 0) return -INFINITY;
@@ -233,6 +233,13 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     BvhNode &node = nodes.at(nodeIdx);
     calculateBoundingBox(node, isObject);
     // hanlde leaf
+    if(node.endIdx- node.startIdx < 12) {
+        
+        node.childLeft = -1;
+        node.childRight = -1;
+        node.splitAxis = 0;
+        return nodeIdx;
+    }
     // chose split axis
     int bestAxis = 0; 
     int bestSplit = 0;
@@ -273,7 +280,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
             
             //evaluate
             float cost = evaluateSplit(isObject);
-            if (cost >= bestSAHScore)
+            if (cost >= bestSAHScore || std::isnan(-cost))
                 continue;
             
             bestSAHScore = cost;
@@ -290,9 +297,9 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         node.splitAxis = 0;
         return nodeIdx;
     }
+    bins[0].indicies.clear();
+    bins[1].indicies.clear();
 
-    std::vector<u32> idxL(0);
-    std::vector<u32> idxR(0);
     float delta = nodeMax[bestAxis] - nodeMin[bestAxis];
     float splitPos = nodeMin[bestAxis] + delta * ((float)bestSplit)/((float)SPLITS+1.0f);
     
@@ -308,13 +315,13 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         }
         
         if(min[bestAxis] < splitPos) {
-            idxL.push_back(idx);
+            bins[0].indicies.push_back(idx);
         } else {
-            idxR.push_back(idx);
+            bins[1].indicies.push_back(idx);
         }
     }
     
-    if(idxL.size() * idxR.size() == 0) {
+    if(bins[0].indicies.size() * bins[1].indicies.size() == 0) {
         node.childLeft = -1;
         node.childRight = -1;
         node.splitAxis = 0;
@@ -325,11 +332,11 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
 
     int currentIdx = node.startIdx;
     // left node
-    for (auto idx : idxL) {
+    for (auto idx : bins[0].indicies) {
         indicies.at(currentIdx++) = idx;
     }
     int splitIdx = currentIdx;
-    for (auto idx : idxR) {
+    for (auto idx : bins[1].indicies) {
         indicies.at(currentIdx++) = idx;
     }
 
@@ -337,12 +344,14 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         .startIdx = node.startIdx,
         .endIdx = splitIdx,
         .depth = node.depth + 1,
+        .cost = INFINITY,
     };
 
     BvhNode childRight{
         .startIdx = splitIdx,
         .endIdx = node.endIdx,
         .depth = node.depth + 1,
+        .cost = INFINITY,
     };
 
     node.childLeft = nodes.size();

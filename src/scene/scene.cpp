@@ -85,7 +85,7 @@ void findIntersection(Ray &ray) {
 
 bool scenenInited = false;
 void initScene() {   
-    loadObject("lucy.obj", {0,-250,50}, {300,300,300}, addMaterial(orange));
+    loadObject("cornel.obj", {0,-250,50}, {300,300,300}, addMaterial(orange));
     
     root = constructBVH(0, objects.size());
     constructGrid();

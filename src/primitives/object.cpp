@@ -24,7 +24,6 @@ bool objectIntersection(Ray &ray, Object &primitive) {
     bool hit = false;
     if(getIntersectMode() != ALL) {
         float l = ray.tmax;
-        ray.interSectionAS++;
         findBVHIntesection(ray, primitive.root, true);
         hit |= ray.tmax != l;
     }

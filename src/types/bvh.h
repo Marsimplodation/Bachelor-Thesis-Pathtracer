@@ -4,6 +4,7 @@
 #include "scene/scene.h"
 #include "types/aabb.h"
 #include "vector.h"
+#include <cmath>
 #include <vector>
 
 struct BvhSettings {
@@ -18,7 +19,7 @@ struct BvhNode {
     int AABBIdx;
     int childLeft;
     int childRight;
-    float cost;
+    float cost = INFINITY;
 };
 
 BvhSettings *getBvhSettings();
