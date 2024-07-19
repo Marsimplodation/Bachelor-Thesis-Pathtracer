@@ -30,10 +30,20 @@ bool running = true;
 
 int MAX_SAMPLE_COUNT = INT_MAX;
 bool finishedRendering = false;
+bool debugView = false;
+int debugScale = 10;
 } // namespace
 
 bool& getfinishedRendering() {
     return finishedRendering;
+}
+
+bool& getDebugView() {
+    return debugView;
+}
+
+int& getDebugScale() {
+    return debugScale;
 }
 
 int& getMaxSampleCount() {
@@ -101,11 +111,19 @@ void traceWF(int i) {
             color = {0.0f, 0.0f, 0.0f};
         }
 
+        ray.interSectionAS = 0;
         findIntersection(ray);
         // float t = ray.throughPut;
         color += shade(ray);
         ray.depth++;
 
+        if(debugView) {
+            auto it =(float) ray.interSectionAS;
+            if(it > debugScale) color = {1,0,0}; 
+            else color = Vector3{it, it, it} / (float)debugScale;
+            setPixel(x, y, color);
+            ray.terminated = true;
+        }
         if (!ray.terminated)
             continue;
 
@@ -113,11 +131,13 @@ void traceWF(int i) {
         samples[x][y]++;
         randomStates[x][y] = ray.randomState;
 
-        float currentSample = (float)samples[x][y];
-        color += tracerGetPixel(x, y) * (float)currentSample;
-        color = color / (currentSample + 1.0f);
+        if(!debugView){
+            float currentSample = (float)samples[x][y];
+            color += tracerGetPixel(x, y) * (float)currentSample;
+            color = color / (currentSample + 1.0f);
+            setPixel(x, y, color);
+        }
         
-        setPixel(x, y, color);
         
         if(!progressFront(ray, i, x, y)) break;
     }

@@ -40,6 +40,7 @@ int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
     return (u * grid.size * grid.size * grid.size) + (v * grid.size * grid.size) + (s * grid.size) + t;
 }
+thread_local std::vector<u32> toTraverse(0);
 
 } // namespace
 
@@ -82,50 +83,59 @@ void intersectObjectGrid(Ray &r, int idx) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
-    auto &grid = objectGrids[idx];
-    auto axis = grid.splitingAxis;
-    auto axes = getGridAxes(axis);
-    int right = axes[0];
-    int up = axes[1];
-    auto point = calculateIntersection(r, grid, axis, up, right);
-    for (int i = 0; i < 4; i++) {
-        if(point(i) < 0 || point(i) >= grid.size) return;
-    }
-    int uIndex = point(0);
-    int vIndex = point(1);
-    int sIndex = point(2);
-    int tIndex = point(3);
+    toTraverse.clear();
+    
+    toTraverse.push_back(idx);
+    Vector2 axes;
+    int axis, right, startIdx, endIdx, up, uIndex, sIndex, vIndex, tIndex, lutIdx;
+    for(int i = 0; i < toTraverse.size(); ++i) {
+        int idx = toTraverse[i];
+        auto &grid = objectGrids[idx];
+        axis = grid.splitingAxis;
+        axes = getGridAxes(axis);
+        right = axes[0];
+        up = axes[1];
+        
+
+        r.interSectionAS++;
+        auto point = calculateIntersection(r, grid, axis, up, right);
+        for (int i = 0; i < 4; i++) {
+            if(point(i) < 0 || point(i) >= grid.size) return;
+        }
+        uIndex = point(0);
+        vIndex = point(1);
+        sIndex = point(2);
+        tIndex = point(3);
 
 
-    // ray is in channel uv,st
-    // to do get all tris in the lut for uvst and loop over them
-    int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx, true);
+        // ray is in channel uv,st
+        // to do get all tris in the lut for uvst and loop over them
+        lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx, true);
 
-    // sanity check
-    if (lutIdx >= grid.gridLutStart.size() || lutIdx >= grid.gridLutEnd.size())
-        return;
-    ;
-    int startIdx = grid.gridLutStart.at(lutIdx);
-    int endIdx = grid.gridLutEnd.at(lutIdx);
-    bool hit = false;
-    for (unsigned int i = startIdx; i < endIdx; ++i) {
-        if (r.terminated)
-            break;
         // sanity check
-        if (i < 0 || i >= grid.indicies.size())
-            break;
-        int sIdx = grid.indicies[i];
-        if(grid.hasTris) {
-            r.interSectionTests++;
-            Triangle &triangle = trisBuffer[sIdx];
-            hit |= triangleIntersection(r, triangle);
-        } else {
-            r.interSectionTests++;
-            if (!findIntersection(r, objectGrids[sIdx].aabb)) {
-                continue;
+        if (lutIdx >= grid.gridLutStart.size() || lutIdx >= grid.gridLutEnd.size())
+            return;
+        ;
+        startIdx = grid.gridLutStart.at(lutIdx);
+        endIdx = grid.gridLutEnd.at(lutIdx);
+        for (unsigned int i = startIdx; i < endIdx; ++i) {
+            if (r.terminated)
+                break;
+            // sanity check
+            if (i < 0 || i >= grid.indicies.size())
+                break;
+            int sIdx = grid.indicies[i];
+            if(grid.hasTris) {
+                r.interSectionTests++;
+                Triangle &triangle = trisBuffer[sIdx];
+                triangleIntersection(r, triangle);
+            } else {
+                r.interSectionAS++;
+                if (!findIntersection(r, objectGrids[sIdx].aabb)) {
+                    continue;
+                }
+                toTraverse.push_back(sIdx);
             }
-            intersectObjectGrid(r, sIdx);
-            
         }
     }
 }
@@ -144,6 +154,7 @@ void intersectGrid(Ray &r) {
     int right = axes[0];
     int up = axes[1];
     
+    r.interSectionAS++;
     auto point = calculateIntersection(r, grids[idx], axis, up, right);
     for (int i = 0; i < 4; i++) {
         if(point(i) < 0 || point(i) >= grids[idx].size) return;
@@ -174,7 +185,7 @@ void intersectGrid(Ray &r) {
         if (i < 0 || i >= grids[idx].indicies.size())
             break;
         int tIdx = grids[idx].indicies[i];
-        r.interSectionTests++;
+        r.interSectionAS++;
         if (!findIntersection(r, objectGrids[tIdx].aabb)) {
             continue;
         }

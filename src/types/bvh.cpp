@@ -23,6 +23,8 @@ struct Bin {
     std::vector<u32> indicies;
 };
 std::vector<Bin> bins(2);
+
+thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
 bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
@@ -34,49 +36,59 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
 
-    BvhNode &node = nodes.at(nodeIdx);
-    bool leaf = (node.childLeft == -1 && node.childRight == -1);
 
-    if (node.AABBIdx >= boxes.size())
-        return false;
-
-    ray.interSectionTests++;
-    if (!findIntersection(ray, boxes[node.AABBIdx]))
-        return false;
-   
-    if(!leaf) {
-        if(node.childLeft < 0 && node.childRight >= 0) {
-            return findBVHIntesection(ray, node.childRight, isObject);
-        }else if(node.childLeft >= 0 && node.childRight < 0) {
-            return findBVHIntesection(ray, node.childLeft, isObject);
-        } else {
-            bool hit = false;
-            auto & left = nodes[node.childLeft];
-            auto & right = nodes[node.childRight];
-            auto minLeft = boxes[left.AABBIdx].min[node.splitAxis];
-            auto minRight = boxes[right.AABBIdx].min[node.splitAxis];
-            float dir = ray.direction[node.splitAxis];
-            
-            int first = node.childLeft;
-            int second = node.childRight;
-
-            hit |= findBVHIntesection(ray, first, isObject);
-            hit |= findBVHIntesection(ray, second, isObject);
-            return hit;    
-        }
-        return false;
-    }
-
+    toTraverse.clear();
+    toTraverse.push_back(nodeIdx);
     bool hit = false;
-    for (int i = node.startIdx; i < node.endIdx; i++) {
-        if (i >= indicies.size())
-            continue;
-        int idx = indicies[i];
-        ray.interSectionTests++;
-        if (isObject)
-            hit |= triangleIntersection(ray, trisBuffer[idx]);
-        else
-            hit |= objectIntersection(ray, objectBuffer[idx]);
+    for(int i = 0; i < toTraverse.size(); ++i) {
+        if (ray.terminated) break;
+        int idx = toTraverse[i];
+        BvhNode &node = nodes.at(idx);
+        bool leaf = (node.childLeft == -1 && node.childRight == -1);
+    
+        ray.interSectionAS++;
+        if (!findIntersection(ray, boxes[node.AABBIdx])) continue;
+
+        
+        if(!leaf) {
+            if(node.childLeft < 0 && node.childRight >= 0) {
+                ray.interSectionAS++;
+                if(getIntersectDistance(ray, boxes[nodes[node.childRight].AABBIdx]) != INFINITY) {
+                    toTraverse.push_back(node.childRight);
+                }
+            }else if(node.childLeft >= 0 && node.childRight < 0) {
+                ray.interSectionAS++;
+                if(getIntersectDistance(ray, boxes[nodes[node.childLeft].AABBIdx]) != INFINITY) {
+                    toTraverse.push_back(node.childLeft);
+                }
+            } else {
+                ray.interSectionAS++;
+                ray.interSectionAS++;
+                auto dLeft = getIntersectDistance(ray, boxes[nodes[node.childLeft].AABBIdx]);
+                auto dRight = getIntersectDistance(ray, boxes[nodes[node.childRight].AABBIdx]);
+                
+                if(dRight >= dLeft) {
+                    if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
+                    if(dRight != INFINITY) toTraverse.push_back(node.childRight);
+                } else {
+                    if(dRight != INFINITY) toTraverse.push_back(node.childRight);
+                    if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
+                }
+            }
+        } else {
+            for (int i = node.startIdx; i < node.endIdx; i++) {
+                if (i >= indicies.size())
+                    continue;
+                int idx = indicies[i];
+                if (isObject) {
+                    ray.interSectionTests++;
+                    hit |= triangleIntersection(ray, trisBuffer[idx]);
+                }
+                else {
+                    hit |= objectIntersection(ray, objectBuffer[idx]);
+                }
+            }
+        }
     }
     return hit;
 }

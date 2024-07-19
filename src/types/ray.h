@@ -15,6 +15,7 @@ struct Ray {
     
     int depth;
     int interSectionTests;
+    int interSectionAS;
     u32 randomState;
     
     //hit info

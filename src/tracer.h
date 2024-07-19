@@ -25,4 +25,6 @@ unsigned long getIntersectionCount();
 
 int& getMaxSampleCount();
 bool& getfinishedRendering(); 
+bool& getDebugView();
+int& getDebugScale();
 #endif // !TRACER_H
