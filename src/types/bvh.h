@@ -18,6 +18,7 @@ struct BvhNode {
     int AABBIdx;
     int childLeft;
     int childRight;
+    float cost;
 };
 
 BvhSettings *getBvhSettings();
