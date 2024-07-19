@@ -20,10 +20,9 @@ std::vector<AABB> boxes;
 std::vector<u32> indicies;
 
 struct Bin {
-    AABB aabb;
     std::vector<u32> indicies;
 };
-std::vector<Bin> bins(12);
+std::vector<Bin> bins(2);
 } // namespace
 
 bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
@@ -89,7 +88,7 @@ void destroyBVH() {
     nodes.clear();
 }
 
-float evaluateSplit(bool isObject, int split, Vector3 & min1, Vector3 & max1) {
+float evaluateSplit(bool isObject, Vector3 & min1, Vector3 & max1) {
     Vector3 min2 = {INFINITY, INFINITY, INFINITY};
     Vector3 max2 = {-INFINITY, -INFINITY, -INFINITY};
     Vector3 min3 = {INFINITY, INFINITY, INFINITY};
@@ -102,41 +101,37 @@ float evaluateSplit(bool isObject, int split, Vector3 & min1, Vector3 & max1) {
     u32 primitiveCount2 = 0;
 
     // left node
-    for (int i = 0; i < split; i++) {
-        for (auto idx : bins[i].indicies) {
-            Vector3 pmax = isObject ? maxBounds(trisBuffer[idx])
-                                    : maxBounds(objectBuffer[idx]);
-            max1.x = std::fmaxf(max1.x, pmax.x);
-            max1.y = std::fmaxf(max1.y, pmax.y);
-            max1.z = std::fmaxf(max1.z, pmax.z);
-            Vector3 pmin = isObject ? minBounds(trisBuffer[idx])
-                                    : minBounds(objectBuffer[idx]);
-            min1.x = std::fminf(min1.x, pmin.x);
-            min1.y = std::fminf(min1.y, pmin.y);
-            min1.z = std::fminf(min1.z, pmin.z);
-            primitiveCount1++;
-        }
+    for (auto idx : bins[0].indicies) {
+        Vector3 pmax = isObject ? maxBounds(trisBuffer[idx])
+                                : maxBounds(objectBuffer[idx]);
+        max1.x = std::fmaxf(max1.x, pmax.x);
+        max1.y = std::fmaxf(max1.y, pmax.y);
+        max1.z = std::fmaxf(max1.z, pmax.z);
+        Vector3 pmin = isObject ? minBounds(trisBuffer[idx])
+                                : minBounds(objectBuffer[idx]);
+        min1.x = std::fminf(min1.x, pmin.x);
+        min1.y = std::fminf(min1.y, pmin.y);
+        min1.z = std::fminf(min1.z, pmin.z);
+        primitiveCount1++;
     }
 
     // right node
-    for (int i = split; i < 12; i++) {
-        for (auto idx : bins[i].indicies) {
-            Vector3 pmax = isObject ? maxBounds(trisBuffer[idx])
-                                    : maxBounds(objectBuffer[idx]);
-            max2.x = std::fmaxf(max2.x, pmax.x);
-            max2.y = std::fmaxf(max2.y, pmax.y);
-            max2.z = std::fmaxf(max2.z, pmax.z);
-            Vector3 pmin = isObject ? minBounds(trisBuffer[idx])
-                                    : minBounds(objectBuffer[idx]);
-            min2.x = std::fminf(min2.x, pmin.x);
-            min2.y = std::fminf(min2.y, pmin.y);
-            min2.z = std::fminf(min2.z, pmin.z);
-            primitiveCount2++;
-        }
+    for (auto idx : bins[1].indicies) {
+        Vector3 pmax = isObject ? maxBounds(trisBuffer[idx])
+                                : maxBounds(objectBuffer[idx]);
+        max2.x = std::fmaxf(max2.x, pmax.x);
+        max2.y = std::fmaxf(max2.y, pmax.y);
+        max2.z = std::fmaxf(max2.z, pmax.z);
+        Vector3 pmin = isObject ? minBounds(trisBuffer[idx])
+                                : minBounds(objectBuffer[idx]);
+        min2.x = std::fminf(min2.x, pmin.x);
+        min2.y = std::fminf(min2.y, pmin.y);
+        min2.z = std::fminf(min2.z, pmin.z);
+        primitiveCount2++;
     }
 
     // parent node
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 2; i++) {
         for (auto idx : bins[i].indicies) {
             Vector3 pmax = isObject ? maxBounds(trisBuffer[idx])
                                     : maxBounds(objectBuffer[idx]);
@@ -158,10 +153,10 @@ float evaluateSplit(bool isObject, int split, Vector3 & min1, Vector3 & max1) {
                        extent1.x * extent1.z);
     float area2 = 2 * (extent2.x * extent2.y + extent2.y * extent2.z +
                        extent2.x * extent2.z);
-    float areaRoot = 3 * (extent3.x * extent3.y + extent3.y * extent3.z +
+    float areaRoot = 2 * (extent3.x * extent3.y + extent3.y * extent3.z +
                           extent3.x * extent3.z);
-    float cTrav = 1000.0f;
-    float cInter = 1.0f;
+    float cTrav = 1.0f;
+    float cInter = 10.0f;
     if(primitiveCount1 * primitiveCount2 == 0) return INFINITY;
 
     return cTrav + (area1 / areaRoot) * cInter * primitiveCount1 +
@@ -242,33 +237,40 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     int bestSplit = 0;
     float bestSAHScore = INFINITY;
     AABB bestAABB={};
-    auto const nodeAABB = boxes[node.AABBIdx];
+    auto nodeAABB = boxes[node.AABBIdx];
+    bool split = false;
+    auto nodeMax = maxBounds(nodeAABB);
+    auto nodeMin = minBounds(nodeAABB);
     for (int axis = 0; axis < 3; ++axis) {
         // build bins
-        for (int i = 0; i < 12; ++i) {
-            auto &bin = bins[i];
-            bin.indicies.resize(0);
-            bin.aabb = {.center = nodeAABB.center, .size = nodeAABB.size};
-            bin.aabb.size[axis] *= 0.08333f; // = 1/12
-            bin.aabb.center[axis] += (i-5.5f) * bin.aabb.size[axis];
+        #define SPLITS 5
+        float delta = nodeMax[axis] - nodeMin[axis];
+        for (int i = 1; i < SPLITS - 1; ++i) {
+            
+            float splitPos = nodeMin[axis] + delta * ((float)i)/(float)SPLITS;
 
+            bins[0].indicies.resize(0);
+            bins[1].indicies.resize(0);
+            
+            //sort in
             for (int j = node.startIdx; j < node.endIdx; j++) {
                 int idx = indicies.at(j);
                 if (!isObject) {
-                    if (aabbInAABB(bestAABB, objectBuffer[idx].boundingBox)) {
-                        bin.indicies.push_back(idx);
-                    }
-                } else if (triInAABB(bin.aabb, trisBuffer[idx].vertices)) {
-                    bin.indicies.push_back(idx);
+                    Vector3 min = minBounds(objectBuffer[idx]);
+                    if(min[axis] <= splitPos) {
+                        bins[0].indicies.push_back(idx);
+                    } else bins[1].indicies.push_back(idx);
+                } else {
+                    Vector3 min = minBounds(trisBuffer[idx]);
+                    if(min[axis] <= splitPos) {
+                        bins[0].indicies.push_back(idx);
+                    } else bins[1].indicies.push_back(idx);
                 }
             }
-        }
-        // test bins
-        bool split = false;
-        for (int i = 1; i < 11; ++i) {
+            //evaluate
             Vector3 lMin{INFINITY, INFINITY, INFINITY};
             Vector3 lMax{-INFINITY, -INFINITY, -INFINITY};
-            float cost = evaluateSplit(isObject, i, lMin, lMax);
+            float cost = evaluateSplit(isObject, lMin, lMax);
             if (cost >= bestSAHScore)
                 continue;
             bestSAHScore = cost;
@@ -280,29 +282,33 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
                 .size = (lMax - lMin),
             };
         }
+    }
         if(!split) {
             node.childLeft = -1;
             node.childRight = -1;
             node.splitAxis = 0;
             return nodeIdx;
         }
-    }
 
     std::vector<u32> idxL(0);
     std::vector<u32> idxR(0);
+    float delta = nodeMax[bestAxis] - nodeMin[bestAxis];
 
+    float splitPos = nodeMin[bestAxis] + delta * ((float)bestSplit)/(float)SPLITS;
+    
+    //sort in
     for (int j = node.startIdx; j < node.endIdx; j++) {
         int idx = indicies.at(j);
         if (!isObject) {
-            if (aabbInAABB(bestAABB, objectBuffer[idx].boundingBox)) {
+            Vector3 min = minBounds(objectBuffer[idx]);
+            if(min[bestAxis] <= splitPos) {
                 idxL.push_back(idx);
-            } else {
-                idxR.push_back(idx);
-            }
-        } else if (triInAABB(bestAABB, trisBuffer[idx].vertices)) {
-            idxL.push_back(idx);
+            } else idxR.push_back(idx);
         } else {
-            idxR.push_back(idx);
+            Vector3 min = minBounds(trisBuffer[idx]);
+            if(min[bestAxis] <= splitPos) {
+                idxL.push_back(idx);
+            } else idxR.push_back(idx);
         }
     }
     node.splitAxis = bestAxis;
@@ -315,14 +321,6 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     int splitIdx = currentIdx;
     for (auto idx : idxR) {
         indicies.at(currentIdx++) = idx;
-    }
-
-    if(splitIdx >= node.endIdx || splitIdx == node.startIdx) {
-        printf("%d, %d, %f\n", bestSplit, bestAxis, bestSAHScore);
-        node.childLeft = -1;
-        node.childRight = -1;
-        node.splitAxis = 0;
-        return nodeIdx;
     }
 
     BvhNode childLeft{

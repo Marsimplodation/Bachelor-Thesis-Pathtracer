@@ -314,3 +314,12 @@ bool aabbInAABB(AABB & aabbA, AABB & aabbB) {
 
     return true;
 }
+
+bool pointInAABB(AABB &aabb, Vector3 v){
+    auto min = minBounds(aabb);
+    auto max = maxBounds(aabb);
+    if ((min.x <= v.x && v.x <= max.x) && 
+        (min.y <= v.y && v.y <= max.y) && 
+        (min.z <= v.z && v.z <= max.z)) return true; 
+    return false;
+}

@@ -13,5 +13,6 @@ Vector3 maxBounds(AABB &primitive);
 bool cuboidInAABB(AABB & aabb, Vector3 *verts);
 bool triInAABB(AABB & aabb, Vector3 *verts);
 bool aabbInAABB(AABB & aabbA, AABB & aabbB); 
+bool pointInAABB(AABB & aabb, Vector3 v); 
 
 #endif // !AABB_H
