@@ -37,14 +37,14 @@ bool triangleIntersection(Ray &ray, Triangle & primitive) {
 
     // Test whether this is the foremost primitive in front of the camera
     float const t = dotProduct(edge2, qVec) * inv_det;
-    if (t < 0.00001f || ray.length < t)
+    if (t < 0.00001f || ray.tmax < t)
         return false;
 
     ray.normal = normalized(u * primitive.normal[1] + v * primitive.normal[2] + (1 - u - v) * primitive.normal[0]);
     ray.uv = (u * primitive.uv[1] + v * primitive.uv[2] + (1 - u - v) * primitive.uv[0]);
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
-    ray.length = t;
+    ray.tmax = t;
     ray.materialIdx = primitive.materialIdx;
     return true;
 }

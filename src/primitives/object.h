@@ -18,7 +18,12 @@ struct Object {
 
 bool objectIntersection(Ray & ray, Object & primitive);
 void loadObject(const char* fileName, Vector3 position, Vector3 size, int  materialIdx);
-Vector3 minBounds(Object &primitive);
-Vector3 maxBounds(Object &primitive);
+
+inline Vector3 minBounds(Object &primitive) {
+    return primitive.boundingBox.min;
+}
+inline Vector3 maxBounds(Object &primitive) {
+    return primitive.boundingBox.max;
+}
 
 #endif // !OBJECT_H

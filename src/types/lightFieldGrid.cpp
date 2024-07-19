@@ -47,7 +47,7 @@ int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
 Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right) {
     // First intersect
     float oz = grid.min[axis] - r.origin[axis];
-    float d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    float d = (fabs(oz) < EPS) ? 0 : oz * r.inv_dir[axis];
     float iX = r.origin[right] + d * r.direction[right];
     float iY = r.origin[up] + d * r.direction[up];
 
@@ -61,7 +61,7 @@ Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int u
 
     // Intersect with far plane
     oz = -(r.origin[axis] - grid.max[axis]);
-    d = (fabs(oz) < EPS) ? 0 : oz / r.direction[axis];
+    d = (fabs(oz) < EPS) ? 0 : oz * r.inv_dir[axis];
     iX = r.origin[right] + d * r.direction[right];
     iY = r.origin[up] + d * r.direction[up];
 
@@ -227,8 +227,8 @@ void constructGrid(const int gridIdx) {
     auto &trisBuffer = getTris();
     
     Grid & grid = objectGrids[gridIdx];
-    grid.min = minBounds(grid.aabb);
-    grid.max = maxBounds(grid.aabb);
+    grid.min = grid.aabb.min;
+    grid.max = grid.aabb.max;
     
     //set defaults
     
@@ -277,13 +277,20 @@ void constructGrid(const int gridIdx) {
             Vector3 offset{};
             //split in the middle of the aabb
             auto op = permutations[i];
-            offset[0] = grid.aabb.size[0] / 4 * op[0];
-            offset[1] = grid.aabb.size[1] / 4 * op[1];
-            offset[2] = grid.aabb.size[2] / 4 * op[2];
+            Vector3 size = getSize(grid.aabb);
+            Vector3 center = getCenter(grid.aabb);
+            offset[0] = size[0] / 4 * op[0];
+            offset[1] = size[1] / 4 * op[1];
+            offset[2] = size[2] / 4 * op[2];
+            center = center + offset, 
+            size = size * 0.5f + Vector3{EPS, EPS, EPS},
+
+            
             child.aabb = {
-                .center = grid.aabb.center + offset, 
-                .size = grid.aabb.size * 0.5f + Vector3{EPS, EPS, EPS},
+                .min = center - size / 2,
+                .max = center + size / 2,
             };
+            
             //push relevant indicies
             for(auto idx : indicies) {
                 if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
@@ -345,7 +352,7 @@ void constructGrid() {
         for (int axis = 0; axis < 3; ++axis) {
             auto &primitive = objectBuffer[idx];
             auto grid = Grid{.splitingAxis = axis};
-            grid.aabb = {.center = (maxBounds(primitive) + minBounds(primitive))/2, .size=maxBounds(primitive)-minBounds(primitive)}; 
+            grid.aabb = {.min = minBounds(primitive), .max=maxBounds(primitive)}; 
             grid.indicies = std::vector<u32>();
             grid.size = GRID_SIZE;
             for (int i = primitive.startIdx; i < primitive.endIdx; ++i) {
@@ -445,7 +452,7 @@ void testChannelAgainstTriangles(Grid &grid, int axis, int up,
     points[3][axis] = 0.5f;
     points[3][right] = 0.5f;
     points[3][up] = -0.5f;
-    AABB unitCUbe = {.center = {0, 0, 0}, .size = {1.04f, 1.04f, 1.04f}};
+    AABB unitCUbe = {.min = {-0.52f, -0.52f, -0.52f}, .max = {0.52f, 0.52f, 0.52f}};
 
     Eigen::Vector<float, 12> newPoints;
     newPoints << points[0].x, points[0].y, points[0].z, points[1].x,

@@ -2,47 +2,27 @@
 #include "types/vector.h"
 #include <cmath>
 #include <utility>
+#include <algorithm>
 
-Vector3 minBounds(AABB &primitive){
-    return {
-        primitive.center.x - primitive.size.x / 2.0f,
-        primitive.center.y - primitive.size.y / 2.0f,
-        primitive.center.z - primitive.size.z / 2.0f,
+
+
+bool findIntersection(const Ray &r, const AABB &b) {
+    // calculate intersection intervals
+    float tx1 = (b.min.x - r.origin.x) * r.inv_dir.x;
+    float tx2 = (b.max.x - r.origin.x) * r.inv_dir.x;
+    float ty1 = (b.min.y - r.origin.y) * r.inv_dir.y;
+    float ty2 = (b.max.y - r.origin.y) * r.inv_dir.y;
+    float tz1 = (b.min.z - r.origin.z) * r.inv_dir.z;
+    float tz2 = (b.max.z - r.origin.z) * r.inv_dir.z;
+    // find min and max intersection t’s
+    using std::max;
+    using std::min;
+    float tres[2] = {
+        max(max(max(min(tx1, tx2), min(ty1, ty2)), min(tz1, tz2)), r.tmin),
+        min(min(min(max(tx1, tx2), max(ty1, ty2)), max(tz1, tz2)), r.tmax)
     };
-}
-
-Vector3 maxBounds(AABB &primitive){
-    return {
-        primitive.center.x + primitive.size.x / 2.0f,
-        primitive.center.y + primitive.size.y / 2.0f,
-        primitive.center.z + primitive.size.z / 2.0f,
-    };
-}
-
-bool findIntersection(Ray &ray, AABB & primitive) {
-    Vector3 const minBound = minBounds(primitive);
-    Vector3 const maxBound = maxBounds(primitive);
-    float tNear = -INFINITY;
-    float tFar = +INFINITY;
-    //pixars aabb test
-    for (int a = 0; a < 3; a++) {
-            auto invD = 1 / ray.direction[a];
-            auto orig = ray.origin[a];
-
-            auto t0 = (minBound[a] - orig) * invD;
-            auto t1 = (maxBound[a] - orig) * invD;
-
-            if (invD < 0)
-                std::swap(t0, t1);
-
-            if (t0 > tNear) tNear = t0;
-            if (t1 < tFar) tFar = t1;
-
-            if (tNear > tFar)
-                return false;
-        }
-        if(tNear > ray.length)  return  false;  
-    return true;
+    // return result
+    return tres[0] <= tres[1];
 }
 
 //----------- Math stuff -----------//
@@ -53,8 +33,8 @@ bool triInAABB(AABB & aabb, Vector3 *verts) {
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
         return p.x * axis.x + p.y * axis.y + p.z * axis.z;
     };
-    Vector3 min = minBounds(aabb); 
-    Vector3 max = maxBounds(aabb); 
+    Vector3 min = aabb.min; 
+    Vector3 max = aabb.max; 
 
     // Check overlap on the coordinate axes
     for (int axis = 0; axis < 3; axis++) {
@@ -146,8 +126,8 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
         return p.x * axis.x + p.y * axis.y + p.z * axis.z;
     };
-    Vector3 min = minBounds(aabb); 
-    Vector3 max = maxBounds(aabb); 
+    Vector3 min = aabb.min; 
+    Vector3 max = aabb.max; 
 
     // Check overlap on the coordinate axes
     for (int axis = 0; axis < 3; axis++) {
@@ -239,10 +219,10 @@ bool aabbInAABB(AABB & aabbA, AABB & aabbB) {
     auto projectPoint = [](const Vector3 &p, const Vector3 &axis) -> float {
         return p.x * axis.x + p.y * axis.y + p.z * axis.z;
     };
-    Vector3 minA = minBounds(aabbA); 
-    Vector3 maxA = maxBounds(aabbA); 
-    Vector3 minB = minBounds(aabbB); 
-    Vector3 maxB = maxBounds(aabbB); 
+    Vector3 minA = aabbA.min; 
+    Vector3 maxA = aabbA.max; 
+    Vector3 minB = aabbB.min; 
+    Vector3 maxB = aabbB.max; 
 
     // Check overlap on the coordinate axes
     for (int axis = 0; axis < 3; axis++) {
@@ -316,8 +296,8 @@ bool aabbInAABB(AABB & aabbA, AABB & aabbB) {
 }
 
 bool pointInAABB(AABB &aabb, Vector3 v){
-    auto min = minBounds(aabb);
-    auto max = maxBounds(aabb);
+    Vector3 min = aabb.min; 
+    Vector3 max = aabb.max; 
     if ((min.x <= v.x && v.x <= max.x) && 
         (min.y <= v.y && v.y <= max.y) && 
         (min.z <= v.z && v.z <= max.z)) return true; 

@@ -39,6 +39,7 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
 
     if (node.AABBIdx >= boxes.size())
         return false;
+
     ray.interSectionTests++;
     if (!findIntersection(ray, boxes[node.AABBIdx]))
         return false;
@@ -52,8 +53,8 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
             bool hit = false;
             auto & left = nodes[node.childLeft];
             auto & right = nodes[node.childRight];
-            auto minLeft = minBounds(boxes[left.AABBIdx])[node.splitAxis];
-            auto minRight = minBounds(boxes[right.AABBIdx])[node.splitAxis];
+            auto minLeft = boxes[left.AABBIdx].min[node.splitAxis];
+            auto minRight = boxes[right.AABBIdx].min[node.splitAxis];
             float dir = ray.direction[node.splitAxis];
             
             int first = node.childLeft;
@@ -189,14 +190,8 @@ void calculateBoundingBox(BvhNode &node, bool isObject) {
         if (tmax.z > max.z)
             max.z = tmax.z;
     }
-
-    // Calculate the center and size of the bounding box
-    Vector3 center = {(min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f,
-                      (min.z + max.z) * 0.5f};
-    Vector3 size = {max.x - min.x, max.y - min.y, max.z - min.z};
-
     node.AABBIdx = boxes.size();
-    boxes.push_back({center, size});
+    boxes.push_back({.min = min, .max = max});
 }
 
 int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
@@ -227,13 +222,14 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     calculateBoundingBox(node, isObject);
     // hanlde leaf
     // chose split axis
-    int bestAxis = rand() % 3;
-    int bestSplit = 6;
+    int bestAxis = 0; 
+    int bestSplit = 0;
     float bestSAHScore = node.cost;
-    auto nodeAABB = boxes[node.AABBIdx];
     bool split = false;
-    auto nodeMax = maxBounds(nodeAABB);
-    auto nodeMin = minBounds(nodeAABB);
+    
+    auto nodeAABB = boxes[node.AABBIdx];
+    auto nodeMax = nodeAABB.max;
+    auto nodeMin = nodeAABB.min;
     #define SPLITS 12
     for (int axis = 0; axis < 3; ++axis) {
         // build bins
@@ -242,17 +238,18 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
             
             float splitPos = nodeMin[axis] + delta * ((float)i)/((float)SPLITS+1.0f);
 
-            bins[0].indicies.resize(0);
-            bins[1].indicies.resize(0);
+            bins[0].indicies.clear();
+            bins[1].indicies.clear();
             
             //sort in
             for (int j = node.startIdx; j < node.endIdx; j++) {
                 int idx = indicies.at(j);
                 Vector3 min;
                 if (!isObject) {
-                    min = objectBuffer[idx].boundingBox.center;
+                    min = getCenter(objectBuffer[idx].boundingBox);
                 } else {
-                    min = (minBounds(trisBuffer[idx]) + maxBounds(trisBuffer[idx]))/2.0f;
+                    auto verts = trisBuffer[idx].vertices;
+                    min = (verts[0] + verts[1] + verts[2])/3.0f;
                 }
                 
                 if(min[axis] < splitPos) {
@@ -274,7 +271,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         }
     }
     //no split possiblew/more expensive
-        node.cost = bestSAHScore;
+    node.cost = bestSAHScore;
     if(!split) {
         node.childLeft = -1;
         node.childRight = -1;
@@ -292,9 +289,10 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         int idx = indicies.at(j);
         Vector3 min;
         if (!isObject) {
-            min = objectBuffer[idx].boundingBox.center;
+            min = getCenter(objectBuffer[idx].boundingBox);
         } else {
-            min = (minBounds(trisBuffer[idx]) + maxBounds(trisBuffer[idx]))/2.0f;
+            auto verts = trisBuffer[idx].vertices;
+            min = (verts[0] + verts[1] + verts[2])/3.0f;
         }
         
         if(min[bestAxis] < splitPos) {
