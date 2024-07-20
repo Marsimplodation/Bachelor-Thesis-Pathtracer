@@ -112,13 +112,15 @@ void traceWF(int i) {
         }
 
         ray.interSectionAS = 0;
+        ray.interSectionTests = 0;
         findIntersection(ray);
         // float t = ray.throughPut;
         color += shade(ray);
         ray.depth++;
 
         if(debugView) {
-            auto it =(float) ray.interSectionAS;
+            //auto it =(float) ray.interSectionAS;
+            auto it =(float) ray.interSectionTests;
             if(it > debugScale) color = {1,0,0}; 
             else color = Vector3{it, it, it} / (float)debugScale;
             setPixel(x, y, color);

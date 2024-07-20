@@ -170,18 +170,18 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts) {
 
     // Edges of the cuboid
     Vector3 edgesB[12] = {
-        verts[1] - verts[0],
-        verts[2] - verts[0],
         verts[4] - verts[0],
-        verts[3] - verts[1],
-        verts[5] - verts[1],
-        verts[3] - verts[2],
-        verts[6] - verts[2],
-        verts[6] - verts[4],
-        verts[5] - verts[4],
-        verts[7] - verts[5],
-        verts[7] - verts[3],
-        verts[7] - verts[6],
+        verts[5] - verts[0],
+        verts[3] - verts[4],
+        verts[1] - verts[4],
+        verts[3] - verts[7],
+        verts[0] - verts[7],
+        verts[1] - verts[5],
+        verts[6] - verts[1],
+        verts[3] - verts[6],
+        verts[2] - verts[6],
+        verts[5] - verts[2],
+        verts[2] - verts[7],
     };
 
     // Create test axes from cross products of edges

@@ -5,11 +5,13 @@
 #include "types/aabb.h"
 #include "types/bvh.h"
 #include "types/vector.h"
+#include <cmath>
 #include <vector>
 #include "common.h"
 struct Grid {
     bool hasTris; 
     int splitingAxis;
+    float cost = INFINITY;
     u32 size;
     Vector3 min;
     Vector3 max;
