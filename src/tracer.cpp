@@ -31,6 +31,7 @@ bool running = true;
 int MAX_SAMPLE_COUNT = INT_MAX;
 bool finishedRendering = false;
 bool debugView = false;
+bool debugViewTris = false;
 int debugScale = 10;
 } // namespace
 
@@ -40,6 +41,10 @@ bool& getfinishedRendering() {
 
 bool& getDebugView() {
     return debugView;
+}
+
+bool& getDebugShowTris() {
+    return debugViewTris;
 }
 
 int& getDebugScale() {
@@ -112,13 +117,14 @@ void traceWF(int i) {
         }
 
         ray.interSectionAS = 0;
+        ray.interSectionTests = 0;
         findIntersection(ray);
         // float t = ray.throughPut;
         color += shade(ray);
         ray.depth++;
 
         if(debugView) {
-            auto it =(float) ray.interSectionAS;
+            auto it =(float) (debugViewTris ? ray.interSectionTests : ray.interSectionAS);
             if(it > debugScale) color = {1,0,0}; 
             else color = Vector3{it, it, it} / (float)debugScale;
             setPixel(x, y, color);

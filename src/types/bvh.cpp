@@ -51,17 +51,6 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
 
         
         if(!leaf) {
-            if(node.childLeft < 0 && node.childRight >= 0) {
-                ray.interSectionAS++;
-                if(getIntersectDistance(ray, boxes[nodes[node.childRight].AABBIdx]) != INFINITY) {
-                    toTraverse.push_back(node.childRight);
-                }
-            }else if(node.childLeft >= 0 && node.childRight < 0) {
-                ray.interSectionAS++;
-                if(getIntersectDistance(ray, boxes[nodes[node.childLeft].AABBIdx]) != INFINITY) {
-                    toTraverse.push_back(node.childLeft);
-                }
-            } else {
                 ray.interSectionAS++;
                 ray.interSectionAS++;
                 auto dLeft = getIntersectDistance(ray, boxes[nodes[node.childLeft].AABBIdx]);
@@ -74,18 +63,15 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
                     if(dRight != INFINITY) toTraverse.push_back(node.childRight);
                     if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
                 }
-            }
         } else {
             for (int i = node.startIdx; i < node.endIdx; i++) {
-                if (i >= indicies.size())
-                    continue;
                 int idx = indicies[i];
                 if (isObject) {
                     ray.interSectionTests++;
                     hit |= triangleIntersection(ray, trisBuffer[idx]);
                 }
                 else {
-                    hit |= objectIntersection(ray, objectBuffer[idx]);
+                    hit |= findBVHIntesection(ray, objectBuffer[idx].root, true);
                 }
             }
         }
@@ -179,9 +165,9 @@ void calculateBoundingBox(BvhNode &node, bool isObject) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
-    Vector3 min, max{};
-    Vector3 tmin{INFINITY, INFINITY, INFINITY};
-    Vector3 tmax{-INFINITY, -INFINITY, -INFINITY};
+    Vector3 tmin, tmax{};
+    Vector3 min{INFINITY, INFINITY, INFINITY};
+    Vector3 max{-INFINITY, -INFINITY, -INFINITY};
     void *primitive;
     for (int i = node.startIdx; i < node.endIdx; i++) {
         int idx = indicies.at(i);
@@ -232,6 +218,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         return -1;
     BvhNode &node = nodes.at(nodeIdx);
     calculateBoundingBox(node, isObject);
+    
     // hanlde leaf
     if(node.endIdx- node.startIdx < 12) {
         
@@ -240,6 +227,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         node.splitAxis = 0;
         return nodeIdx;
     }
+    
     // chose split axis
     int bestAxis = 0; 
     int bestSplit = 0;
@@ -249,6 +237,7 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
     auto nodeAABB = boxes[node.AABBIdx];
     auto nodeMax = nodeAABB.max;
     auto nodeMin = nodeAABB.min;
+    
     #define SPLITS 12
     for (int axis = 0; axis < 3; ++axis) {
         // build bins

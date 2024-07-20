@@ -235,6 +235,7 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
     change |= ImGui::Checkbox("Debug", &getDebugView());
    
     if(getDebugView()){
+        change |= ImGui::Checkbox("Triangles", &getDebugShowTris());
         change |= ImGui::DragInt("Debug Visual", &getDebugScale());
     }
 
