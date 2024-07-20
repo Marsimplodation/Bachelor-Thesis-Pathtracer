@@ -27,7 +27,7 @@ std::vector<Bin> bins(2);
 thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
-bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
+bool findBVHIntesection(Ray &ray, int nodeIdx) {
     if (nodeIdx < 0 || nodeIdx >= nodes.size())
         return false;
     if (ray.terminated)
@@ -40,9 +40,12 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
     toTraverse.clear();
     toTraverse.push_back(nodeIdx);
     bool hit = false;
+    std::unordered_set<u32> visited(0);
     for(int i = 0; i < toTraverse.size(); ++i) {
         if (ray.terminated) break;
         int idx = toTraverse[i];
+        if(visited.find(idx) != visited.end()) continue;
+        visited.insert(idx);
         BvhNode &node = nodes.at(idx);
         bool leaf = (node.childLeft == -1 && node.childRight == -1);
     
@@ -66,12 +69,12 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
         } else {
             for (int i = node.startIdx; i < node.endIdx; i++) {
                 int idx = indicies[i];
-                if (isObject) {
+                if (node.hasTris) {
                     ray.interSectionTests++;
                     hit |= triangleIntersection(ray, trisBuffer[idx]);
                 }
                 else {
-                    hit |= findBVHIntesection(ray, objectBuffer[idx].root, true);
+                    toTraverse.push_back(objectBuffer[idx].root);
                 }
             }
         }
@@ -192,7 +195,7 @@ void calculateBoundingBox(BvhNode &node, bool isObject) {
     boxes.push_back({.min = min, .max = max});
 }
 
-int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
+int constructBVH(int startIdx, int endIdx, int nodeIdx, const bool isObject) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
@@ -216,12 +219,14 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
 
     if (nodeIdx >= nodes.size())
         return -1;
-    BvhNode &node = nodes.at(nodeIdx);
+    
+    BvhNode & node = nodes.at(nodeIdx);
     calculateBoundingBox(node, isObject);
+    node.hasTris = isObject;
     
     // hanlde leaf
     if(node.endIdx- node.startIdx < 12) {
-        
+        node.hasTris = isObject;       
         node.childLeft = -1;
         node.childRight = -1;
         node.splitAxis = 0;

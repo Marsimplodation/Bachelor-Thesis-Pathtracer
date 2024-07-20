@@ -31,8 +31,8 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 5
-#define GRID_SIZE 2
+#define TRIS_GRID_SIZE 4
+#define GRID_SIZE 5
 #define MAX_TRIS_IN_CHANNEL 200
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
@@ -57,8 +57,8 @@ Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int u
     float v = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
 
     // Convert to grid indices
-    int uIndex = static_cast<int>(u * grid.size);
-    int vIndex = static_cast<int>(v * grid.size);
+    int uIndex = (int)(u * grid.size);
+    int vIndex = (int)(v * grid.size);
 
     // Intersect with far plane
     oz = -(r.origin[axis] - grid.max[axis]);
@@ -71,8 +71,8 @@ Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int u
     float t = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
     
     // Convert to grid indices
-    int sIndex = static_cast<int>(s * grid.size);
-    int tIndex = static_cast<int>(t * grid.size);
+    int sIndex = (int)(s * grid.size);
+    int tIndex = (int)(t * grid.size);
     
     Eigen::Vector<int, 4> point;
     point << uIndex, vIndex, sIndex, tIndex;
@@ -301,13 +301,27 @@ void constructGrid(const int gridIdx) {
                 .min = center - size / 2,
                 .max = center + size / 2,
             };
-            
+            Vector3 min1 = {INFINITY, INFINITY, INFINITY};
+            Vector3 max1 = {-INFINITY, -INFINITY, -INFINITY};
+
             //push relevant indicies
             for(auto idx : indicies) {
                 if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
                     child.indicies.push_back(idx);
+                    Vector3 pmax = maxBounds(trisBuffer[idx]);
+                    max1.x = std::fmaxf(max1.x, pmax.x);
+                    max1.y = std::fmaxf(max1.y, pmax.y);
+                    max1.z = std::fmaxf(max1.z, pmax.z);
+                    Vector3 pmin = minBounds(trisBuffer[idx]);
+                    min1.x = std::fminf(min1.x, pmin.x);
+                    min1.y = std::fminf(min1.y, pmin.y);
+                    min1.z = std::fminf(min1.z, pmin.z);
                 }
             }
+            child.aabb = {
+                .min = min1, 
+                .max = max1, 
+            };
         }
         //recursively build grid tree
         constructGrid(size-1);
@@ -463,7 +477,7 @@ void testChannelAgainstTriangles(Grid &grid, int axis, int up,
     points[3][axis] = 0.5f;
     points[3][right] = 0.5f;
     points[3][up] = -0.5f;
-    AABB unitCUbe = {.min = {-0.52f, -0.52f, -0.52f}, .max = {0.52f, 0.52f, 0.52f}};
+    AABB unitCUbe = {.min = {-0.5001f, -0.5001f, -0.5001f}, .max = {0.5001f, 0.5001f, 0.5001f}};
 
     Eigen::Vector<float, 12> newPoints;
     newPoints << points[0].x, points[0].y, points[0].z, points[1].x,

@@ -88,8 +88,15 @@ void initScene() {
     loadObject("cornel.obj", {0,-250,50}, {300,300,300}, addMaterial(orange));
     
     root = constructBVH(0, objects.size());
+    for (int i = 0; i < objects.size(); i++) {
+        auto & obj = objects[i];
+        printf("building bvh for %s\n", obj.name.c_str());
+        obj.root = constructBVH(obj.startIdx, obj.endIdx, -1, true);
+        printf("finished bvh for %s\n", obj.name.c_str());
+    }
+    printf("BVH root %d\n", root);
+    printf("building grid\n");
     constructGrid();
-    printf("BVH root %d", root);
     
     /*Vector3 f{0.0f, 0.0f, 1.0f};
     Vector3 u{0.0f, 1.0f, 0.0f};
@@ -99,27 +106,9 @@ void initScene() {
 }
 
 void buildAS() {
-    auto const tmp = getIntersectMode();
-    setIntersectMode(ALL);
-    destroyBVH();
-    for(int i = 0; i < objects.size(); i++) {
-        objects[i].root = constructBVH(objects[i].startIdx, objects[i].endIdx, -1, true);
-    }
-    root = constructBVH(0, objects.size());
-    constructGrid();
-    setIntersectMode(tmp);
 }
 
 void resetScene() {
-    if(!scenenInited) return;
-    destroyBVH();
-    for(int i = 0; i < objects.size(); i++) {
-        constructBVH(objects[i].startIdx, objects[i].endIdx, -1, true);
-    }
-    root = constructBVH(0, objects.size());
-    //destroyBVH(root.childLeft);
-    //destroyBVH(root.childRight);
-    //root = constructBVH(0, getNumPrimitives(), false);
 }
 
 void destroyScene() {   

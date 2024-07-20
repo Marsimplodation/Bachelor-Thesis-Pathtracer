@@ -22,11 +22,6 @@ bool objectIntersection(Ray &ray, Object &primitive) {
     //    return false;
     
     bool hit = false;
-    if(getIntersectMode() != ALL) {
-        float l = ray.tmax;
-        findBVHIntesection(ray, primitive.root, true);
-        hit |= ray.tmax != l;
-    }
     
     if(getIntersectMode() == ALL) {
         for (int i = primitive.startIdx; i < primitive.endIdx; ++i) {
@@ -147,7 +142,6 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             .endIdx = endIdx,
             .boundingBox =  {.min = min, .max=max},
             .materialIdx = matIdx,
-            .root = constructBVH(startIdx, endIdx, -1, true),
             .active = true,
             .name = std::string(shape.name.c_str()),
         };
