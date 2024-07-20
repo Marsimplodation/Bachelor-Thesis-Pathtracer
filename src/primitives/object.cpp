@@ -127,7 +127,8 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
 
         
         //boundingbox
-        Vector3 min, max{};
+        Vector3 min{INFINITY, INFINITY, INFINITY};
+        Vector3 max{-INFINITY, -INFINITY, -INFINITY};
         Vector3 tmin, tmax{};
         for (int i = startIdx; i < endIdx; i++) {
             auto & vertice = trisBuffer[i];
