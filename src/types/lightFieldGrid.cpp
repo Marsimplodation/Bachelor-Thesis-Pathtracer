@@ -33,6 +33,7 @@ Vector2 getGridAxes(int idx) {
 }
 #define TRIS_GRID_SIZE 5
 #define GRID_SIZE 2
+#define MAX_TRIS_IN_CHANNEL 200
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
 int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
@@ -40,82 +41,6 @@ int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
     return (u * grid.size * grid.size * grid.size) + (v * grid.size * grid.size) + (s * grid.size) + t;
 }
 thread_local std::vector<u32> toTraverse(0);
-
-struct Bin {
-    std::vector<u32> indicies;
-};
-std::vector<Bin> bins(2);
-
-float evaluateSplit() {
-    Vector3 min1 = {INFINITY, INFINITY, INFINITY};
-    Vector3 max1 = {-INFINITY, -INFINITY, -INFINITY};
-    Vector3 min2 = {INFINITY, INFINITY, INFINITY};
-    Vector3 max2 = {-INFINITY, -INFINITY, -INFINITY};
-    Vector3 min3 = {INFINITY, INFINITY, INFINITY};
-    Vector3 max3 = {-INFINITY, -INFINITY, -INFINITY};
-
-    auto &objectBuffer = getObjects();
-    auto &indicieBuffer = getIndicies();
-    auto &trisBuffer = getTris();
-    u32 primitiveCount1 = 0;
-    u32 primitiveCount2 = 0;
-
-    // left node
-    for (auto idx : bins[0].indicies) {
-        Vector3 pmax = maxBounds(trisBuffer[idx]);
-        max1.x = std::fmaxf(max1.x, pmax.x);
-        max1.y = std::fmaxf(max1.y, pmax.y);
-        max1.z = std::fmaxf(max1.z, pmax.z);
-        Vector3 pmin = minBounds(trisBuffer[idx]);
-        min1.x = std::fminf(min1.x, pmin.x);
-        min1.y = std::fminf(min1.y, pmin.y);
-        min1.z = std::fminf(min1.z, pmin.z);
-        primitiveCount1++;
-    }
-
-    // right node
-    for (auto idx : bins[1].indicies) {
-        Vector3 pmax = maxBounds(trisBuffer[idx]);
-        max2.x = std::fmaxf(max2.x, pmax.x);
-        max2.y = std::fmaxf(max2.y, pmax.y);
-        max2.z = std::fmaxf(max2.z, pmax.z);
-        Vector3 pmin = minBounds(trisBuffer[idx]);
-        min2.x = std::fminf(min2.x, pmin.x);
-        min2.y = std::fminf(min2.y, pmin.y);
-        min2.z = std::fminf(min2.z, pmin.z);
-        primitiveCount2++;
-    }
-
-    // parent node
-    for (int i = 0; i < 2; i++) {
-        for (auto idx : bins[i].indicies) {
-            Vector3 pmax = maxBounds(trisBuffer[idx]);
-            max3.x = std::fmaxf(max3.x, pmax.x);
-            max3.y = std::fmaxf(max3.y, pmax.y);
-            max3.z = std::fmaxf(max3.z, pmax.z);
-            Vector3 pmin = minBounds(trisBuffer[idx]);
-            min3.x = std::fminf(min3.x, pmin.x);
-            min3.y = std::fminf(min3.y, pmin.y);
-            min3.z = std::fminf(min3.z, pmin.z);
-        }
-    }
-    
-    Vector3 extent1 = max1 - min1;
-    Vector3 extent2 = max2 - min2;
-    Vector3 extent3 = max3 - min3;
-    float area1 = extent1.x * (extent1.y + extent1.x) + extent1.y * extent1.z;
-    float area2 = extent2.x * (extent2.y + extent2.x) + extent2.y * extent2.z;
-    float area3 = extent3.x * (extent3.y + extent3.x) + extent3.y * extent3.z;
-    float cTrav = 100000.0f;
-    float cInter = 0.1f;
-    //this should not be necessary
-    //if(primitiveCount1 * primitiveCount2 == 0) return -INFINITY;
-
-    return cTrav + (area1/area3) * cInter * primitiveCount1 +
-           (area2/area3) * cInter * primitiveCount2;
-}
-
-
 
 } // namespace
 
@@ -315,107 +240,31 @@ void constructGrid(const int gridIdx) {
     Grid & grid = objectGrids[gridIdx];
     grid.min = grid.aabb.min;
     grid.max = grid.aabb.max;
-
-    // chose split axis
-    int bestAxis = 0; 
-    int bestSplit = 0;
-    float bestSAHScore = grid.cost;
-    bool split = false;
     
-    auto nodeAABB = grid.aabb;
-    auto nodeMax = nodeAABB.max;
-    auto nodeMin = nodeAABB.min;
-    auto indicies(grid.indicies);
-    Grid childL = {.splitingAxis = grid.splitingAxis};
-    Grid childR = {.splitingAxis = grid.splitingAxis}; 
-
-    
-    //---- evaluate if should split -----//
-    #define SPLITS 12
-    for (int axis = 0; axis < 3; ++axis) {
-        // build bins
-        float delta = nodeMax[axis] - nodeMin[axis];
-        for (int i = 1; i <= SPLITS; ++i) {
-            
-            float splitPos = nodeMin[axis] + delta * ((float)i)/((float)SPLITS+1.0f);
-
-            bins[0].indicies.clear();
-            bins[1].indicies.clear();
-    
-        for(auto idx : indicies) {
-            Vector3 min;
-            auto verts = trisBuffer[idx].vertices;
-            min = (verts[0] + verts[1] + verts[2])/3.0f;
-            
-            if(min[axis] < splitPos) {
-                bins[0].indicies.push_back(idx);
-            } else {
-                bins[1].indicies.push_back(idx);
-            }
-        }
-            //evaluate
-            float cost = evaluateSplit();
-            if (cost >= bestSAHScore || std::isnan(-cost))
-                continue;
-            
-            bestSAHScore = cost;
-            bestAxis = axis;
-            bestSplit = i;
-            split=true;
-            childL.indicies.clear(); 
-            childR.indicies.clear(); 
-            for(auto idx : bins[0].indicies) {
-               childL.indicies.push_back(idx); 
-            }
-            
-            for(auto idx : bins[1].indicies) {
-               childR.indicies.push_back(idx); 
-            }
-        }
-    }
-
     //set defaults
     
-    if(split) {
+    if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL) {
         //split grid in 2
         int splitAxis=grid.splitingAxis;
-        
-        //define new AABBs
-        Vector3 min1 = {INFINITY, INFINITY, INFINITY};
-        Vector3 max1 = {-INFINITY, -INFINITY, -INFINITY};
-        Vector3 min2 = {INFINITY, INFINITY, INFINITY};
-        Vector3 max2 = {-INFINITY, -INFINITY, -INFINITY};
-
-
-        // left node
-        for (auto idx : childL.indicies) {
-            Vector3 pmax = maxBounds(trisBuffer[idx]);
-            max1.x = std::fmaxf(max1.x, pmax.x);
-            max1.y = std::fmaxf(max1.y, pmax.y);
-            max1.z = std::fmaxf(max1.z, pmax.z);
-            Vector3 pmin = minBounds(trisBuffer[idx]);
-            min1.x = std::fminf(min1.x, pmin.x);
-            min1.y = std::fminf(min1.y, pmin.y);
-            min1.z = std::fminf(min1.z, pmin.z);
-        }
-
-        // right node
-        for (auto idx : childR.indicies) {
-            Vector3 pmax = maxBounds(trisBuffer[idx]);
-            max2.x = std::fmaxf(max2.x, pmax.x);
-            max2.y = std::fmaxf(max2.y, pmax.y);
-            max2.z = std::fmaxf(max2.z, pmax.z);
-            Vector3 pmin = minBounds(trisBuffer[idx]);
-            min2.x = std::fminf(min2.x, pmin.x);
-            min2.y = std::fminf(min2.y, pmin.y);
-            min2.z = std::fminf(min2.z, pmin.z);
-        }
-        childL.aabb = {.min = min1, .max = max1};
-        childR.aabb = {.min = min2, .max = max2};
-
-        objectGrids.push_back(childL);
-        objectGrids.push_back(childR);
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
         u32 size = objectGrids.size();
+        Vector3 permutations[8] = {
+            {1,1,1},
+            {-1,1,1},
+            {1,-1,1},
+            {-1,-1,1},
+            {1,1,-1},
+            {-1,1,-1},
+            {1,-1,-1},
+            {-1,-1,-1},
+        };
         
         //why do I need this?
         auto & grid = objectGrids[gridIdx];
@@ -426,20 +275,57 @@ void constructGrid(const int gridIdx) {
         grid.indicies = {
             size - 1,
             size - 2,
+            size - 3,
+            size - 4,
+            size - 5,
+            size - 6,
+            size - 7,
+            size - 8,
         };
+        
+        for(int i = 0; i < 8; ++i) {
+            auto & child = objectGrids[size - i - 1];
+            Vector3 offset{};
+            //split in the middle of the aabb
+            auto op = permutations[i];
+            Vector3 size = getSize(grid.aabb);
+            Vector3 center = getCenter(grid.aabb);
+            offset[0] = size[0] / 4 * op[0];
+            offset[1] = size[1] / 4 * op[1];
+            offset[2] = size[2] / 4 * op[2];
+            center = center + offset, 
+            size = size * 0.5f + Vector3{EPS, EPS, EPS},
 
-
+            
+            child.aabb = {
+                .min = center - size / 2,
+                .max = center + size / 2,
+            };
+            
+            //push relevant indicies
+            for(auto idx : indicies) {
+                if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
+                    child.indicies.push_back(idx);
+                }
+            }
+        }
         //recursively build grid tree
         constructGrid(size-1);
         constructGrid(size-2);
+        constructGrid(size-3);
+        constructGrid(size-4);
+        constructGrid(size-5);
+        constructGrid(size-6);
+        constructGrid(size-7);
+        constructGrid(size-8);
 
     } else {
         Grid & grid = objectGrids[gridIdx];
         grid.hasTris = true;
         int tris = grid.indicies.size();
-        grid.size = TRIS_GRID_SIZE; 
+        if(tris < 10/MAX_TRIS_IN_CHANNEL) grid.size = 1;
+        else grid.size = TRIS_GRID_SIZE; 
     }
-    
     Grid & newGrid = objectGrids[gridIdx];
     float count = newGrid.size * newGrid.size * newGrid.size * newGrid.size;
     newGrid.gridLutEnd.clear();
@@ -448,7 +334,7 @@ void constructGrid(const int gridIdx) {
     newGrid.gridLutStart.resize(count);
     adjustGridSize(gridIdx, true);
     
-    indicies.clear();
+    std::vector<u32> indicies = std::vector<u32>();
     for(auto idx : newGrid.indicies) {
         indicies.push_back(idx);
     }
