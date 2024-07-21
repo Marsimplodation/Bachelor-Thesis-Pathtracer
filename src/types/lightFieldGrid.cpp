@@ -57,8 +57,8 @@ Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int u
     float v = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
 
     // Convert to grid indices
-    int uIndex = static_cast<int>(u * grid.size);
-    int vIndex = static_cast<int>(v * grid.size);
+    int uIndex = (int)(u * grid.size);
+    int vIndex = (int)(v * grid.size);
 
     // Intersect with far plane
     oz = -(r.origin[axis] - grid.max[axis]);
@@ -71,8 +71,8 @@ Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int u
     float t = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
     
     // Convert to grid indices
-    int sIndex = static_cast<int>(s * grid.size);
-    int tIndex = static_cast<int>(t * grid.size);
+    int sIndex = (int)(s * grid.size);
+    int tIndex = (int)(t * grid.size);
     
     Eigen::Vector<int, 4> point;
     point << uIndex, vIndex, sIndex, tIndex;
@@ -234,117 +234,139 @@ void adjustGridSize(int idx, bool isObject = false) {
     grid.max[right] += offset + deltaF;
 }
 
-void constructGrid(const int gridIdx) {
+void constructGrid(int gridIdx) {
     auto &trisBuffer = getTris();
     
-    Grid & grid = objectGrids[gridIdx];
-    grid.min = grid.aabb.min;
-    grid.max = grid.aabb.max;
-    
-    //set defaults
-    
-    if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL) {
-        //split grid in 2
-        int splitAxis=grid.splitingAxis;
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-        u32 size = objectGrids.size();
-        Vector3 permutations[8] = {
-            {1,1,1},
-            {-1,1,1},
-            {1,-1,1},
-            {-1,-1,1},
-            {1,1,-1},
-            {-1,1,-1},
-            {1,-1,-1},
-            {-1,-1,-1},
-        };
-        
-        //why do I need this?
-        auto & grid = objectGrids[gridIdx];
-        auto indicies(grid.indicies);
-        grid.indicies.clear();
-        grid.hasTris = false;
-        grid.size = GRID_SIZE;
-        grid.indicies = {
-            size - 1,
-            size - 2,
-            size - 3,
-            size - 4,
-            size - 5,
-            size - 6,
-            size - 7,
-            size - 8,
-        };
-        
-        for(int i = 0; i < 8; ++i) {
-            auto & child = objectGrids[size - i - 1];
-            Vector3 offset{};
-            //split in the middle of the aabb
-            auto op = permutations[i];
-            Vector3 size = getSize(grid.aabb);
-            Vector3 center = getCenter(grid.aabb);
-            offset[0] = size[0] / 4 * op[0];
-            offset[1] = size[1] / 4 * op[1];
-            offset[2] = size[2] / 4 * op[2];
-            center = center + offset, 
-            size = size * 0.5f + Vector3{EPS, EPS, EPS},
+    std::vector<u32> gridsToBuild(0);
+    gridsToBuild.push_back(gridIdx);
+    const u32 originalNodeIdx = gridIdx;
 
-            
-            child.aabb = {
-                .min = center - size / 2,
-                .max = center + size / 2,
+    for(int n = 0; n < gridsToBuild.size(); ++n) {
+        gridIdx = gridsToBuild[n];
+    
+        Grid & grid = objectGrids[gridIdx];
+        grid.min = grid.aabb.min;
+        grid.max = grid.aabb.max;
+        
+        //set defaults
+        
+        if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL) {
+            //split grid in 2
+            int splitAxis=grid.splitingAxis;
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+            u32 size = objectGrids.size();
+            Vector3 permutations[8] = {
+                {1,1,1},
+                {-1,1,1},
+                {1,-1,1},
+                {-1,-1,1},
+                {1,1,-1},
+                {-1,1,-1},
+                {1,-1,-1},
+                {-1,-1,-1},
             };
             
-            //push relevant indicies
-            for(auto idx : indicies) {
-                if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
-                    child.indicies.push_back(idx);
-                }
-            }
-        }
-        //recursively build grid tree
-        constructGrid(size-1);
-        constructGrid(size-2);
-        constructGrid(size-3);
-        constructGrid(size-4);
-        constructGrid(size-5);
-        constructGrid(size-6);
-        constructGrid(size-7);
-        constructGrid(size-8);
+            //why do I need this?
+            auto & grid = objectGrids[gridIdx];
+            auto indicies(grid.indicies);
+            grid.indicies.clear();
+            grid.hasTris = false;
+            grid.size = GRID_SIZE;
+            grid.indicies = {
+                size - 1,
+                size - 2,
+                size - 3,
+                size - 4,
+                size - 5,
+                size - 6,
+                size - 7,
+                size - 8,
+            };
+            
+            for(int i = 0; i < 8; ++i) {
+                auto & child = objectGrids[size - i - 1];
+                Vector3 offset{};
+                //split in the middle of the aabb
+                auto op = permutations[i];
+                Vector3 size = getSize(grid.aabb);
+                Vector3 center = getCenter(grid.aabb);
+                offset[0] = size[0] / 4 * op[0];
+                offset[1] = size[1] / 4 * op[1];
+                offset[2] = size[2] / 4 * op[2];
+                center = center + offset, 
+                size = size * 0.5f + Vector3{EPS, EPS, EPS},
 
-    } else {
-        Grid & grid = objectGrids[gridIdx];
-        grid.hasTris = true;
-        int tris = grid.indicies.size();
-        if(tris < 10/MAX_TRIS_IN_CHANNEL) grid.size = 1;
-        else grid.size = TRIS_GRID_SIZE; 
-    }
-    Grid & newGrid = objectGrids[gridIdx];
-    float count = newGrid.size * newGrid.size * newGrid.size * newGrid.size;
-    newGrid.gridLutEnd.clear();
-    newGrid.gridLutEnd.resize(count);
-    newGrid.gridLutStart.clear();
-    newGrid.gridLutStart.resize(count);
-    adjustGridSize(gridIdx, true);
-    
-    std::vector<u32> indicies = std::vector<u32>();
-    for(auto idx : newGrid.indicies) {
-        indicies.push_back(idx);
-    }
-    newGrid.indicies.clear();
-    int i = 1;
-    for (int u = 0; u < newGrid.size; u++) {
-        for (int v = 0; v < newGrid.size; v++) {
-            for (int s = 0; s < newGrid.size; s++) {
-                for (int t = 0; t < newGrid.size; t++) {
-                    constructChannel(u, v, s, t, gridIdx, indicies, true);
+                
+                child.aabb = {
+                    .min = center - size / 2,
+                    .max = center + size / 2,
+                };
+                Vector3 min1 = {INFINITY, INFINITY, INFINITY};
+                Vector3 max1 = {-INFINITY, -INFINITY, -INFINITY};
+
+                //push relevant indicies
+                for(auto idx : indicies) {
+                    if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
+                        child.indicies.push_back(idx);
+                        Vector3 pmax = maxBounds(trisBuffer[idx]);
+                        max1.x = std::fmaxf(max1.x, pmax.x);
+                        max1.y = std::fmaxf(max1.y, pmax.y);
+                        max1.z = std::fmaxf(max1.z, pmax.z);
+                        Vector3 pmin = minBounds(trisBuffer[idx]);
+                        min1.x = std::fminf(min1.x, pmin.x);
+                        min1.y = std::fminf(min1.y, pmin.y);
+                        min1.z = std::fminf(min1.z, pmin.z);
+                    }
+                }
+                child.aabb = {
+                    .min = min1, 
+                    .max = max1, 
+                };
+            }
+            //recursively build grid tree
+            gridsToBuild.push_back(size-1);
+            gridsToBuild.push_back(size-2);
+            gridsToBuild.push_back(size-3);
+            gridsToBuild.push_back(size-4);
+            gridsToBuild.push_back(size-5);
+            gridsToBuild.push_back(size-6);
+            gridsToBuild.push_back(size-7);
+            gridsToBuild.push_back(size-8);
+
+        } else {
+            Grid & grid = objectGrids[gridIdx];
+            grid.hasTris = true;
+            int tris = grid.indicies.size();
+            if(tris < 10/MAX_TRIS_IN_CHANNEL) grid.size = 1;
+            else grid.size = TRIS_GRID_SIZE; 
+        }
+        Grid & newGrid = objectGrids[gridIdx];
+        float count = newGrid.size * newGrid.size * newGrid.size * newGrid.size;
+        newGrid.gridLutEnd.clear();
+        newGrid.gridLutEnd.resize(count);
+        newGrid.gridLutStart.clear();
+        newGrid.gridLutStart.resize(count);
+        adjustGridSize(gridIdx, true);
+        
+        std::vector<u32> indicies = std::vector<u32>();
+        for(auto idx : newGrid.indicies) {
+            indicies.push_back(idx);
+        }
+        newGrid.indicies.clear();
+        int i = 1;
+        for (int u = 0; u < newGrid.size; u++) {
+            for (int v = 0; v < newGrid.size; v++) {
+                for (int s = 0; s < newGrid.size; s++) {
+                    for (int t = 0; t < newGrid.size; t++) {
+                        constructChannel(u, v, s, t, gridIdx, indicies, true);
+                    }
                 }
             }
         }
@@ -463,7 +485,7 @@ void testChannelAgainstTriangles(Grid &grid, int axis, int up,
     points[3][axis] = 0.5f;
     points[3][right] = 0.5f;
     points[3][up] = -0.5f;
-    AABB unitCUbe = {.min = {-0.52f, -0.52f, -0.52f}, .max = {0.52f, 0.52f, 0.52f}};
+    AABB unitCUbe = {.min = {-0.5001f, -0.5001f, -0.5001f}, .max = {0.5001f, 0.5001f, 0.5001f}};
 
     Eigen::Vector<float, 12> newPoints;
     newPoints << points[0].x, points[0].y, points[0].z, points[1].x,

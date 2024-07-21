@@ -27,7 +27,7 @@ std::vector<Bin> bins(2);
 thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
-bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
+bool findBVHIntesection(Ray &ray, int nodeIdx) {
     if (nodeIdx < 0 || nodeIdx >= nodes.size())
         return false;
     if (ray.terminated)
@@ -66,12 +66,12 @@ bool findBVHIntesection(Ray &ray, int nodeIdx, bool isObject) {
         } else {
             for (int i = node.startIdx; i < node.endIdx; i++) {
                 int idx = indicies[i];
-                if (isObject) {
+                if (node.hasTris) {
                     ray.interSectionTests++;
                     hit |= triangleIntersection(ray, trisBuffer[idx]);
                 }
                 else {
-                    hit |= findBVHIntesection(ray, objectBuffer[idx].root, true);
+                    toTraverse.push_back(objectBuffer[idx].root);
                 }
             }
         }
@@ -192,7 +192,7 @@ void calculateBoundingBox(BvhNode &node, bool isObject) {
     boxes.push_back({.min = min, .max = max});
 }
 
-int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
+int constructBVH(int startIdx, int endIdx, int nodeIdx, const bool isObject) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
@@ -214,144 +214,142 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, bool isObject) {
         });
     }
 
-    if (nodeIdx >= nodes.size())
-        return -1;
-    BvhNode &node = nodes.at(nodeIdx);
-    calculateBoundingBox(node, isObject);
-    
-    // hanlde leaf
-    if(node.endIdx- node.startIdx < 12) {
-        
-        node.childLeft = -1;
-        node.childRight = -1;
-        node.splitAxis = 0;
-        return nodeIdx;
-    }
-    
-    // chose split axis
-    int bestAxis = 0; 
-    int bestSplit = 0;
-    float bestSAHScore = node.cost;
-    bool split = false;
-    
-    auto nodeAABB = boxes[node.AABBIdx];
-    auto nodeMax = nodeAABB.max;
-    auto nodeMin = nodeAABB.min;
-    
-    #define SPLITS 12
-    for (int axis = 0; axis < 3; ++axis) {
-        // build bins
-        float delta = nodeMax[axis] - nodeMin[axis];
-        for (int i = 1; i <= SPLITS; ++i) {
-            
-            float splitPos = nodeMin[axis] + delta * ((float)i)/((float)SPLITS+1.0f);
+    std::vector<u32> toBuild(0);
+    toBuild.push_back(nodeIdx);
+    const u32 originalNodeIdx = nodeIdx;
 
-            bins[0].indicies.clear();
-            bins[1].indicies.clear();
-            
-            //sort in
-            for (int j = node.startIdx; j < node.endIdx; j++) {
-                int idx = indicies.at(j);
-                Vector3 min;
-                if (!isObject) {
-                    min = getCenter(objectBuffer[idx].boundingBox);
-                } else {
-                    auto verts = trisBuffer[idx].vertices;
-                    min = (verts[0] + verts[1] + verts[2])/3.0f;
+    for(int n = 0; n < toBuild.size(); ++n) {
+            nodeIdx = toBuild[n];
+        if (nodeIdx >= nodes.size())
+            return -1;
+        
+        BvhNode & node = nodes.at(nodeIdx);
+        calculateBoundingBox(node, isObject);
+        node.hasTris = isObject;
+        
+        // chose split axis
+        int bestAxis = 0; 
+        int bestSplit = 0;
+        float bestSAHScore = node.cost;
+        bool split = false;
+        
+        auto nodeAABB = boxes[node.AABBIdx];
+        auto nodeMax = nodeAABB.max;
+        auto nodeMin = nodeAABB.min;
+        
+        #define SPLITS 12
+        for (int axis = 0; axis < 3; ++axis) {
+            // build bins
+            float delta = nodeMax[axis] - nodeMin[axis];
+            for (int i = 1; i <= SPLITS; ++i) {
+                
+                float splitPos = nodeMin[axis] + delta * ((float)i)/((float)SPLITS+1.0f);
+
+                bins[0].indicies.clear();
+                bins[1].indicies.clear();
+                
+                //sort in
+                for (int j = node.startIdx; j < node.endIdx; j++) {
+                    int idx = indicies.at(j);
+                    Vector3 min;
+                    if (!isObject) {
+                        min = getCenter(objectBuffer[idx].boundingBox);
+                    } else {
+                        auto verts = trisBuffer[idx].vertices;
+                        min = (verts[0] + verts[1] + verts[2])/3.0f;
+                    }
+                    
+                    if(min[axis] < splitPos) {
+                        bins[0].indicies.push_back(idx);
+                    } else {
+                        bins[1].indicies.push_back(idx);
+                    }
                 }
                 
-                if(min[axis] < splitPos) {
-                    bins[0].indicies.push_back(idx);
-                } else {
-                    bins[1].indicies.push_back(idx);
-                }
+                //evaluate
+                float cost = evaluateSplit(isObject);
+                if (cost >= bestSAHScore || std::isnan(-cost))
+                    continue;
+                
+                bestSAHScore = cost;
+                bestAxis = axis;
+                bestSplit = i;
+                split=true;
+            }
+        }
+        //no split possiblew/more expensive
+        node.cost = bestSAHScore;
+        if(!split) {
+            node.childLeft = -1;
+            node.childRight = -1;
+            node.splitAxis = 0;
+            continue;
+        }
+        bins[0].indicies.clear();
+        bins[1].indicies.clear();
+
+        float delta = nodeMax[bestAxis] - nodeMin[bestAxis];
+        float splitPos = nodeMin[bestAxis] + delta * ((float)bestSplit)/((float)SPLITS+1.0f);
+        
+        //sort in
+        for (int j = node.startIdx; j < node.endIdx; j++) {
+            int idx = indicies.at(j);
+            Vector3 min;
+            if (!isObject) {
+                min = getCenter(objectBuffer[idx].boundingBox);
+            } else {
+                auto verts = trisBuffer[idx].vertices;
+                min = (verts[0] + verts[1] + verts[2])/3.0f;
             }
             
-            //evaluate
-            float cost = evaluateSplit(isObject);
-            if (cost >= bestSAHScore || std::isnan(-cost))
-                continue;
-            
-            bestSAHScore = cost;
-            bestAxis = axis;
-            bestSplit = i;
-            split=true;
-        }
-    }
-    //no split possiblew/more expensive
-    node.cost = bestSAHScore;
-    if(!split) {
-        node.childLeft = -1;
-        node.childRight = -1;
-        node.splitAxis = 0;
-        return nodeIdx;
-    }
-    bins[0].indicies.clear();
-    bins[1].indicies.clear();
-
-    float delta = nodeMax[bestAxis] - nodeMin[bestAxis];
-    float splitPos = nodeMin[bestAxis] + delta * ((float)bestSplit)/((float)SPLITS+1.0f);
-    
-    //sort in
-    for (int j = node.startIdx; j < node.endIdx; j++) {
-        int idx = indicies.at(j);
-        Vector3 min;
-        if (!isObject) {
-            min = getCenter(objectBuffer[idx].boundingBox);
-        } else {
-            auto verts = trisBuffer[idx].vertices;
-            min = (verts[0] + verts[1] + verts[2])/3.0f;
+            if(min[bestAxis] < splitPos) {
+                bins[0].indicies.push_back(idx);
+            } else {
+                bins[1].indicies.push_back(idx);
+            }
         }
         
-        if(min[bestAxis] < splitPos) {
-            bins[0].indicies.push_back(idx);
-        } else {
-            bins[1].indicies.push_back(idx);
+        if(bins[0].indicies.size() * bins[1].indicies.size() == 0) {
+            node.childLeft = -1;
+            node.childRight = -1;
+            node.splitAxis = 0;
+            continue;
         }
-    }
-    
-    if(bins[0].indicies.size() * bins[1].indicies.size() == 0) {
-        node.childLeft = -1;
-        node.childRight = -1;
-        node.splitAxis = 0;
-        return nodeIdx;
-    }
-    node.splitAxis = bestAxis;
+        node.splitAxis = bestAxis;
 
 
-    int currentIdx = node.startIdx;
-    // left node
-    for (auto idx : bins[0].indicies) {
-        indicies.at(currentIdx++) = idx;
-    }
-    int splitIdx = currentIdx;
-    for (auto idx : bins[1].indicies) {
-        indicies.at(currentIdx++) = idx;
-    }
+        int currentIdx = node.startIdx;
+        // left node
+        for (auto idx : bins[0].indicies) {
+            indicies.at(currentIdx++) = idx;
+        }
+        int splitIdx = currentIdx;
+        for (auto idx : bins[1].indicies) {
+            indicies.at(currentIdx++) = idx;
+        }
 
-    BvhNode childLeft{
-        .startIdx = node.startIdx,
-        .endIdx = splitIdx,
-        .depth = node.depth + 1,
-        .cost = INFINITY,
-    };
+        BvhNode childLeft{
+            .startIdx = node.startIdx,
+            .endIdx = splitIdx,
+            .depth = node.depth + 1,
+            .cost = INFINITY,
+        };
 
-    BvhNode childRight{
-        .startIdx = splitIdx,
-        .endIdx = node.endIdx,
-        .depth = node.depth + 1,
-        .cost = INFINITY,
-    };
+        BvhNode childRight{
+            .startIdx = splitIdx,
+            .endIdx = node.endIdx,
+            .depth = node.depth + 1,
+            .cost = INFINITY,
+        };
 
-    node.childLeft = nodes.size();
-    node.childRight = nodes.size() + 1;
-    nodes.push_back(childLeft);
-    nodes.push_back(childRight);
-    node = nodes.at(nodeIdx);
-    node.childLeft = constructBVH(0, 0, node.childLeft, isObject);
-    node.childRight = constructBVH(0, 0, node.childRight, isObject);
-    if (isRoot) {
-        printf("build bvh %d\n", nodeIdx);
+        node.childLeft = nodes.size();
+        node.childRight = nodes.size() + 1;
+
+        toBuild.push_back(node.childLeft);
+        toBuild.push_back(node.childRight);
+        
+        nodes.push_back(childLeft);
+        nodes.push_back(childRight);
     }
-    return nodeIdx;
+    return originalNodeIdx;
 }
