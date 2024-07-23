@@ -31,13 +31,17 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 5
-#define GRID_SIZE 2
-#define MAX_TRIS_IN_CHANNEL 200
+#define TRIS_GRID_SIZE 2
+#define GRID_SIZE 3
+#define MAX_TRIS_IN_CHANNEL 100
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
-int getLUTIdx(int u, int v, int s, int t, int idx, bool isObject = false) {
+int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
+    u = (int) (u*grid.size);
+    v = (int) (v*grid.size);
+    s = (int) (s*grid.size);
+    t = (int) (t*grid.size);
     return (u * grid.size * grid.size * grid.size) + (v * grid.size * grid.size) + (s * grid.size) + t;
 }
 thread_local std::vector<u32> toTraverse(0);
@@ -45,37 +49,27 @@ thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
 //-------------- Intersection ---------------//
-Eigen::Vector<int, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right) {
-    // First intersect
-    float oz = grid.min[axis] - r.origin[axis];
-    float d = (fabs(oz) < EPS) ? 0 : oz * r.inv_dir[axis];
-    float iX = r.origin[right] + d * r.direction[right];
-    float iY = r.origin[up] + d * r.direction[up];
+Eigen::Vector<float, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right) {
+    // intersection distance
+    float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];
+    float d2 = (grid.max[axis] - r.origin[axis]) * r.inv_dir[axis];
+    if(std::min(d1, d2) >= r.tmax) return {-1,0,0,0};
+   
+    //get intersection point
+    float iX1 = r.origin[right] + d1 * r.direction[right];
+    float iY1 = r.origin[up] + d1 * r.direction[up];
+    float iX2 = r.origin[right] + d2 * r.direction[right];
+    float iY2 = r.origin[up] + d2 * r.direction[up];
 
-    // Get uv coordinates
-    float u = (iX - grid.min[right]) / (grid.max[right] - grid.min[right]);
-    float v = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
+    // Get uvst coordinates
+    float u = (iX1 - grid.min[right]) * grid.inv_delta[right]; 
+    float v = (iY1 - grid.min[up]) * grid.inv_delta[up]; 
+    float s = (iX2 - grid.min[right]) * grid.inv_delta[right]; 
+    float t = (iY2 - grid.min[up]) * grid.inv_delta[up]; 
 
-    // Convert to grid indices
-    int uIndex = (int)(u * grid.size);
-    int vIndex = (int)(v * grid.size);
-
-    // Intersect with far plane
-    oz = -(r.origin[axis] - grid.max[axis]);
-    d = (fabs(oz) < EPS) ? 0 : oz * r.inv_dir[axis];
-    iX = r.origin[right] + d * r.direction[right];
-    iY = r.origin[up] + d * r.direction[up];
-
-    // Get st coordinates
-    float s = (iX - grid.min[right]) / (grid.max[right] - grid.min[right]);
-    float t = (iY - grid.min[up]) / (grid.max[up] - grid.min[up]);
     
-    // Convert to grid indices
-    int sIndex = (int)(s * grid.size);
-    int tIndex = (int)(t * grid.size);
-    
-    Eigen::Vector<int, 4> point;
-    point << uIndex, vIndex, sIndex, tIndex;
+    Eigen::Vector<float, 4> point;
+    point << u, v, s, t; 
     return point;
 }
 
@@ -87,7 +81,8 @@ void intersectObjectGrid(Ray &r, int idx) {
     
     toTraverse.push_back(idx);
     Vector2 axes;
-    int axis, right, startIdx, endIdx, up, uIndex, sIndex, vIndex, tIndex, lutIdx;
+    int axis, right, startIdx, endIdx, up, lutIdx;
+    float uIndex, sIndex, vIndex, tIndex;
     for(int i = 0; i < toTraverse.size(); ++i) {
         int idx = toTraverse[i];
         auto &grid = objectGrids[idx];
@@ -99,8 +94,8 @@ void intersectObjectGrid(Ray &r, int idx) {
 
         r.interSectionAS++;
         auto point = calculateIntersection(r, grid, axis, up, right);
-        for (int i = 0; i < 4; i++) {
-            if(point(i) < 0 || point(i) >= grid.size) return;
+        for (int i = 0; i < 4; ++i) {
+            if(point(i) < 0 || point(i) >= 1) continue; 
         }
         uIndex = point(0);
         vIndex = point(1);
@@ -114,8 +109,8 @@ void intersectObjectGrid(Ray &r, int idx) {
 
         // sanity check
         if (lutIdx >= grid.gridLutStart.size() || lutIdx >= grid.gridLutEnd.size())
-            return;
-        ;
+            continue;
+        
         startIdx = grid.gridLutStart.at(lutIdx);
         endIdx = grid.gridLutEnd.at(lutIdx);
         for (unsigned int i = startIdx; i < endIdx; ++i) {
@@ -125,7 +120,7 @@ void intersectObjectGrid(Ray &r, int idx) {
             if (i < 0 || i >= grid.indicies.size())
                 break;
             int sIdx = grid.indicies[i];
-            if(grid.hasTris) {
+            if((const bool) grid.hasTris) {
                 r.interSectionTests++;
                 Triangle &triangle = trisBuffer[sIdx];
                 triangleIntersection(r, triangle);
@@ -157,12 +152,12 @@ void intersectGrid(Ray &r) {
     r.interSectionAS++;
     auto point = calculateIntersection(r, grids[idx], axis, up, right);
     for (int i = 0; i < 4; i++) {
-        if(point(i) < 0 || point(i) >= grids[idx].size) return;
+        if(point(i) < 0 || point(i) >= 1) continue; 
     }
-    int uIndex = point(0);
-    int vIndex = point(1);
-    int sIndex = point(2);
-    int tIndex = point(3);
+    float uIndex = point(0);
+    float vIndex = point(1);
+    float sIndex = point(2);
+    float tIndex = point(3);
 
 
     // ray is in channel uv,st
@@ -344,8 +339,7 @@ void constructGrid(int gridIdx) {
             Grid & grid = objectGrids[gridIdx];
             grid.hasTris = true;
             int tris = grid.indicies.size();
-            if(tris < 10/MAX_TRIS_IN_CHANNEL) grid.size = 1;
-            else grid.size = TRIS_GRID_SIZE; 
+            grid.size = TRIS_GRID_SIZE; 
         }
         Grid & newGrid = objectGrids[gridIdx];
         float count = newGrid.size * newGrid.size * newGrid.size * newGrid.size;
@@ -354,6 +348,9 @@ void constructGrid(int gridIdx) {
         newGrid.gridLutStart.clear();
         newGrid.gridLutStart.resize(count);
         adjustGridSize(gridIdx, true);
+        newGrid.inv_delta[0] = 1.0f / (newGrid.max[0] - newGrid.min[0]);
+        newGrid.inv_delta[1] = 1.0f / (newGrid.max[1] - newGrid.min[1]);
+        newGrid.inv_delta[2] = 1.0f / (newGrid.max[2] - newGrid.min[2]);
         
         std::vector<u32> indicies = std::vector<u32>();
         for(auto idx : newGrid.indicies) {
@@ -411,6 +408,9 @@ void constructGrid() {
 
         // offset the min and max based on the camera
         adjustGridSize(idx);
+        grids[idx].inv_delta[0] = 1.0f / (grids[idx].max[0] - grids[idx].min[0]);
+        grids[idx].inv_delta[1] = 1.0f / (grids[idx].max[1] - grids[idx].min[1]);
+        grids[idx].inv_delta[2] = 1.0f / (grids[idx].max[2] - grids[idx].min[2]);
         
         printf("building channel LUT for Grid %d\n", idx);
         int i = 1;
@@ -597,11 +597,6 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
     } else {
         testChannelAgainstTriangles(grid, axis, up, right, points, indicies);
     }
-
-    u = (u) * (float)grid.size;
-    v = (v) * (float)grid.size;
-    s = (s) * (float)grid.size;
-    t = (t) * (float)grid.size;
     int lutIdx = getLUTIdx(u, v, s, t, idx, isObject);
     int endIdx = grid.indicies.size();
     grid.gridLutStart.at(lutIdx) = startIdx;

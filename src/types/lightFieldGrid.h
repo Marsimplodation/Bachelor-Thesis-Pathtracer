@@ -13,6 +13,7 @@ struct Grid {
     u32 size;
     Vector3 min;
     Vector3 max;
+    Vector3 inv_delta;
     AABB aabb;
     //experiment with others later
     std::vector<u32> indicies = std::vector<u32>(); 
