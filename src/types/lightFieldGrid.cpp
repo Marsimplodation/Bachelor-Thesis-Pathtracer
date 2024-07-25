@@ -5,6 +5,7 @@
 #include "primitives/triangle.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
+#include "types/bvh.h"
 #include "types/camera.h"
 #include "types/vector.h"
 #include <Eigen>
@@ -32,7 +33,7 @@ Vector2 getGridAxes(int idx) {
     }
 }
 #define TRIS_GRID_SIZE 2
-#define GRID_SIZE 3
+#define GRID_SIZE 4
 #define MAX_TRIS_IN_CHANNEL 100
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
@@ -235,6 +236,10 @@ void constructGrid(int gridIdx) {
     std::vector<u32> gridsToBuild(0);
     gridsToBuild.push_back(gridIdx);
     const u32 originalNodeIdx = gridIdx;
+            
+    std::vector<u32> bvhIndicies(0);
+    std::vector<u32> childs1(0);
+    std::vector<u32> childs2(0);
 
     for(int n = 0; n < gridsToBuild.size(); ++n) {
         gridIdx = gridsToBuild[n];
@@ -242,99 +247,57 @@ void constructGrid(int gridIdx) {
         Grid & grid = objectGrids[gridIdx];
         grid.min = grid.aabb.min;
         grid.max = grid.aabb.max;
+        BvhNode & node = getNode(grid.indicies.back());
+        grid.indicies.pop_back();
+        bvhIndicies.clear();
+        childs1.clear();
+        childs2.clear();
         
         //set defaults
         
-        if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL) {
-            //split grid in 2
-            int splitAxis=grid.splitingAxis;
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-            u32 size = objectGrids.size();
-            Vector3 permutations[8] = {
-                {1,1,1},
-                {-1,1,1},
-                {1,-1,1},
-                {-1,-1,1},
-                {1,1,-1},
-                {-1,1,-1},
-                {1,-1,-1},
-                {-1,-1,-1},
-            };
+        if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL && !isLeaf(node)) {
+            childs1.push_back(node.childLeft);
+            childs1.push_back(node.childRight);
+            for(auto nIdx : childs1) {
+                auto & n = getNode(nIdx);
+                if(isLeaf(n)) childs2.push_back(nIdx);
+                else {
+                    childs2.push_back(n.childLeft);
+                    childs2.push_back(n.childRight);
+                }
+            }
             
-            //why do I need this?
-            auto & grid = objectGrids[gridIdx];
-            auto indicies(grid.indicies);
+            for(auto nIdx : childs2) {
+                auto & n = getNode(nIdx);
+                if(isLeaf(n)) bvhIndicies.push_back(nIdx);
+                else {
+                    bvhIndicies.push_back(n.childLeft);
+                    bvhIndicies.push_back(n.childRight);
+                }
+            }
+            
             grid.indicies.clear();
             grid.hasTris = false;
             grid.size = GRID_SIZE;
-            grid.indicies = {
-                size - 1,
-                size - 2,
-                size - 3,
-                size - 4,
-                size - 5,
-                size - 6,
-                size - 7,
-                size - 8,
-            };
-            
-            for(int i = 0; i < 8; ++i) {
-                auto & child = objectGrids[size - i - 1];
-                Vector3 offset{};
-                //split in the middle of the aabb
-                auto op = permutations[i];
-                Vector3 size = getSize(grid.aabb);
-                Vector3 center = getCenter(grid.aabb);
-                offset[0] = size[0] / 4 * op[0];
-                offset[1] = size[1] / 4 * op[1];
-                offset[2] = size[2] / 4 * op[2];
-                center = center + offset, 
-                size = size * 0.5f + Vector3{EPS, EPS, EPS},
+            int splitAxis=grid.splitingAxis;
 
+
+            for(auto nIdx : bvhIndicies) {
+                auto & n = getNode(nIdx);
+                objectGrids.push_back(Grid{.splitingAxis = splitAxis});
+                u32 size = objectGrids.size();
+                auto & grid = objectGrids[gridIdx];
+                grid.indicies.push_back(size - 1);
                 
-                child.aabb = {
-                    .min = center - size / 2,
-                    .max = center + size / 2,
-                };
-                Vector3 min1 = {INFINITY, INFINITY, INFINITY};
-                Vector3 max1 = {-INFINITY, -INFINITY, -INFINITY};
-
-                //push relevant indicies
-                for(auto idx : indicies) {
-                    if(triInAABB(child.aabb, trisBuffer[idx].vertices)){
-                        child.indicies.push_back(idx);
-                        Vector3 pmax = maxBounds(trisBuffer[idx]);
-                        max1.x = std::fmaxf(max1.x, pmax.x);
-                        max1.y = std::fmaxf(max1.y, pmax.y);
-                        max1.z = std::fmaxf(max1.z, pmax.z);
-                        Vector3 pmin = minBounds(trisBuffer[idx]);
-                        min1.x = std::fminf(min1.x, pmin.x);
-                        min1.y = std::fminf(min1.y, pmin.y);
-                        min1.z = std::fminf(min1.z, pmin.z);
-                    }
+                auto & child = objectGrids[size - 1];
+                for(int i = n.startIdx; i < n.endIdx; ++i) {
+                    child.indicies.push_back(bvhGetTrisIndex(i));
                 }
-                child.aabb = {
-                    .min = min1, 
-                    .max = max1, 
-                };
+                
+                child.indicies.push_back(nIdx);
+                child.aabb = getNodeAABB(n.AABBIdx);
+                gridsToBuild.push_back(size-1);
             }
-            //recursively build grid tree
-            gridsToBuild.push_back(size-1);
-            gridsToBuild.push_back(size-2);
-            gridsToBuild.push_back(size-3);
-            gridsToBuild.push_back(size-4);
-            gridsToBuild.push_back(size-5);
-            gridsToBuild.push_back(size-6);
-            gridsToBuild.push_back(size-7);
-            gridsToBuild.push_back(size-8);
-
         } else {
             Grid & grid = objectGrids[gridIdx];
             grid.hasTris = true;
@@ -388,6 +351,7 @@ void constructGrid() {
             for (int i = primitive.startIdx; i < primitive.endIdx; ++i) {
                 grid.indicies.push_back(i);
             }
+            grid.indicies.push_back(primitive.root);
             objectGrids.push_back(grid);
             indicies.push_back(objectGrids.size() - 1);
             constructGrid(objectGrids.size() - 1);

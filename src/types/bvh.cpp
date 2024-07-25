@@ -27,6 +27,20 @@ std::vector<Bin> bins(2);
 thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
+BvhNode & getNode(u32 idx) {
+    return nodes[idx];
+}
+
+AABB & getNodeAABB(u32 idx) {
+    return boxes[idx];
+}
+
+u32 & bvhGetTrisIndex(u32 idx) {
+    return indicies[idx];
+}
+
+
+
 bool findBVHIntesection(Ray &ray, int nodeIdx) {
     if (nodeIdx < 0 || nodeIdx >= nodes.size())
         return false;

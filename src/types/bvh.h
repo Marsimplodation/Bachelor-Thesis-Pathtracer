@@ -17,13 +17,19 @@ struct BvhNode {
     int splitAxis;
     int depth;
     int AABBIdx;
-    int childLeft;
-    int childRight;
+    int childLeft = -1;
+    int childRight = -1;
     float cost = INFINITY;
     bool hasTris;
 };
 
 BvhSettings *getBvhSettings();
+BvhNode & getNode(u32 idx);
+AABB & getNodeAABB(u32 idx);
+u32 & bvhGetTrisIndex(u32 idx);
+inline bool isLeaf(BvhNode & node) {
+    return node.childLeft == -1 && node.childRight == -1;
+}
 void destroyBVH();
 void calculateBoundingBox(BvhNode &node, bool isObject = false);
 int constructBVH(int startIdx, int endIdx, int nodeIdx = -1, bool isObject = false);
