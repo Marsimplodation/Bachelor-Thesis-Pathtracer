@@ -7,6 +7,7 @@
 #include "types/aabb.h"
 #include "types/bvh.h"
 #include "types/camera.h"
+#include "types/sah.h"
 #include "types/vector.h"
 #include <Eigen>
 #include <algorithm>
@@ -396,13 +397,13 @@ void constructGrid() {
 
 //------------------ Channel construction ---------------//
 void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
-                            Vector3 *points, std::vector<u32> & indicies) {
+                            Vector3 *points, Vector3 *edges,std::vector<u32> & indicies) {
     auto &objectBuffer = getObjects();
-    auto &indicieBuffer = getIndicies();
+    auto &indicieBuffer = getIndicies();    
     auto &trisBuffer = getTris();
 
     for (auto i : indicies) {
-        if (!cuboidInAABB(objectGrids[i].aabb, points)) {
+        if (!cuboidInAABB(objectGrids[i].aabb, points, edges)) {
             continue;
         }
         grid.indicies.push_back(i);
@@ -410,11 +411,19 @@ void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
 }
 
 void testChannelAgainstTriangles(Grid &grid, int axis, int up,
-                                 int right, Vector3 *points, std::vector<u32> & indicies) {
+                                 int right, Vector3 *points, Vector3 *edges, std::vector<u32> & indicies) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
 
+    for (auto i : indicies) {
+        if (!triInChannel(trisBuffer[i].vertices, points, edges)) {
+            continue;
+        }
+        grid.indicies.push_back(i);
+    }
+
+    /* old system solving the same problem with matrices
     Eigen::Matrix<float, 12, 12> M0;
     M0.fill(0.0f);
     for (int i = 0; i < 4; ++i) {
@@ -488,7 +497,7 @@ void testChannelAgainstTriangles(Grid &grid, int axis, int up,
             continue;
         }
         grid.indicies.push_back(i);
-    }
+    }*/
 }
 
 void constructChannel(float u, float v, float s, float t, int idx, std::vector<u32> indicies, bool isObject) {
@@ -553,13 +562,31 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
     points[7][right] = grid.min[right] + deltaR * s;
     points[7][up] = grid.min[up] + deltaU * t;
 
+        // Edges of the cuboid
+    Vector3 edges[12] = {
+        points[4] - points[0],
+        points[5] - points[0],
+        points[3] - points[4],
+        points[1] - points[4],
+        points[3] - points[7],
+        points[0] - points[7],
+        points[1] - points[5],
+        points[6] - points[1],
+        points[3] - points[6],
+        points[2] - points[6],
+        points[5] - points[2],
+        points[2] - points[7],
+    };
+
+
+
     // transform each triangle in local space and test it against a unit cube
     int startIdx = grid.indicies.size();
 
     if (!grid.hasTris) {
-        testChannelAgainstAABB(grid, axis, up, right, points, indicies);
+        testChannelAgainstAABB(grid, axis, up, right, points, edges, indicies);
     } else {
-        testChannelAgainstTriangles(grid, axis, up, right, points, indicies);
+        testChannelAgainstTriangles(grid, axis, up, right, points, edges, indicies);
     }
     int lutIdx = getLUTIdx(u, v, s, t, idx, isObject);
     int endIdx = grid.indicies.size();

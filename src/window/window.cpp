@@ -34,38 +34,21 @@ bool toneMapping = true;
 
 } // namespace
 
+//credit to stackoverflow
+//https://stackoverflow.com/questions/34255820/save-sdl-texture-to-file
 void saveImage(const char* file_name, SDL_Renderer* renderer, SDL_Texture* texture) {
-    
-    // Get the texture format and size
+    SDL_Texture* target = SDL_GetRenderTarget(renderer);
+    SDL_SetRenderTarget(renderer, texture);
     int width, height;
-    Uint32 format;
-    SDL_QueryTexture(texture, &format, NULL, &width, &height);
-    // Create a surface to store the texture data
-    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, format);
-    // Create a texture that is accessible for reading
-    SDL_Texture* targetTexture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_TARGET, width, height);
-    // Set the target texture to the renderer
+    SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+    SDL_Texture* targetTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
     SDL_SetRenderTarget(renderer, targetTexture);
-    // Copy the original texture to the target texture
     SDL_RenderCopy(renderer, texture, NULL, NULL);
-
-    // Read the pixels from the target texture to the surface
-    SDL_RenderReadPixels(renderer, NULL, format, surface->pixels, surface->pitch);
-    // Reset the render target
-    SDL_SetRenderTarget(renderer, NULL);
-
-    // Save the surface to a BMP file
-    if (SDL_SaveBMP(surface, file_name) != 0) {
-        printf("SDL_SaveBMP failed: %s\n", SDL_GetError());
-        SDL_DestroyTexture(targetTexture);
-        SDL_FreeSurface(surface);
-        return;
-    }
-
-    // Clean up
-    SDL_DestroyTexture(targetTexture);
+    SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
+    SDL_RenderReadPixels(renderer, NULL, surface->format->format, surface->pixels, surface->pitch);
+    IMG_SavePNG(surface, file_name);
     SDL_FreeSurface(surface);
-    return;
+    SDL_SetRenderTarget(renderer, target);
 }
 
 
@@ -224,7 +207,7 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
         destroyTracer();
         quit = true;
     }
-    const char *items[] = {"ALL.bmp", "BVH.bmp", "2Plane.bmp", "Hybrid.bmp"};
+    const char *items[] = {"ALL.png", "BVH.png", "2Plane.png", "Hybrid.png"};
     auto file_name = std::string("./render_") + items[getIntersectMode()];
     if(ImGui::Button("Save")) saveImage(file_name.c_str(), renderer, texture);
     ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");

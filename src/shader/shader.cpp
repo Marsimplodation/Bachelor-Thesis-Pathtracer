@@ -135,7 +135,10 @@ Vector3 refractionShader(Ray &r) {
         // r.throughPut *= 1.0f / (1-reflectance);
     }
 
+    auto color = info.color;
+    gammaCorrect(color);
     r.origin = r.origin + r.direction * (r.tmax) + refractDirection * EPS;
+    r.throughPut = r.throughPut * color;
     r.direction = refractDirection;
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
