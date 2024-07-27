@@ -7,7 +7,7 @@
 #include "types/aabb.h"
 #include "types/bvh.h"
 #include "types/camera.h"
-#include "types/sah.h"
+#include "types/sat.h"
 #include "types/vector.h"
 #include <Eigen>
 #include <algorithm>
