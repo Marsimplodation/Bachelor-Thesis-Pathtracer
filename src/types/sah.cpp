@@ -204,16 +204,16 @@ bool triInChannel(Vector3 *trisVerts, Vector3 * channelVerts, Vector3 *channelEd
                         {trisVerts[0].x - trisVerts[2].x, trisVerts[0].y - trisVerts[2].y,
                          trisVerts[0].z - trisVerts[2].z}};
     // Create the 9 axis on which the test is performed
-    Vector3 testAxes[24];
+    Vector3 testAxes[36];
     int idx = 0;
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 8; j++) {
+        for (int j = 0; j < 12; j++) {
             testAxes[idx++] = crossProduct(edges[i], channelEdges[j]);
         }
     }
 
     // perform the SAT test
-    for (int i = 0; i < 24; i++) {
+    for (int i = 0; i < 36; i++) {
         float triMin = INFINITY, triMax = -INFINITY;
         float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
 

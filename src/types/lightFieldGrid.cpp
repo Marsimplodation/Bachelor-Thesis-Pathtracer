@@ -51,7 +51,7 @@ thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
 //-------------- Intersection ---------------//
-Eigen::Vector<float, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right) {
+inline Eigen::Vector<float, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right) {
     // intersection distance
     float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];
     float d2 = (grid.max[axis] - r.origin[axis]) * r.inv_dir[axis];
@@ -96,9 +96,12 @@ void intersectObjectGrid(Ray &r, int idx) {
 
         r.interSectionAS++;
         auto point = calculateIntersection(r, grid, axis, up, right);
+        bool inBounds = true;
         for (int i = 0; i < 4; ++i) {
-            if(point(i) < 0 || point(i) >= 1) continue; 
+            inBounds &= !(point(i) < 0 || point(i) >= 1); 
+            if(!inBounds) break;
         }
+        if(!inBounds) continue;
         uIndex = point(0);
         vIndex = point(1);
         sIndex = point(2);
@@ -109,17 +112,10 @@ void intersectObjectGrid(Ray &r, int idx) {
         // to do get all tris in the lut for uvst and loop over them
         lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx, true);
 
-        // sanity check
-        if (lutIdx >= grid.gridLutStart.size() || lutIdx >= grid.gridLutEnd.size())
-            continue;
-        
         startIdx = grid.gridLutStart.at(lutIdx);
         endIdx = grid.gridLutEnd.at(lutIdx);
         for (unsigned int i = startIdx; i < endIdx; ++i) {
             if (r.terminated)
-                break;
-            // sanity check
-            if (i < 0 || i >= grid.indicies.size())
                 break;
             int sIdx = grid.indicies[i];
             if((const bool) grid.hasTris) {
@@ -217,7 +213,7 @@ void adjustGridSize(int idx, bool isObject = false) {
 
     // expand the grid just a tiny bit, to give wiggle room for floating errors
     // during intersect testing
-    const float offset = 0.5f;
+    const float offset = 0.1f;
     grid.min[axis] -= offset;
     grid.max[axis] += offset;
     float deltaF = grid.max[axis] - grid.min[axis];
