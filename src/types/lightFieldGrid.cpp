@@ -33,12 +33,12 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 2
+#define TRIS_GRID_SIZE 3
 #define GRID_SIZE 4
 #define MAX_TRIS_IN_CHANNEL 100
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
-int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
+inline int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
     Grid &grid = isObject ? objectGrids[idx] : grids[idx];
     u = (int) (u*grid.size);
     v = (int) (v*grid.size);
@@ -75,13 +75,11 @@ inline Eigen::Vector<float, 4> calculateIntersection(Ray &r, Grid & grid, int ax
     return point;
 }
 
-void intersectObjectGrid(Ray &r, int idx) {
+void intersectObjectGrid(Ray &r) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
-    toTraverse.clear();
     
-    toTraverse.push_back(idx);
     Vector2 axes;
     int axis, right, startIdx, endIdx, up, lutIdx;
     float uIndex, sIndex, vIndex, tIndex;
@@ -138,10 +136,14 @@ void intersectGrid(Ray &r) {
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
 
-    float maxDelta = max(r.direction, true);
-    int axis = (maxDelta == fabsf(r.direction[0]))  ? 0
-               : (maxDelta == fabs(r.direction[1])) ? 1
-                                                    : 2;
+    float maxDelta = 0.0f;
+    int axis = 0;
+    for(int i = 0; i < 3; i++){
+        float f = std::abs(r.direction[i]);
+        if(f <= maxDelta) continue;
+        axis = i;
+        maxDelta = f;
+    }
     int idx = axis;
     auto axes = getGridAxes(axis);
     int right = axes[0];
@@ -150,7 +152,7 @@ void intersectGrid(Ray &r) {
     r.interSectionAS++;
     auto point = calculateIntersection(r, grids[idx], axis, up, right);
     for (int i = 0; i < 4; i++) {
-        if(point(i) < 0 || point(i) >= 1) continue; 
+        if(point(i) < 0 || point(i) >= 1) return; 
     }
     float uIndex = point(0);
     float vIndex = point(1);
@@ -163,28 +165,23 @@ void intersectGrid(Ray &r) {
     int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx);
 
     // sanity check
-    if (lutIdx >= grids[idx].gridLutStart.size() ||
-        lutIdx >= grids[idx].gridLutEnd.size()) {
-        return;
-    }
     int startIdx = grids[idx].gridLutStart.at(lutIdx);
     int endIdx = grids[idx].gridLutEnd.at(lutIdx);
+    toTraverse.clear();
     bool hit = false;
     for (unsigned int i = startIdx; i < endIdx; ++i) {
         if (r.terminated)
             break;
 
-        // sanity check
-        if (i < 0 || i >= grids[idx].indicies.size())
-            break;
         int tIdx = grids[idx].indicies[i];
         r.interSectionAS++;
         if (!findIntersection(r, objectGrids[tIdx].aabb)) {
             continue;
         }
+        toTraverse.push_back(tIdx);
 
-        intersectObjectGrid(r, tIdx);
     }
+    intersectObjectGrid(r);
 }
 
 //------------- Constructing the Grids ------------------//
@@ -526,32 +523,32 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
     points[0][up] = grid.min[up] + deltaU * v;
 
     points[1][axis] = grid.min[axis];
-    points[1][right] = grid.min[right] + deltaR * (u + 1.0f);
-    points[1][up] = grid.min[up] + deltaU * (v + 1.0f);
+    points[1][right] = grid.min[right] + deltaR * (u + 1.0f/grid.size);
+    points[1][up] = grid.min[up] + deltaU * (v + 1.0f/grid.size);
 
     points[2][axis] = grid.max[axis];
     points[2][right] = grid.min[right] + deltaR * s;
-    points[2][up] = grid.min[up] + deltaU * (t + 1.0f);
+    points[2][up] = grid.min[up] + deltaU * (t + 1.0f/grid.size);
 
     points[3][axis] = grid.max[axis];
-    points[3][right] = grid.min[right] + deltaR * (s + 1.0f);
+    points[3][right] = grid.min[right] + deltaR * (s + 1.0f/grid.size);
     points[3][up] = grid.min[up] + deltaU * (t);
     // Define points[4] to points[7]
 
     // points[4]
     points[4][axis] = grid.min[axis];
-    points[4][right] = grid.min[right] + deltaR * (u + 1.0f);
+    points[4][right] = grid.min[right] + deltaR * (u + 1.0f/grid.size);
     points[4][up] = grid.min[up] + deltaU * v;
 
     // points[5]
     points[5][axis] = grid.min[axis];
     points[5][right] = grid.min[right] + deltaR * u;
-    points[5][up] = grid.min[up] + deltaU * (v + 1.0f);
+    points[5][up] = grid.min[up] + deltaU * (v + 1.0f/grid.size);
 
     // points[6]
     points[6][axis] = grid.max[axis];
-    points[6][right] = grid.min[right] + deltaR * (s + 1.0f);
-    points[6][up] = grid.min[up] + deltaU * (t + 1.0f);
+    points[6][right] = grid.min[right] + deltaR * (s + 1.0f/grid.size);
+    points[6][up] = grid.min[up] + deltaU * (t + 1.0f/grid.size);
 
     // points[7]
     points[7][axis] = grid.max[axis];
