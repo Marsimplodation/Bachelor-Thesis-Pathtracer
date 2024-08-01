@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 
@@ -18,7 +19,7 @@ namespace {
 std::vector<Triangle> tris={};
 std::vector<u32> indicies={};
 std::vector<Object> objects={};
-Material orange{.color={1.0f, 0.6f, 0.0f}, .shaderFlag=EMITSHADER, .intensity = 1.0f };
+Material orange{.pbr={}, .weights={1,0,0},std::string("None")};
 int root {};
 }
 
@@ -85,7 +86,7 @@ void findIntersection(Ray &ray) {
 
 bool scenenInited = false;
 void initScene() {   
-    loadObject("cornel.obj", {0,-250,50}, {300,300,300}, addMaterial(orange));
+    loadObject("cornel2.obj", {0,-250,50}, {300,300,300}, addMaterial(orange));
     
     root = constructBVH(0, objects.size());
     for (int i = 0; i < objects.size(); i++) {

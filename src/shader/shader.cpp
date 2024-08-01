@@ -37,32 +37,16 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
     return r0 + (1 - r0) * pow(1 - dot, 5);
 }
 
-u32 randomState;
-Vector3 shade(Ray &r) {
-    Vector3 black{0.0f, 0.0f, 0.0f};
-    if (r.tmax == INFINITY)
-        return black;
-    int idx = r.materialIdx;
-    switch (materials[idx].shaderFlag) {
-    case EMITSHADER:
-        return emitShader(r);
-    case MIRRORSHADER:
-        return mirrorShader(r);
-    case SHADOWSHADER:
-        return shadowShader(r);
-    case REFRACTSHADER:
-        return refractionShader(r);
-    case EDGESHADER:
-        return edgeShader(r);
-    default:
-        return r.normal;
-    }
-}
-
-Vector3 mirrorShader(Ray &r) {
+//------- shader ----//
+Vector3 reflectionShader(Ray &r) {
+    Material &info = materials[r.materialIdx];
     r.origin = r.origin + r.direction * (r.tmax);
     r.direction =
         r.direction - 2.0f * dotProduct(r.direction, r.normal) * r.normal;
+    auto dir = randomCosineWeightedDirection(r);
+    r.direction = r.direction * (1-info.pbr.roughness) + dir * info.pbr.roughness;
+    normalize(r.direction);
+
     r.origin += r.direction * 0.01f;
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
@@ -71,36 +55,13 @@ Vector3 mirrorShader(Ray &r) {
     return {};
 }
 
-Vector3 emitShader(Ray &r) {
-    int idx = r.materialIdx;
-    Material &info = materials[idx];
-
-    bool t = r.terminated;
-    r.terminated = true;
-    if (info.texture.data.empty())
-        return info.color * info.intensity * r.throughPut;
-
-    Vector4 fgColor = getTextureAtUV(info.texture, r.uv.x, r.uv.y);
-    float opacity = fgColor.w;
-    float xi = fastRandom(r.randomState);
-    if (xi < 1 - opacity) {
-        r.terminated = t;
-        r.origin = r.origin + r.direction * (r.tmax + 0.01f);
-        r.tmax = INFINITY;
-        return {};
-    }
-    Vector3 color = {fgColor.x, fgColor.y, fgColor.z};
-    gammaCorrect(color);
-    return (color * info.intensity * r.throughPut);
-}
-
 Vector3 refractionShader(Ray &r) {
     int idx = r.materialIdx;
     Material &info = materials[idx];
 
     Vector3 normal = r.normal;
-    float n1 = info.refractiveIdx1;
-    float n2 = info.refractiveIdx2;
+    float n1 = info.pbr.refractiveIdx1;
+    float n2 = info.pbr.refractiveIdx2;
     float eta = n1 / n2;
     float cos = dotProduct(r.direction, r.normal);
 
@@ -135,11 +96,14 @@ Vector3 refractionShader(Ray &r) {
         // r.throughPut *= 1.0f / (1-reflectance);
     }
 
-    auto color = info.color;
+    auto color = info.pbr.albedo;
     gammaCorrect(color);
     r.origin = r.origin + r.direction * (r.tmax) + refractDirection * EPS;
     r.throughPut = r.throughPut * color;
     r.direction = refractDirection;
+    auto dir = randomCosineWeightedDirection(r);
+    r.direction = r.direction * (1-info.pbr.roughness) + dir * info.pbr.roughness;
+    normalize(r.direction);
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
     r.inv_dir[1] = 1.0f/r.direction[1];
@@ -149,59 +113,16 @@ Vector3 refractionShader(Ray &r) {
     return {};
 }
 
-Vector3 edgeShader(Ray &r) {
-    int idx = r.materialIdx;
-    Material &info = materials[idx];
-    Vector3 fgColor = info.color;
 
-    float cos = dotProduct(r.normal, r.direction);
-    float edge = 1.0f;
-    if (fabs(cos) > info.intensity)
-        edge = .0f;
-    if (edge) {
-        r.terminated = true;
-        return info.color2;
-    }
-
-    Vector3 color = {0, 0, 0};
-    if (info.texture.data.empty())
-        color = info.color;
-    else {
-        Vector4 fgColor = getTextureAtUV(info.texture, r.uv.x, r.uv.y);
-        float opacity = fgColor.w;
-        float xi = fastRandom(r.randomState);
-        if (xi < 1 - opacity) {
-            r.origin = r.origin + r.direction * (r.tmax + 0.01f);
-            r.tmax = INFINITY;
-            return {0, 0, 0};
-        }
-        color = {fgColor.x, fgColor.y, fgColor.z};
-    }
-    r.terminated = true;
-    gammaCorrect(color);
-    return color;
-
-    // reset for next bounce
-    r.throughPut = r.throughPut * color * fabsf(cos);
-    r.origin = r.origin + r.direction * r.tmax;
-    r.direction = randomCosineWeightedDirection(r);
-    r.origin += r.direction * EPS;
-    r.tmax = INFINITY;
-    r.inv_dir[0] = 1.0f/r.direction[0];
-    r.inv_dir[1] = 1.0f/r.direction[1];
-    r.inv_dir[2] = 1.0f/r.direction[2];
-    return {};
-}
-
-Vector3 shadowShader(Ray &r) {
+Vector3 lambertShader(Ray &r) {
     int idx = r.materialIdx;
     Material &info = materials[idx];
     float cos = dotProduct(r.normal, r.direction);
     Vector3 color = {0, 0, 0};
-    if (info.texture.data.empty())
-        color = info.color;
+    if (info.pbr.texture.data.empty())
+        color = info.pbr.albedo;
     else {
-        Vector4 fgColor = getTextureAtUV(info.texture, r.uv.x, r.uv.y);
+        Vector4 fgColor = getTextureAtUV(info.pbr.texture, r.uv.x, r.uv.y);
         float opacity = fgColor.w;
         float xi = fastRandom(r.randomState);
         if (xi < 1 - opacity) {
@@ -224,3 +145,24 @@ Vector3 shadowShader(Ray &r) {
     r.inv_dir[2] = 1.0f/r.direction[2];
     return {};
 }
+
+u32 randomState;
+Vector3 shade(Ray &r) {
+    Vector3 black{0.0f, 0.0f, 0.0f};
+    if (r.tmax == INFINITY)
+        return black;
+    int idx = r.materialIdx;
+    auto & mat = materials[idx];
+    float xi = fastRandom(r.randomState);
+
+    if(xi < mat.weights.lambert) {
+        lambertShader(r);
+    } else if (xi < (mat.weights.lambert + mat.weights.reflection)) {
+        reflectionShader(r);
+    } else {
+        refractionShader(r);
+    }
+
+    return r.throughPut * mat.pbr.emmision;
+}
+
