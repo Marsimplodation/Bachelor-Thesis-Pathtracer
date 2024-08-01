@@ -33,9 +33,9 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 3
-#define GRID_SIZE 4
-#define MAX_TRIS_IN_CHANNEL 100
+#define TRIS_GRID_SIZE 4
+#define GRID_SIZE 8
+#define MAX_TRIS_IN_CHANNEL 50
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
 inline int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
@@ -51,11 +51,10 @@ thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
 //-------------- Intersection ---------------//
-inline Eigen::Vector<float, 4> calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right) {
+inline bool calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right, Vector4 & points) {
     // intersection distance
     float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];
     float d2 = (grid.max[axis] - r.origin[axis]) * r.inv_dir[axis];
-    if(std::min(d1, d2) >= r.tmax) return {-1,0,0,0};
    
     //get intersection point
     float iX1 = r.origin[right] + d1 * r.direction[right];
@@ -64,15 +63,13 @@ inline Eigen::Vector<float, 4> calculateIntersection(Ray &r, Grid & grid, int ax
     float iY2 = r.origin[up] + d2 * r.direction[up];
 
     // Get uvst coordinates
-    float u = (iX1 - grid.min[right]) * grid.inv_delta[right]; 
-    float v = (iY1 - grid.min[up]) * grid.inv_delta[up]; 
-    float s = (iX2 - grid.min[right]) * grid.inv_delta[right]; 
-    float t = (iY2 - grid.min[up]) * grid.inv_delta[up]; 
+    points.x = (iX1 - grid.min[right]) * grid.inv_delta[right]; 
+    points.y = (iY1 - grid.min[up]) * grid.inv_delta[up]; 
+    points.z = (iX2 - grid.min[right]) * grid.inv_delta[right]; 
+    points.w = (iY2 - grid.min[up]) * grid.inv_delta[up]; 
 
     
-    Eigen::Vector<float, 4> point;
-    point << u, v, s, t; 
-    return point;
+    return std::min(d1, d2) < r.tmax;
 }
 
 void intersectObjectGrid(Ray &r) {
@@ -82,7 +79,6 @@ void intersectObjectGrid(Ray &r) {
     
     Vector2 axes;
     int axis, right, startIdx, endIdx, up, lutIdx;
-    float uIndex, sIndex, vIndex, tIndex;
     for(int i = 0; i < toTraverse.size(); ++i) {
         int idx = toTraverse[i];
         auto &grid = objectGrids[idx];
@@ -90,28 +86,27 @@ void intersectObjectGrid(Ray &r) {
         axes = getGridAxes(axis);
         right = axes[0];
         up = axes[1];
+        r.interSectionAS++;
+        if (!findIntersection(r, grid.aabb)) {
+            continue;
+        }
         
 
         r.interSectionAS++;
-        auto point = calculateIntersection(r, grid, axis, up, right);
-        bool inBounds = true;
-        for (int i = 0; i < 4; ++i) {
-            inBounds &= !(point(i) < 0 || point(i) >= 1); 
-            if(!inBounds) break;
-        }
-        if(!inBounds) continue;
-        uIndex = point(0);
-        vIndex = point(1);
-        sIndex = point(2);
-        tIndex = point(3);
+        Vector4 points{};
+        if (!calculateIntersection(r, grid, axis, up, right, points)) continue;;
+        if (points.x < 0 || points.x >= 1) continue; 
+        if (points.y < 0 || points.y >= 1) continue; 
+        if (points.z < 0 || points.z >= 1) continue; 
+        if (points.w < 0 || points.w >= 1) continue; 
 
 
         // ray is in channel uv,st
         // to do get all tris in the lut for uvst and loop over them
-        lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx, true);
+        lutIdx = getLUTIdx(points.x, points.y, points.z, points.w, idx, true);
 
-        startIdx = grid.gridLutStart.at(lutIdx);
-        endIdx = grid.gridLutEnd.at(lutIdx);
+        startIdx = grid.gridLutStart[(lutIdx)];
+        endIdx = grid.gridLutEnd[(lutIdx)];
         for (unsigned int i = startIdx; i < endIdx; ++i) {
             if (r.terminated)
                 break;
@@ -121,14 +116,11 @@ void intersectObjectGrid(Ray &r) {
                 Triangle &triangle = trisBuffer[sIdx];
                 triangleIntersection(r, triangle);
             } else {
-                r.interSectionAS++;
-                if (!findIntersection(r, objectGrids[sIdx].aabb)) {
-                    continue;
-                }
                 toTraverse.push_back(sIdx);
             }
         }
     }
+    toTraverse.clear();
 }
 
 void intersectGrid(Ray &r) {
@@ -150,23 +142,25 @@ void intersectGrid(Ray &r) {
     int up = axes[1];
     
     r.interSectionAS++;
-    auto point = calculateIntersection(r, grids[idx], axis, up, right);
-    for (int i = 0; i < 4; i++) {
-        if(point(i) < 0 || point(i) >= 1) return; 
-    }
-    float uIndex = point(0);
-    float vIndex = point(1);
-    float sIndex = point(2);
-    float tIndex = point(3);
+   
+    Vector4 points{};
+    if (!calculateIntersection(r, grids[idx], axis, up, right, points)) return;
+    if (points.x < 0 || points.x >= 1) return; 
+    if (points.y < 0 || points.y >= 1) return; 
+    if (points.z < 0 || points.z >= 1) return; 
+    if (points.w < 0 || points.w >= 1) return; 
 
 
     // ray is in channel uv,st
     // to do get all tris in the lut for uvst and loop over them
-    int lutIdx = getLUTIdx(uIndex, vIndex, sIndex, tIndex, idx);
-
+    float lutIdx = getLUTIdx(points.x, points.y, points.z, points.w, idx);
     // sanity check
-    int startIdx = grids[idx].gridLutStart.at(lutIdx);
-    int endIdx = grids[idx].gridLutEnd.at(lutIdx);
+    /*if(((u32)lutIdx) >= grids[idx].gridLutStart.size()) {
+        printf("%f %f %f %f : %d \n", uIndex, vIndex, sIndex, tIndex, lutIdx);
+        return;
+    }*/
+    int startIdx = grids[idx].gridLutStart[lutIdx];
+    int endIdx = grids[idx].gridLutEnd[lutIdx];
     toTraverse.clear();
     bool hit = false;
     for (unsigned int i = startIdx; i < endIdx; ++i) {

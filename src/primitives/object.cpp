@@ -54,13 +54,13 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
 
     for (const auto & material : materials) {
         Material m {
-            .color = {material.diffuse[0], material.diffuse[1], material.diffuse[2]},
-            .shaderFlag = SHADOWSHADER,
+            .pbr = {
+                .albedo = {material.diffuse[0], material.diffuse[1], material.diffuse[2]},
+            },
             .name = std::string(material.name.c_str()),
         };
         auto emit = material.emission;
         if(emit[0] != 0 || emit[1] != 0 || emit[2] != 0) {
-            m.shaderFlag = EMITSHADER;
             Vector3 c = {emit[0], emit[1], emit[2]};
             float ma = max(c);
             float i = 1;
@@ -70,11 +70,11 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
                 c[2]/=ma;
                 i=ma;
             }
-            m.intensity = i;
-            m.color = c;
+            m.pbr.emmision = i;
+            m.pbr.albedo = c;
         }
         int idx = addMaterial(m);
-        if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->texture, material.diffuse_texname);
+        if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->pbr.texture, material.diffuse_texname);
         printf("loaded material %s\n", m.name.c_str());
     }
     

@@ -68,7 +68,7 @@ void callReset() {
 
 
 bool DisplayMaterial(int & idx) {
-    Material * info = getMaterial(idx);
+    Material * material = getMaterial(idx);
     bool change = false;
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Material");
     change |= ImGui::Button("New Material");
@@ -95,25 +95,58 @@ bool DisplayMaterial(int & idx) {
 
     const char *items[] = {"Emissive", "Lambert", "Mirror", "Refract", "Edge", "None"};
     
-    if (ImGui::BeginCombo("Shader Type", items[info->shaderFlag])) {
-        for (int i = 0; i < IM_ARRAYSIZE(items); i++) {
-            bool isSelected = (info->shaderFlag == i);
-            if (ImGui::Selectable(items[i], isSelected)) {
-                info->shaderFlag = i;
-                change = true;
-            }
-            if (isSelected)
-                ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
+    
+    change |= ImGui::ColorEdit3("Albedo", (float *)&(material->pbr.albedo));
+    change |= ImGui::DragFloat("Roughness", &(material->pbr.roughness), 0.01f, 0.0f, 1.0f);
+    change |= ImGui::DragFloat("Emmision", &(material->pbr.emmision));
+    change |= ImGui::DragFloat("Refractive Index 1", &(material->pbr.refractiveIdx1), 0.01f);
+    change |= ImGui::DragFloat("Refractive Index 2", &(material->pbr.refractiveIdx2), 0.01f);
+
+    // Store previous values
+    float previousLambert = material->weights.lambert;
+    float previousReflection = material->weights.reflection;
+    float previousRefraction = material->weights.refraction;
+
+    // Allow the user to change the weights
+    change |= ImGui::DragFloat("Lambert Weight", &(material->weights.lambert), 0.01f, 0.0f, 1.0f);
+    change |= ImGui::DragFloat("Reflection Weight", &(material->weights.reflection), 0.01f, 0.0f, 1.0f);
+    change |= ImGui::DragFloat("Refraction Weight", &(material->weights.refraction), 0.01f, 0.0f, 1.0f);
+
+    // Calculate the sum of the weights
+    float sum = material->weights.lambert + material->weights.reflection + material->weights.refraction;
+
+    // If the sum is not 1, normalize the weights
+    if (sum != 1.0f) {
+        material->weights.lambert /= sum;
+        material->weights.reflection /= sum;
+        material->weights.refraction /= sum;
+    }
+    
+    if(material->weights.lambert >= 0.99f) {
+        material->weights.lambert = 1.0f;
+        material->weights.reflection = 0.0f;
+        material->weights.refraction = 0.0f;
+    }
+    
+    if(material->weights.refraction >= 0.99f) {
+        material->weights.lambert = 0.0f;
+        material->weights.reflection = 0.0f;
+        material->weights.refraction = 1.0f;
+    }
+    
+    if(material->weights.reflection >= 0.99f) {
+        material->weights.lambert = 0.0f;
+        material->weights.reflection = 1.0f;
+        material->weights.refraction = 0.0f;
     }
 
+    if (material->pbr.texture.data.size() > 0) {
+        ImGui::Text("Texture Loaded");
+        // Display texture or additional texture settings
+    } else {
+        ImGui::Text("No Texture Loaded");
+    }
 
-    change |= ImGui::ColorEdit3("Color", (float *)&(info->color));
-    change |= ImGui::ColorEdit3("Second Color", (float *)&(info->color2));
-    change |= ImGui::DragFloat("Intensity", &(info->intensity));
-    change |= ImGui::DragFloat("refractive index 1", &(info->refractiveIdx1));
-    change |= ImGui::DragFloat("refractive index 2", &(info->refractiveIdx2));
     return change;
 }
 

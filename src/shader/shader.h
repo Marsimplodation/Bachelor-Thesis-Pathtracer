@@ -11,15 +11,24 @@
 #include "../types/vector.h"
 #include "../types/ray.h"
 
+struct ShaderMix {
+    float lambert = 1.0f;
+    float reflection = 0.0f;
+    float refraction = 0.0f;
+};
+
+struct pbrProbs {
+    Vector3 albedo;
+    float refractiveIdx1 = 1.0f;
+    float refractiveIdx2 = 1.5f;
+    float emmision = 0.0f;
+    float roughness = 0.5f;
+    Texture texture;
+}; 
 
 struct Material {
-    Vector3 color;
-    Vector3 color2;
-    char shaderFlag;
-    float refractiveIdx1;
-    float refractiveIdx2;
-    float intensity;
-    Texture texture;
+    pbrProbs pbr;
+    ShaderMix weights;
     std::string name;
 };
 

@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 
@@ -18,7 +19,7 @@ namespace {
 std::vector<Triangle> tris={};
 std::vector<u32> indicies={};
 std::vector<Object> objects={};
-Material orange{.color={1.0f, 0.6f, 0.0f}, .shaderFlag=EMITSHADER, .intensity = 1.0f };
+Material orange{.pbr={}, .weights={},.name=std::string("None")};
 int root {};
 }
 
