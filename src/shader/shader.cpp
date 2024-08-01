@@ -46,6 +46,10 @@ Vector3 reflectionShader(Ray &r) {
     auto dir = randomCosineWeightedDirection(r);
     r.direction = r.direction * (1-info.pbr.roughness) + dir * info.pbr.roughness;
     normalize(r.direction);
+    
+    auto color = info.pbr.albedo;
+    gammaCorrect(color);
+    r.throughPut = r.throughPut * color;
 
     r.origin += r.direction * 0.01f;
     r.tmax = INFINITY;
