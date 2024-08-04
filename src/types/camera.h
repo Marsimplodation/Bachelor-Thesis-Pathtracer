@@ -9,6 +9,8 @@ struct Camera {
     Vector3 up;
     float focus;
     float fov;
+    float fovScale;
+    float dof;
 }; 
 Camera *getCamera();
 void cameraSetForward(Vector3 & v);

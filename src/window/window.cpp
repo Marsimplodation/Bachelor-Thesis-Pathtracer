@@ -206,6 +206,16 @@ void displayCamera() {
         cameraSetFov(cam->fov);
         callReset();
     }
+     if (ImGui::DragFloat("Depth of field", &cam->dof)) {
+        //cameraSetFov(cam->fov);
+        callReset();
+    }
+
+    if (ImGui::DragFloat("Camera focus", &cam->focus)) {
+        //cameraSetFov(cam->fov);
+        callReset();
+    }
+    
     ImGui::End();
 }
 

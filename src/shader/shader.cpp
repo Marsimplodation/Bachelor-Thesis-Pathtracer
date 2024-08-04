@@ -153,11 +153,12 @@ Vector3 lambertShader(Ray &r) {
 u32 randomState;
 Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
-    if (r.tmax == INFINITY)
-        return black;
     int idx = r.materialIdx;
     auto & mat = materials[idx];
     float xi = fastRandom(r.randomState);
+    
+    if(r.tmax == INFINITY) return black;
+
 
     if(xi < mat.weights.lambert) {
         lambertShader(r);
