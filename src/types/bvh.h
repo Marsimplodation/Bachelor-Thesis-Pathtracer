@@ -34,4 +34,5 @@ void destroyBVH();
 void calculateBoundingBox(BvhNode &node, bool isObject = false);
 int constructBVH(int startIdx, int endIdx, int nodeIdx = -1, bool isObject = false);
 bool findBVHIntesection(Ray &ray, int nodeIdx);
+unsigned long getMemoryBVH();
 #endif // !BVH_H

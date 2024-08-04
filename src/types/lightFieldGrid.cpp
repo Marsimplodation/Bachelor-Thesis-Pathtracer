@@ -33,9 +33,9 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 5
-#define GRID_SIZE 10
-#define MAX_TRIS_IN_CHANNEL 5
+int TRIS_GRID_SIZE = 4;
+int GRID_SIZE = 8;
+int MAX_TRIS_IN_CHANNEL = 50;
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
 inline int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
@@ -49,6 +49,28 @@ inline int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject 
 thread_local std::vector<u32> toTraverse(0);
 
 } // namespace
+
+//settings
+void setGridSettings(u32 size, u32 oSize, u32 count) {
+    TRIS_GRID_SIZE = oSize;
+    GRID_SIZE = size;
+    MAX_TRIS_IN_CHANNEL = count;
+}
+
+unsigned long getMemory2Plane() {
+    unsigned long size = (objectGrids.size() + 3) * sizeof(Grid);
+    for(auto & g: objectGrids) {
+        size += g.gridLutEnd.size() * sizeof(u32);
+        size += g.gridLutStart.size() * sizeof(u32);
+        size += g.indicies.size() * sizeof(u32);
+    }
+    for(auto & g: grids) {
+        size += g.gridLutEnd.size() * sizeof(u32);
+        size += g.gridLutStart.size() * sizeof(u32);
+        size += g.indicies.size() * sizeof(u32);
+    }
+    return size;
+}
 
 //-------------- Intersection ---------------//
 inline bool calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right, Vector4 & points) {

@@ -27,6 +27,10 @@ std::vector<Bin> bins(2);
 thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
+unsigned long getMemoryBVH() {
+    return indicies.size() * sizeof(u32) + boxes.size() * sizeof(AABB) + nodes.size() * sizeof(BvhNode);
+}
+
 BvhNode & getNode(u32 idx) {
     return nodes[idx];
 }

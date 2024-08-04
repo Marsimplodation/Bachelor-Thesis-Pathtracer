@@ -2,7 +2,8 @@ import subprocess
 import json
 import re
 import os
-
+import matplotlib.pyplot as plt
+import numpy as np
 # Function to parse output and convert to JSON
 def parse_output_to_json(output):
     bvh_data = []
@@ -14,7 +15,7 @@ def parse_output_to_json(output):
         matches = pattern.findall(line)
         if matches:
             entry = {match[0]: match[1] for match in matches}
-            if i < 4:  # First four lines go into 'bvh'
+            if i < 5:  # First four lines go into 'bvh'
                 bvh_data.append(entry)
             else:  # Remaining lines go into 'all'
                 all_data.append(entry)
@@ -23,22 +24,23 @@ def parse_output_to_json(output):
 
 
 scenes = ["cornel", "cornel_Glass", "s"]
+samples = [10, 20]
 # Execute the command and capture output
 out = {}
-for scene in scenes:
-    command = f"../build/pathtracer scenes/{scene}.scene test | tail -n 8"
-
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    json_output = parse_output_to_json(result.stdout)
-    out[scene] = json.loads(json_output)
+for sample in samples:
+    for scene in scenes:
+        command = f"../build/pathtracer scenes/{scene}.scene {sample} 8 4 50 | tail -n 10"
     
-    dir_path = os.path.join("render", scene)
-    subprocess.run(f"mkdir -p {dir_path}", shell=True)
-    
-    source_pattern = os.path.join("render", "*.png")
-    subprocess.run(f"mv {source_pattern} {dir_path}", shell=True)
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        json_output = parse_output_to_json(result.stdout)
+        out[scene+"-"+str(sample)] = json.loads(json_output)
+        
+        dir_path = os.path.join("render", scene + "-" + str(sample))
+        subprocess.run(f"mkdir -p {dir_path}", shell=True)
+        
+        source_pattern = os.path.join("render", "*.png")
+        subprocess.run(f"mv {source_pattern} {dir_path}", shell=True)
 
 # Parse the output to JSON
-
 # Print the JSON output
 print(json.dumps(out))

@@ -14,5 +14,5 @@ weights: 0,1,0
 [Camera]
 pos: 0,200,-900 
 forward: 0.3,0.0,-0.9
-dof: 80
+dof: 20
 focus: 635
