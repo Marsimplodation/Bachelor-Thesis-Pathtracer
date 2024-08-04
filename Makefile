@@ -3,12 +3,12 @@
 build:
 	cd build && cmake .. -DCMAKE_BUILD_TYPE=Release
 	cd build && make -j16
-	cd showcase && ../build/pathtracer
+	cd showcase && ../build/pathtracer scenes/cornel.scene test
 
 debug:
 	cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug
 	cd build && make -j16
-	cd showcase && gdb ../build/pathtracer
+	cd showcase && gdb --args ../build/pathtracer scenes/s.scene
 
 
 

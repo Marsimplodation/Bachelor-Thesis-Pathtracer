@@ -13,7 +13,7 @@ struct WaveFrontEntry {
 };
 
 
-void trace();
+void trace(bool testing);
 void initTracer();
 void destroyTracer();
 Vector3 tracerGetPixel(int x, int y);
@@ -22,6 +22,7 @@ void reset();
 void setWindowSize(int x, int y);
 Vector3 getWindowSize();
 unsigned long getIntersectionCount(); 
+unsigned long getStructureIntersectionCount();
 
 int& getMaxSampleCount();
 bool& getfinishedRendering(); 

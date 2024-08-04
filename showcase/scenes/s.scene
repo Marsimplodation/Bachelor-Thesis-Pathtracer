@@ -1,0 +1,18 @@
+[Models]
+file: objects/scene.obj
+pos:  0,0,0 
+scale: 1,1,1 
+
+[Materials]
+name: Metal
+color: 1.0,1.0,1.0 
+emission: 0
+roughness: 0.6
+weights: 0,1,0
+
+
+[Camera]
+pos: 0,200,-900 
+forward: 0.3,0.0,-0.9
+dof: 80
+focus: 635

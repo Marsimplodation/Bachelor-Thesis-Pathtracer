@@ -2,6 +2,7 @@
 #include "common.h"
 #include "primitives/object.h"
 #include "primitives/primitive.h"
+#include "scene/SceneFile.h"
 #include "shader/shader.h"
 #include "types/camera.h"
 #include "types/bvh.h"
@@ -85,8 +86,21 @@ void findIntersection(Ray &ray) {
 
 
 bool scenenInited = false;
-void initScene() {   
-    loadObject("cornel.obj", {0,-250,50}, {300,300,300}, addMaterial(orange));
+void initScene() {
+    for(auto m : getSceneFile().models) {
+        //loadObject("scene.obj", {0,0,0}, {1,1,1}, addMaterial(orange));
+        loadObject(m.file.c_str(), m.pos, m.scale, addMaterial(orange));
+    }
+
+    for(auto m : getSceneFile().materials) {
+        //loadObject("scene.obj", {0,0,0}, {1,1,1}, addMaterial(orange));
+        for(auto & mat : *getMaterials()) {
+            if(mat.name != m.name) continue;
+            mat.weights = m.mat.weights;
+            mat.pbr = m.mat.pbr;
+        }
+    }
+
     
     root = constructBVH(0, objects.size());
     for (int i = 0; i < objects.size(); i++) {
@@ -99,10 +113,10 @@ void initScene() {
     printf("building grid\n");
     constructGrid();
     
-    /*Vector3 f{0.0f, 0.0f, 1.0f};
-    Vector3 u{0.0f, 1.0f, 0.0f};
-    cameraSetForward(f);
-    cameraSetUp(u);*/
+    cameraSetForward(getSceneFile().cam.forward);
+    getCamera()->origin = getSceneFile().cam.pos;
+    getCamera()->dof = getSceneFile().cam.dof;
+    getCamera()->focus = getSceneFile().cam.focus;
     scenenInited = true;
 }
 

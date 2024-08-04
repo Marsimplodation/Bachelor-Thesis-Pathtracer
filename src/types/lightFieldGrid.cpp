@@ -33,9 +33,9 @@ Vector2 getGridAxes(int idx) {
         return {0, 1};
     }
 }
-#define TRIS_GRID_SIZE 4
-#define GRID_SIZE 8
-#define MAX_TRIS_IN_CHANNEL 50
+#define TRIS_GRID_SIZE 5
+#define GRID_SIZE 10
+#define MAX_TRIS_IN_CHANNEL 5
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
 inline int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
@@ -53,6 +53,7 @@ thread_local std::vector<u32> toTraverse(0);
 //-------------- Intersection ---------------//
 inline bool calculateIntersection(Ray &r, Grid & grid, int axis, int up, int right, Vector4 & points) {
     // intersection distance
+    if(r.direction[axis] == 0) return false;
     float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];
     float d2 = (grid.max[axis] - r.origin[axis]) * r.inv_dir[axis];
    
@@ -68,7 +69,6 @@ inline bool calculateIntersection(Ray &r, Grid & grid, int axis, int up, int rig
     points.z = (iX2 - grid.min[right]) * grid.inv_delta[right]; 
     points.w = (iY2 - grid.min[up]) * grid.inv_delta[up]; 
 
-    
     return std::min(d1, d2) < r.tmax;
 }
 
@@ -155,10 +155,7 @@ void intersectGrid(Ray &r) {
     // to do get all tris in the lut for uvst and loop over them
     float lutIdx = getLUTIdx(points.x, points.y, points.z, points.w, idx);
     // sanity check
-    /*if(((u32)lutIdx) >= grids[idx].gridLutStart.size()) {
-        printf("%f %f %f %f : %d \n", uIndex, vIndex, sIndex, tIndex, lutIdx);
-        return;
-    }*/
+    
     int startIdx = grids[idx].gridLutStart[lutIdx];
     int endIdx = grids[idx].gridLutEnd[lutIdx];
     toTraverse.clear();

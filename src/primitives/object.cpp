@@ -34,7 +34,7 @@ bool objectIntersection(Ray &ray, Object &primitive) {
     }
     return hit;
 }
-void loadObject(const char *fileName, Vector3 position, Vector3 size,
+void loadObject(const std::string fileName, Vector3 position, Vector3 size,
                   int materialIdx) {
     auto & objectBuffer = getObjects();
     auto & indicieBuffer = getIndicies();
@@ -44,8 +44,9 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
+    std::string base_dir = fileName.substr(0, fileName.find_last_of('/'));
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                          fileName)) {
+                          fileName.c_str(), base_dir.c_str())) {
         printf("error: %s %s\n", warn.c_str(), err.c_str());
         exit(1);
     }
@@ -74,7 +75,8 @@ void loadObject(const char *fileName, Vector3 position, Vector3 size,
             m.pbr.albedo = c;
         }
         int idx = addMaterial(m);
-        if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->pbr.texture, material.diffuse_texname);
+        std::string texture = base_dir + "/" + material.diffuse_texname;
+        if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->pbr.texture, texture.c_str());
         printf("loaded material %s\n", m.name.c_str());
     }
     
