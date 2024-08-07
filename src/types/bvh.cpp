@@ -58,9 +58,10 @@ bool findBVHIntesection(Ray &ray, int nodeIdx) {
     toTraverse.clear();
     toTraverse.push_back(nodeIdx);
     bool hit = false;
-    for(int i = 0; i < toTraverse.size(); ++i) {
+    while(toTraverse.size() > 0) {
         if (ray.terminated) break;
-        int idx = toTraverse[i];
+        int idx = toTraverse.back();
+        toTraverse.pop_back();
         BvhNode &node = nodes.at(idx);
         bool leaf = (node.childLeft == -1 && node.childRight == -1);
     
@@ -75,11 +76,11 @@ bool findBVHIntesection(Ray &ray, int nodeIdx) {
                 auto dRight = getIntersectDistance(ray, boxes[nodes[node.childRight].AABBIdx]);
                 
                 if(dRight >= dLeft) {
-                    if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
                     if(dRight != INFINITY) toTraverse.push_back(node.childRight);
+                    if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
                 } else {
-                    if(dRight != INFINITY) toTraverse.push_back(node.childRight);
                     if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
+                    if(dRight != INFINITY) toTraverse.push_back(node.childRight);
                 }
         } else {
             for (int i = node.startIdx; i < node.endIdx; i++) {

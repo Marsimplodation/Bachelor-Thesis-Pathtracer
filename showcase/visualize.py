@@ -22,10 +22,11 @@ for key in out.keys():
 # Extract keys and values from the dictionary
 keys = list(memory.keys())
 values = list(memory.values())
-
+# Define colors based on the key
 # Create a bar chart
 plt.figure(figsize=(8, 6))
-plt.bar(keys, values, color='skyblue')
+colors = ['skyblue' if 'bvh' in key else 'red' for key in keys]
+plt.bar(keys, values, color=colors)
 
 # Add title and labels
 plt.title('Bar Chart of Memory Dictionary')
@@ -39,7 +40,8 @@ values = list(intersections.values())
 
 # Create a bar chart
 plt.figure(figsize=(8, 6))
-plt.bar(keys, values, color='skyblue')
+colors = ['skyblue' if 'bvh' in key else 'red' for key in keys]
+plt.bar(keys, values, color=colors)
 
 # Add title and labels
 plt.title('Bar Chart of Intersections Dictionary')
@@ -53,7 +55,8 @@ values = list(time.values())
 
 # Create a bar chart
 plt.figure(figsize=(8, 6))
-plt.bar(keys, values, color='skyblue')
+colors = ['skyblue' if 'bvh' in key else 'red' for key in keys]
+plt.bar(keys, values, color=colors)
 
 # Add title and labels
 plt.title('Bar Chart of Time Dictionary')

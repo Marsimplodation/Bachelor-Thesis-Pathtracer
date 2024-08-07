@@ -26,16 +26,17 @@ int main(int argc, char **argv) {
     testing = argc != 2;
     
     u32 maxSamples = 100;
-    u32 GridSize = 8;
-    u32 GridObjectSize = 4;
-    u32 GridMaxTris = 50;
+    u32 GridSize = 10;
+    u32 GridObjectSize = 5;
+    u32 GridMaxTris = 40;
 
     if(testing) {
-        maxSamples = (argc > 2) ? atoi(argv[2]) : maxSamples;
-        GridSize = (argc > 3) ? atoi(argv[3]) : GridSize;
-        GridObjectSize = (argc > 4) ? atoi(argv[4]) : GridObjectSize;
-        GridMaxTris = (argc > 5) ? atoi(argv[5]) : GridMaxTris;
+        maxSamples = atoi(argv[2]);
+        GridSize =  atoi(argv[3]);
+        GridObjectSize = atoi(argv[4]);
+        GridMaxTris = atoi(argv[5]);
     }
+    setGridSettings(GridSize, GridObjectSize, GridMaxTris);
 
     setWindowSize(1280, 720);
     getMaxSampleCount() = maxSamples;
@@ -51,7 +52,6 @@ int main(int argc, char **argv) {
             auto draw = std::thread(twindow);
 
             traceT.join();
-            draw.join();
             
             auto tNow = std::chrono::high_resolution_clock::now();
             float elapsed_time_ms = std::chrono::duration<double, std::milli>(tNow - tBegin).count();
@@ -66,6 +66,7 @@ int main(int argc, char **argv) {
             printf("AS Intersections: %lu \n", getStructureIntersectionCount()); 
             printf("Total Intersections: %lu \n", getStructureIntersectionCount() + getIntersectionCount()); 
             printf("Memory Consumption: %lu \n", (i == 1) ? getMemoryBVH() : getMemory2Plane()); 
+            draw.join();
 
         }
     } else {

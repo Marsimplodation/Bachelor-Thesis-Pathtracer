@@ -23,13 +23,13 @@ def parse_output_to_json(output):
     return json.dumps({"bvh": bvh_data, "2plane": all_data}, indent=2)
 
 
-scenes = ["cornel", "cornel_Glass", "s"]
-samples = [10, 20]
+scenes = ["s"]
+samples = [5, 10, 15]
 # Execute the command and capture output
 out = {}
 for sample in samples:
     for scene in scenes:
-        command = f"../build/pathtracer scenes/{scene}.scene {sample} 8 4 50 | tail -n 10"
+        command = f"../build/pathtracer scenes/{scene}.scene 5 10 {sample} 40 | tail -n 10"
     
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         json_output = parse_output_to_json(result.stdout)

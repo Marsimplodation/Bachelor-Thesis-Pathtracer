@@ -18,6 +18,7 @@ endif()
 
 # add_subdirectory(includes/sdl)
 find_package(SDL2 REQUIRED)
+find_package(TBB REQUIRED)
 find_package(SDL2_image REQUIRED)
 set(imgui_SOURCE_DIR includes/imgui/)
 
@@ -51,3 +52,4 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} SDL2)
 target_link_libraries(${PROJECT_NAME} SDL2_image)
 target_link_libraries(${PROJECT_NAME} imgui)
+target_link_libraries(${PROJECT_NAME} TBB::tbb)
