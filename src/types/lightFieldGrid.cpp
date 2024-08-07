@@ -106,7 +106,6 @@ void intersectGrid(Ray &r) {
         float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];
         float d2 = (grid.max[axis] - r.origin[axis]) * r.inv_dir[axis];
         bool gridMiss = std::max(d1, d2) < 0;
-        gridMiss |= std::min(std::abs(d1), std::abs(d2)) > r.tmax;
         if (gridMiss) continue; 
 
         r.interSectionAS++;
