@@ -81,12 +81,23 @@ void intersectGrid(Ray &r) {
 
     float maxDelta = 0.0f;
     int axis = 0;
-    for(int i = 0; i < 3; i++){
-        float f = std::abs(r.direction[i]);
-        if(f <= maxDelta) continue;
-        axis = i;
-        maxDelta = f;
+    float f0 = std::abs(r.direction[0]);
+    float f1 = std::abs(r.direction[1]);
+    float f2 = std::abs(r.direction[2]);
+
+    if (f0 > maxDelta) {
+        maxDelta = f0;
+        axis = 0;
     }
+    if (f1 > maxDelta) {
+        maxDelta = f1;
+        axis = 1;
+    }
+    if (f2 > maxDelta) {
+        maxDelta = f2;
+        axis = 2;
+    }
+    
     int idx = axis;
     auto axes = getGridAxes(axis);
     int right = axes[0];

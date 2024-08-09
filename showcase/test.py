@@ -23,8 +23,8 @@ def parse_output_to_json(output):
     return json.dumps({"bvh": bvh_data, "2plane": all_data}, indent=2)
 
 
-scenes = ["s"]
-samples = [5, 10, 15]
+scenes = ["cornel", "lucy"]
+samples = [5, 10]
 # Execute the command and capture output
 out = {}
 for sample in samples:
