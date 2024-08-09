@@ -206,6 +206,16 @@ void displayCamera() {
         cameraSetFov(cam->fov);
         callReset();
     }
+     if (ImGui::DragFloat("Depth of field", &cam->dof)) {
+        //cameraSetFov(cam->fov);
+        callReset();
+    }
+
+    if (ImGui::DragFloat("Camera focus", &cam->focus)) {
+        //cameraSetFov(cam->fov);
+        callReset();
+    }
+    
     ImGui::End();
 }
 
@@ -261,8 +271,10 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
 
 }
 
-void createWindow() {
+void createWindow(bool testing) {
     SDL_Window *window;
+    quit = false;
+    preview = testing;
     SDL_Init(SDL_INIT_VIDEO);
     int WIDTH = getWindowSize().x;
     int HEIGHT = getWindowSize().y;
@@ -359,7 +371,7 @@ void createWindow() {
         ImVec2 size = ImGui::GetWindowSize();
         size = ImVec2(size.x, size.y);
         if ((int)size.x != WIDTH || (int)size.y != HEIGHT) {
-            setWindowSize(size.x, size.y);
+            if(!testing) setWindowSize(size.x, size.y);
             WIDTH = getWindowSize().x;
             HEIGHT = getWindowSize().y;
             tBegin = std::chrono::high_resolution_clock::now();
@@ -398,7 +410,14 @@ void createWindow() {
         SDL_UpdateTexture(texture, NULL, pixels, WIDTH * sizeof(char) * 4);
         ImGui::Image((void *)texture, ImVec2(WIDTH, HEIGHT));
         ImGui::End();
-        displayMenu(renderer, texture); 
+        displayMenu(renderer, texture);
+
+        if(testing && getfinishedRendering()) {
+            const char *items[] = {"ALL.png", "BVH.png", "2Plane.png", "Hybrid.png"};
+            auto file_name = std::string("./render/render_") + items[getIntersectMode()];
+            saveImage(file_name.c_str(), renderer, texture);
+            quit = true;
+        }
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());

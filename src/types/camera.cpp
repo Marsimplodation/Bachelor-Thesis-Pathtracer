@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "common.h"
 #include "ray.h"
 #include <cmath>
 
@@ -8,8 +9,10 @@ Camera camera{
     .forward= {0, 0, 1},
     .right= {1, 0, 0},
     .up= {0, 1, 0},
-    .focus= 1.0f / (tanf((70 * 3.14f / 180.0f) / 2.0f)),
+    .focus= 1.0f,
     .fov = 70,
+    .fovScale =  (tanf((70 * 3.14f / 180.0f) / 2.0f)),
+    .dof = 0,
 };
 }
 
@@ -34,13 +37,21 @@ void cameraSetUp(Vector3 &v) {
 }
 
 void cameraSetFov(float f) {
-    camera.focus = 1.0f / (tanf((f * 3.14f / 180.0f) / 2.0f));
+    camera.fovScale = (tanf((f * 3.14f / 180.0f) / 2.0f));
 }
 
 void createCameraRay(float x, float y, Ray &ray) {
     ray.origin = camera.origin;
-    ray.direction = normalized(camera.right * x + camera.up * y +
-                               camera.forward * camera.focus);
+    ray.direction = normalized(camera.right * (x * camera.fovScale) +
+                               camera.up * (y * camera.fovScale) +
+                               camera.forward);
+    float xi1 = fastRandom(ray.randomState) * camera.dof;
+    float xi2 = fastRandom(ray.randomState) * camera.dof;
+    Vector3 lensRandom = camera.right * xi1 + camera.up * xi2;  
+    ray.origin += lensRandom;
+    ray.direction = normalized(ray.direction * camera.focus - lensRandom);
+
+
     ray.inv_dir[0] = 1.0f/ray.direction[0];
     ray.inv_dir[1] = 1.0f/ray.direction[1];
     ray.inv_dir[2] = 1.0f/ray.direction[2];

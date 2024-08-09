@@ -1,0 +1,16 @@
+[Models]
+file: objects/cornel.obj
+pos:  0,-250,0 
+scale: 300,300,300 
+
+[Materials]
+name: Material.004
+color: 1.0,1.0,0.8 
+emission: 0
+roughness: 0.1
+weights: 0,0,1
+
+[Camera]
+pos: 0,0,-500 
+forward: 0,0.0,1
+focus: 1

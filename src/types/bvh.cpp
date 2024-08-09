@@ -27,6 +27,10 @@ std::vector<Bin> bins(2);
 thread_local std::vector<u32> toTraverse(0);
 } // namespace
 
+unsigned long getMemoryBVH() {
+    return indicies.size() * sizeof(u32) + boxes.size() * sizeof(AABB) + nodes.size() * sizeof(BvhNode);
+}
+
 BvhNode & getNode(u32 idx) {
     return nodes[idx];
 }
@@ -54,9 +58,10 @@ bool findBVHIntesection(Ray &ray, int nodeIdx) {
     toTraverse.clear();
     toTraverse.push_back(nodeIdx);
     bool hit = false;
-    for(int i = 0; i < toTraverse.size(); ++i) {
+    while(toTraverse.size() > 0) {
         if (ray.terminated) break;
-        int idx = toTraverse[i];
+        int idx = toTraverse.back();
+        toTraverse.pop_back();
         BvhNode &node = nodes.at(idx);
         bool leaf = (node.childLeft == -1 && node.childRight == -1);
     
@@ -71,11 +76,11 @@ bool findBVHIntesection(Ray &ray, int nodeIdx) {
                 auto dRight = getIntersectDistance(ray, boxes[nodes[node.childRight].AABBIdx]);
                 
                 if(dRight >= dLeft) {
-                    if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
                     if(dRight != INFINITY) toTraverse.push_back(node.childRight);
+                    if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
                 } else {
-                    if(dRight != INFINITY) toTraverse.push_back(node.childRight);
                     if(dLeft != INFINITY) toTraverse.push_back(node.childLeft);
+                    if(dRight != INFINITY) toTraverse.push_back(node.childRight);
                 }
         } else {
             for (int i = node.startIdx; i < node.endIdx; i++) {

@@ -23,4 +23,6 @@ struct Grid {
 void intersectGrid(Ray & r);
 void constructGrid();
 void constructChannel(float u, float v, float s, float t, int idx, std::vector<u32> indicies, bool isObject = false);
+void setGridSettings(u32 size, u32 oSize, u32 count);
+unsigned long getMemory2Plane();
 #endif // !LIGHT_FIELD_GRID_H

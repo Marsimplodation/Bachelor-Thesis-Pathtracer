@@ -17,7 +17,7 @@ struct Object {
 };
 
 bool objectIntersection(Ray & ray, Object & primitive);
-void loadObject(const char* fileName, Vector3 position, Vector3 size, int  materialIdx);
+void loadObject(const std::string fileName, Vector3 position, Vector3 size, int  materialIdx);
 
 inline Vector3 minBounds(Object &primitive) {
     return primitive.boundingBox.min;

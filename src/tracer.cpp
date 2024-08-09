@@ -24,7 +24,8 @@ Texture image = createTexture(MAX_WIDTH, MAX_HEIGHT);
 int samples[MAX_WIDTH][MAX_HEIGHT];
 u32 randomStates[MAX_WIDTH][MAX_HEIGHT];
 WaveFrontEntry wavefront[16];
-unsigned long intersects[16];
+unsigned long intersectsP[16];
+unsigned long intersectsA[16];
 std::thread threads[16];
 bool running = true;
 
@@ -33,6 +34,7 @@ bool finishedRendering = false;
 bool debugView = false;
 bool debugViewTris = false;
 int debugScale = 10;
+bool testing = false;
 } // namespace
 
 bool& getfinishedRendering() {
@@ -55,11 +57,15 @@ int& getMaxSampleCount() {
     return MAX_SAMPLE_COUNT;
 }
 unsigned long getIntersectionCount() {
-    unsigned long tests = 0;
-    for (int i = 0; i < 16; i++) {
-        tests+=intersects[i];
-    }
-    return tests;
+unsigned long pTests = 0;
+    for(auto num : intersectsP) pTests += num;
+    return pTests;
+}
+
+unsigned long getStructureIntersectionCount() {
+    unsigned long aTests = 0;
+    for(auto num : intersectsA) aTests += num;
+    return aTests;
 }
 
 void setupRay(Ray & ray, int x, int y) {
@@ -86,7 +92,6 @@ bool progressFront(Ray & ray,int i, int x, int y) {
         bool yOverFlow = y + 4 >= HEIGHT;
 
         if (xOverFlow && yOverFlow) {
-            intersects[i] += ray.interSectionTests;
             ray.interSectionTests = 0;
             wavefront[i].x = x + 4 - WIDTH;
             wavefront[i].y = y + 4 - HEIGHT;
@@ -103,6 +108,7 @@ bool progressFront(Ray & ray,int i, int x, int y) {
     return false;
 }
 
+std::mutex testMtx;
 void traceWF(int i) {
     int x,y;
     Vector3 color{0,0,0};
@@ -120,9 +126,11 @@ void traceWF(int i) {
         ray.interSectionTests = 0;
         findIntersection(ray);
         // float t = ray.throughPut;
+        intersectsP[i] += ray.interSectionTests;
+        intersectsA[i] += ray.interSectionAS;
         color += shade(ray);
         ray.depth++;
-
+            
         if(debugView) {
             auto it =(float) (debugViewTris ? ray.interSectionTests : ray.interSectionAS);
             if(it > debugScale) color = {1,0,0}; 
@@ -151,8 +159,11 @@ void traceWF(int i) {
 
 std::mutex mtx;
 bool reinitTracer = true;
-void trace() {
-    while (true) {
+void trace(bool testing) {
+    bool run = true;
+    ::testing = testing;
+    while (run) {
+        if(testing) run = false;
         {
             std::lock_guard<std::mutex> lock(mtx);
             if (!reinitTracer) continue;
@@ -191,7 +202,8 @@ void reset() {
         }
     }
     for (int i = 0; i < 16; i++) {
-        intersects[i] = 0;
+        intersectsA[i] = 0;
+        intersectsP[i] = 0;
         wavefront[i].x = i % 4;
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
@@ -214,16 +226,18 @@ void initTracer() {
         wavefront[i].x = i % 4;
         wavefront[i].y = fmax(0.0f, i - (i % 4)) / 4;
         wavefront[i].ray.terminated = true;
+        intersectsA[i] = 0;
+        intersectsP[i] = 0;
+
     }
     for (int x = 0; x < MAX_WIDTH; x++) {
         for (int y = 0; y < MAX_HEIGHT; y++) {
             setTextureAt(image, x, y, {});
-
             samples[x][y] = 0;
             randomStates[x][y] = hashCoords(x, y); 
         }
     }
-    initScene();
+    reinitTracer = true;
 }
 void destroyTracer() {
     running = false;

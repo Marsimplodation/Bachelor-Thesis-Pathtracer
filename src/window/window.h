@@ -8,7 +8,7 @@ struct visualInformation {
     char flag;
 };
 
-void createWindow();
+void createWindow(bool testing);
 void registerInfo(float & f, const char * name);
 void registerInfo(Vector3 & v, const char * name);
 

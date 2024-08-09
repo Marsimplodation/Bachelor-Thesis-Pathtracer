@@ -21,5 +21,6 @@ Vector3 getSceneMinBounds();
 Vector3 getSceneMaxBounds();
 
 void resetScene();
-void buildAS(); 
+void buildAS();
+
 #endif // !SCENE_H
