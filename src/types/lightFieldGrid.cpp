@@ -139,6 +139,7 @@ void intersectGrid(Ray &r) {
         
         u32 startIdx = grid.gridLutStart[(lutIdx)];
         u32 endIdx = grid.gridLutEnd[(lutIdx)];
+        if(endIdx - startIdx == 0) continue;
         if(grid.hasTris) {
             for (unsigned int i = startIdx; i < endIdx; ++i) {
                 u32 sIdx = grid.indicies[i];
@@ -146,11 +147,21 @@ void intersectGrid(Ray &r) {
                 Triangle &triangle = trisBuffer[sIdx];
                 triangleIntersection(r, triangle);
             }
-        } else {
+        } else if (r.direction[axis] < 0) {
+            //ensure the closest aabb is traversed first (this is a stack, so it has to be last in the loop)
             for (unsigned int i = startIdx; i < endIdx; ++i) {
                 u32 sIdx = grid.indicies[i];
+                if(objectGrids[sIdx].aabb.min[axis] > r.origin[axis]) continue;
                 toTraverse.push_back(sIdx);
             }
+        } else {
+            //ensure the closest aabb is traversed first (this is a stack, so it has to be last in the loop)
+            for (unsigned int i = endIdx - 1; i != startIdx -1; --i) {
+                u32 sIdx = grid.indicies[i];
+                if(objectGrids[sIdx].aabb.max[axis] < r.origin[axis]) continue;
+                toTraverse.push_back(sIdx);
+            }
+            
         }
         topLevel = false;
     }
@@ -381,13 +392,20 @@ void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();    
     auto &trisBuffer = getTris();
+    struct Compare {u32 idx; float d;};
+    std::vector<Compare> compare(0);
+    compare.reserve(indicies.size());
 
     for (auto i : indicies) {
         if(objectGrids[i].splitingAxis != grid.splitingAxis) continue;
         if (!cuboidInAABB(objectGrids[i].aabb, points, edges)) {
             continue;
         }
-        grid.indicies.push_back(i);
+        compare.push_back({i, objectGrids[i].aabb.min[axis]});
+    }
+    std::sort(compare.begin(), compare.end(), [](Compare &a, Compare &b){return a.d < b.d;});
+    for(auto c : compare) {
+        grid.indicies.push_back(c.idx);
     }
 }
 
