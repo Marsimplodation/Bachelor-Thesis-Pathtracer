@@ -5,6 +5,7 @@
 #include "triangle.h"
 #include "primitive.h"
 #include "types/bvh.h"
+#include "types/lightFieldGrid.h"
 #include "types/texture.h"
 #include <algorithm>
 #include <cmath>
@@ -28,6 +29,31 @@ bool objectIntersection(Ray &ray, Object &primitive) {
             ray.interSectionTests++;
             hit |= triangleIntersection(ray, trisBuffer[i]);
         }
+    }
+    if(getIntersectMode() == BVH) {
+        findBVHIntesection(ray, primitive.root);
+    }
+    
+    if(getIntersectMode() == GRID) {
+        int axis = 0;
+        float maxDelta = 0.0f;
+        float f0 = std::abs(ray.direction[0]);
+        float f1 = std::abs(ray.direction[1]);
+        float f2 = std::abs(ray.direction[2]);
+
+        if (f0 > maxDelta) {
+            maxDelta = f0;
+            axis = 0;
+        }
+        if (f1 > maxDelta) {
+            maxDelta = f1;
+            axis = 1;
+        }
+        if (f2 > maxDelta) {
+            maxDelta = f2;
+            axis = 2;
+        }
+        intersectGrid(ray, primitive.GridIdx[axis]);
     }
     return hit;
 }

@@ -14,6 +14,7 @@ struct Object {
     int root;
     bool active;
     std::string name;
+    u32 GridIdx[3];
     std::vector<u32> materials;
 };
 

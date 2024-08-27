@@ -1,6 +1,8 @@
 #include "shader.h"
 #include "common.h"
+#include "primitives/object.h"
 #include "scene/scene.h"
+#include "types/aabb.h"
 #include "types/texture.h"
 #include "types/vector.h"
 #include <cmath>
@@ -10,11 +12,14 @@
 namespace {
 #define GAMMA 2.2f
 std::vector<Material> materials;
+bool nee = true;
 } // namespace
 
 Material *getMaterial(int idx) { return &materials[idx]; }
 
 std::vector<Material> *getMaterials() { return &materials; }
+
+bool &getNEE() {return nee;}
 
 int addMaterial(Material m) {
     int idx = materials.size();
@@ -35,6 +40,22 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
     float r0 = ((n1 - n2) / (n1 + n2));
     r0 *= r0;
     return r0 + (1 - r0) * pow(1 - dot, 5);
+}
+
+Vector3 getColorOfMaterial(Ray & r, Material & info) {
+    Vector3 color;
+    if (info.pbr.texture.data.empty())
+        color = info.pbr.albedo;
+    else {
+        Vector4 fgColor = getTextureAtUV(info.pbr.texture, r.uv.x, r.uv.y);
+        float opacity = fgColor.w;
+        float xi = fastRandom(r.randomState);
+        if (xi < 1 - opacity) {
+            return {-1, 0, 0};
+        }
+        color = {fgColor.x, fgColor.y, fgColor.z};
+    }
+    return color;
 }
 
 //------- shader ----//
@@ -122,19 +143,11 @@ Vector3 lambertShader(Ray &r) {
     int idx = r.materialIdx;
     Material &info = materials[idx];
     float cos = dotProduct(r.normal, r.direction);
-    Vector3 color = {0, 0, 0};
-    if (info.pbr.texture.data.empty())
-        color = info.pbr.albedo;
-    else {
-        Vector4 fgColor = getTextureAtUV(info.pbr.texture, r.uv.x, r.uv.y);
-        float opacity = fgColor.w;
-        float xi = fastRandom(r.randomState);
-        if (xi < 1 - opacity) {
-            r.origin = r.origin + r.direction * (r.tmax + 0.01f);
-            r.tmax = INFINITY;
-            return {};
-        }
-        color = {fgColor.x, fgColor.y, fgColor.z};
+    Vector3 color = getColorOfMaterial(r, info);
+    if(color[0] == -1) {
+        r.origin = r.origin + r.direction * (r.tmax + 0.01f);
+        r.tmax = INFINITY;
+        return {};
     }
     gammaCorrect(color);
 
@@ -148,6 +161,52 @@ Vector3 lambertShader(Ray &r) {
     r.inv_dir[1] = 1.0f/r.direction[1];
     r.inv_dir[2] = 1.0f/r.direction[2];
     return {};
+}
+
+Vector3 nextEventEstimation(Ray & r) {
+    //setup ray
+    auto light = getLight(r);
+    if(!light) return {0,0,0};
+    float xi1 = fastRandom(r.randomState);
+    float xi2 = fastRandom(r.randomState);
+    float xi3 = fastRandom(r.randomState);
+    Vector3 min = light->boundingBox.min;
+    Vector3 max = light->boundingBox.max;
+    Vector3 delta = max - min;
+    Vector3 point = min;
+    point.x += xi1 * delta.x;
+    point.y += xi2 * delta.y;
+    point.z += xi3 * delta.z;
+    Vector3 origin = r.origin;
+    Vector3 direction = normalized(point - origin); 
+    Vector3 inv_direction = {1.0f / direction[0], 1.0f / direction[1], 1.0f / direction[2]};  
+    Ray shadowRay = Ray{
+        .origin = origin,
+        .direction = direction,
+        .inv_dir = inv_direction,
+        .tmax = INFINITY
+    };
+    float cosSurface = dotProduct(r.normal, shadowRay.direction);
+    if(cosSurface < EPS) return {};
+
+    //check if light gets hit
+    objectIntersection(shadowRay, *light);
+    float cosLight = -dotProduct(shadowRay.normal, shadowRay.direction);
+    if(shadowRay.tmax == INFINITY) return {};
+    shadowRay.tmax -= EPS;
+    float distance = shadowRay.tmax; 
+    findIntersection(shadowRay);
+    if(distance + 0.01f <= shadowRay.tmax || distance - 0.01f >= shadowRay.tmax) return{};
+    
+    //calculate color for hit light
+    Material &mat = materials[shadowRay.materialIdx];
+    if (mat.pbr.emmision < EPS) return {};
+    Vector3 lightColor = getColorOfMaterial(shadowRay, mat);
+    gammaCorrect(lightColor);
+    if(lightColor[0] == -1) return {};
+    float inv_pi = 0.318;
+    lightColor = lightColor * inv_pi * mat.pbr.emmision * cosSurface;
+    return lightColor * r.throughPut;
 }
 
 u32 randomState;
@@ -167,15 +226,16 @@ Vector3 shade(Ray &r) {
     }
     r.normal = normal;
 
-
+    Vector3 lightColor = {};
     if(xi < mat.weights.lambert) {
         lambertShader(r);
+        if(nee) lightColor = nextEventEstimation(r);
     } else if (xi < (mat.weights.lambert + mat.weights.reflection)) {
         reflectionShader(r);
     } else {
         refractionShader(r);
     }
 
-    return r.throughPut * mat.pbr.emmision;
+    return r.throughPut * mat.pbr.emmision + lightColor;
 }
 

@@ -33,6 +33,7 @@ struct Material {
     std::string name;
 };
 
+bool &getNEE();
 Vector3 shade(Ray &r);
 Vector3 emitShader(Ray & r);
 Vector3 shadowShader(Ray & r);

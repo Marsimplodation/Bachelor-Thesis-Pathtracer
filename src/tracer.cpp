@@ -201,6 +201,7 @@ void reset() {
             samples[x][y] = 0;
         }
     }
+    resetScene();
     for (int i = 0; i < 16; i++) {
         intersectsA[i] = 0;
         intersectsP[i] = 0;

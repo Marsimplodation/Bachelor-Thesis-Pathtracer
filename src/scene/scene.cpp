@@ -20,6 +20,7 @@ namespace {
 std::vector<Triangle> tris={};
 std::vector<u32> indicies={};
 std::vector<Object> objects={};
+std::vector<Object> lights={};
 Material orange{.pbr={}, .weights={},.name=std::string("None")};
 int root {};
 }
@@ -28,7 +29,13 @@ std::vector<u32> & getIndicies() {return indicies;}
 std::vector<Triangle> & getTris() {return tris;}
 std::vector<Object> & getObjects() {return objects;}
 
-
+Object* getLight(Ray & r) {
+    if(lights.size() == 0) return 0x0;
+    u32 size = lights.size() - 1;
+    float f = fastRandom(r.randomState);
+    u32 idx = (u32) (f * size);
+    return &lights[idx];
+}
 
 Vector3 getSceneMaxBounds() {
     Vector3 max{-INFINITY,-INFINITY,-INFINITY};
@@ -117,6 +124,7 @@ void initScene() {
     getCamera()->origin = getSceneFile().cam.pos;
     getCamera()->dof = getSceneFile().cam.dof;
     getCamera()->focus = getSceneFile().cam.focus;
+    resetScene();
     scenenInited = true;
 }
 
@@ -124,6 +132,15 @@ void buildAS() {
 }
 
 void resetScene() {
+    lights.clear();
+    for (auto & o : objects) {
+        for(auto & mIdx : o.materials) {
+            if(getMaterial(mIdx)->pbr.emmision < EPS) continue;
+            lights.push_back(o);
+            break;
+        }
+    }
+
 }
 
 void destroyScene() {   
