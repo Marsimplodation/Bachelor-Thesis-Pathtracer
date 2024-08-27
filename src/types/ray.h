@@ -11,6 +11,8 @@ struct Ray {
     Vector3 inv_dir;
     Vector3 throughPut;
     Vector3 normal;
+    Vector3 tangent;
+    Vector3 bitangent;
     Vector2 uv;
     
     int depth;

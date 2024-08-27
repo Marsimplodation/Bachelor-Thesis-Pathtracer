@@ -8,7 +8,7 @@ build:
 debug:
 	cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug
 	cd build && make -j16
-	cd showcase && gdb --args ../build/pathtracer scenes/s.scene
+	cd showcase && gdb --args ../build/pathtracer scenes/cornel.scene
 
 
 

@@ -67,31 +67,28 @@ void callReset() {
 }
 
 
-bool DisplayMaterial(int & idx) {
-    Material * material = getMaterial(idx);
+u32 selectedMaterial = 0;
+bool DisplayMaterial(Object * o) {
     bool change = false;
-    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Material");
-    change |= ImGui::Button("New Material");
-    if(change) {
-       //idx = addMaterial({}); 
-    }
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Materials");
     
     std::vector<const char*> mats(0);
     for(auto & mat : *getMaterials()) {
         if(!mat.name.empty())mats.push_back(mat.name.c_str()); 
     }
-    if (ImGui::BeginCombo("Material", mats[idx])) {
-        for (int i = 0; i < getMaterials()->size(); i++) {
-            bool isSelected = (idx == i);
-            if (ImGui::Selectable(mats[i], isSelected)) {
-                idx = i; 
-                change = true;
+    if (ImGui::BeginCombo("Material", mats[selectedMaterial])) {
+        for (int i = 0; i < o->materials.size(); i++) {
+            int matIdx = o->materials[i];
+            bool isSelected = (selectedMaterial == matIdx);
+            if (ImGui::Selectable(mats[matIdx], isSelected)) {
+                selectedMaterial = matIdx; 
             }
             if (isSelected)
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
     }
+    Material * material = getMaterial(selectedMaterial);
 
     const char *items[] = {"Emissive", "Lambert", "Mirror", "Refract", "Edge", "None"};
     
@@ -162,7 +159,7 @@ void displayActiveObject() {
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Triangles: %d", o->endIdx - o->startIdx);
         change |= ImGui::Checkbox("Active", &o->active);
         change |= ImGui::DragInt2("indices", &(o->startIdx));
-        change |= DisplayMaterial(o->materialIdx);
+        change |= DisplayMaterial(o);
 
     if (change)
         callReset();
@@ -180,6 +177,7 @@ void displayObjects() {
         auto name = primitive.name;
         if (ImGui::Button(name.c_str(), ImVec2(windowWidth, 0))) {
             selectedObject = &primitive;
+            selectedMaterial = primitive.materials[0];
         }
     }
     ImGui::EndChild();

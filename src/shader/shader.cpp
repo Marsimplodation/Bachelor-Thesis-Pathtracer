@@ -158,6 +158,14 @@ Vector3 shade(Ray &r) {
     float xi = fastRandom(r.randomState);
     
     if(r.tmax == INFINITY) return black;
+    Vector3 normal = r.normal;
+    if (mat.pbr.normal.data.size() > 0) {
+        Vector4 const normalColor = getTextureAtUV(mat.pbr.normal, r.uv.x, r.uv.y);
+        Vector3 const textureNormal = Vector3{2.0f * normalColor.x, 2.0f * normalColor.y, 2.0f * normalColor.z} - Vector3{1, 1, 1};
+        normal = textureNormal.x * r.tangent + textureNormal.y * r.bitangent + textureNormal.z * r.normal;
+        normalize(normal);
+    }
+    r.normal = normal;
 
 
     if(xi < mat.weights.lambert) {

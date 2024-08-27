@@ -20,10 +20,10 @@ void setTextureAt(Texture & texture, int x, int y, Vector3 color) {
 }
 
 Vector4 getTextureAtUV(Texture & texture, float u, float v) {
-    if(u > 1) u = 1;
-    if(v > 1) v = 1;
-    if(v < 0) v = 0;
-    if(u < 0) u = 0;
+    if(u > 1) u = (u - (int)u);
+    if(v > 1) v = (v - (int)v);
+    if(v < 0) v = 1 + (v - (int) v);
+    if(u < 0) u = 1 + (u - (int) u);
     if(texture.data.size() != texture.width * texture.height) return {};
     int x = int(roundf(u * (texture.width-1))); 
     int y = int(roundf(v * (texture.height -1))); 
@@ -33,7 +33,10 @@ Vector4 getTextureAtUV(Texture & texture, float u, float v) {
 void loadTexture(Texture & texture, std::string path) {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    if(!pixels) return;
+    if(!pixels) {
+        printf("could not load: %s\n", path.c_str());
+        return;
+    }
     // Clear any existing data in the texture
     texture.data.clear();
 

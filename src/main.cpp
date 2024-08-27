@@ -20,17 +20,18 @@ void twindow() {createWindow(testing);}
 
 int main(int argc, char **argv) {
     if(argc < 2) {
-        printf("usage: pathtracer sceneFile {Samples} {gridSize} {objectGridSize} {maxTris}");
+        printf("usage: pathtracer sceneFile {Samples} {gridSize} {objectGridSize} {maxTris} {testing}");
         return -1;
     }
-    testing = argc != 2;
+    testing = argc > 7;
+    bool settings = argc != 2;
     
     u32 maxSamples = 100;
     u32 GridSize = 10;
     u32 GridObjectSize = 5;
     u32 GridMaxTris = 40;
 
-    if(testing) {
+    if(settings) {
         maxSamples = atoi(argv[2]);
         GridSize =  atoi(argv[3]);
         GridObjectSize = atoi(argv[4]);

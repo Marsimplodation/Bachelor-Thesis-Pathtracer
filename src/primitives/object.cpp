@@ -29,9 +29,6 @@ bool objectIntersection(Ray &ray, Object &primitive) {
             hit |= triangleIntersection(ray, trisBuffer[i]);
         }
     }
-    if(hit) {
-       ray.materialIdx = primitive.materialIdx; 
-    }
     return hit;
 }
 void loadObject(const std::string fileName, Vector3 position, Vector3 size,
@@ -75,8 +72,16 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             m.pbr.albedo = c;
         }
         int idx = addMaterial(m);
-        std::string texture = base_dir + "/" + material.diffuse_texname;
+
+        bool isAbsolute = material.diffuse_texname.front() == '/';
+        std::string texture = isAbsolute? material.diffuse_texname:base_dir + "/" + material.diffuse_texname;
+    
         if(!material.diffuse_texname.empty()) loadTexture(getMaterial(idx)->pbr.texture, texture.c_str());
+        
+        isAbsolute = material.bump_texname.front() == '/';
+        texture = isAbsolute? material.diffuse_texname:base_dir + "/" + material.bump_texname;
+    
+        if(!material.bump_texname.empty()) loadTexture(getMaterial(idx)->pbr.normal, texture.c_str());
         printf("loaded material %s\n", m.name.c_str());
     }
     
@@ -92,6 +97,8 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
         int matIdx = shape.mesh.material_ids[0];
         if(matIdx >= 0)matIdx += firstMatIdx;
         else matIdx = materialIdx;
+        std::vector<u32> objectMats(0);
+        std::vector<bool> matUsed(materials.size(), false);
         for (size_t i = 0; i < shape.mesh.indices.size(); i += 3) {
             idxs[0] = shape.mesh.indices[i];
             idxs[1] = shape.mesh.indices[i+1];
@@ -112,12 +119,36 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
                     attrib.texcoords[2 * idxs[j].texcoord_index + 0],
                     1.0f-attrib.texcoords[2 * idxs[j].texcoord_index + 1],
                 };
+
+
+            }
+             // Compute the tangent and bitangent for the triangle
+            Vector3 deltaPos1 = verts[1] - verts[0];
+            Vector3 deltaPos2 = verts[2] - verts[0];
+            Vector2 deltaUV1 = uvs[1] - uvs[0];
+            Vector2 deltaUV2 = uvs[2] - uvs[0];
+
+            // Calculate the scalar 'r'
+            float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+                
+            Vector3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+            Vector3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;    
+            // Get the material ID for the current triangle
+            int matIdxTri = shape.mesh.material_ids[i / 3];  // Material ID for this specific triangle
+            if (matIdxTri >= 0) {
+                if(!matUsed[matIdxTri]) {
+                    matUsed[matIdxTri] = true;
+                    objectMats.push_back(matIdxTri + firstMatIdx);
+                }
+                matIdxTri += firstMatIdx;
+            } else {
+                matIdxTri = matIdx;  // Default material index if no material assigned
             }
             
             int idx = trisBuffer.size();
             trisBuffer.push_back(createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
-                                                   normals[2], uvs[0], uvs[1], uvs[2], matIdx));
+                                                   normals[2], uvs[0], uvs[1], uvs[2], tangent, bitangent, matIdxTri));
             if(i == 0)startIdx = idx;
             endIdx = std::max(endIdx, idx + 1);
         }
@@ -143,9 +174,9 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             .startIdx = startIdx,
             .endIdx = endIdx,
             .boundingBox =  {.min = min, .max=max},
-            .materialIdx = matIdx,
             .active = true,
             .name = std::string(shape.name.c_str()),
+            .materials = objectMats,
         };
         objectBuffer.push_back(o);
     }

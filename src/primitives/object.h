@@ -4,16 +4,17 @@
 #include "../types/vector.h"
 #include "types/aabb.h"
 #include <string>
+#include <vector>
 #define OBJECT 0x01
 struct Object {
     char type;
     int startIdx;
     int endIdx;
     AABB boundingBox;
-    int materialIdx;
     int root;
     bool active;
     std::string name;
+    std::vector<u32> materials;
 };
 
 bool objectIntersection(Ray & ray, Object & primitive);

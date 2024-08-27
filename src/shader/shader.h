@@ -24,6 +24,7 @@ struct pbrProbs {
     float emmision = 0.0f;
     float roughness = 0.5f;
     Texture texture;
+    Texture normal;
 }; 
 
 struct Material {
