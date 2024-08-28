@@ -148,18 +148,6 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
 
 
             }
-             // Compute the tangent and bitangent for the triangle
-            Vector3 deltaPos1 = verts[1] - verts[0];
-            Vector3 deltaPos2 = verts[2] - verts[0];
-            Vector2 deltaUV1 = uvs[1] - uvs[0];
-            Vector2 deltaUV2 = uvs[2] - uvs[0];
-
-            // Calculate the scalar 'r'
-            float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-                
-            Vector3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
-            Vector3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;    
-            // Get the material ID for the current triangle
             int matIdxTri = shape.mesh.material_ids[i / 3];  // Material ID for this specific triangle
             if (matIdxTri >= 0) {
                 if(!matUsed[matIdxTri]) {
@@ -174,7 +162,7 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             int idx = trisBuffer.size();
             trisBuffer.push_back(createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
-                                                   normals[2], uvs[0], uvs[1], uvs[2], tangent, bitangent, matIdxTri));
+                                                   normals[2], uvs[0], uvs[1], uvs[2], matIdxTri));
             if(i == 0)startIdx = idx;
             endIdx = std::max(endIdx, idx + 1);
         }

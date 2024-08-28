@@ -3,6 +3,7 @@
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "types/camera.h"
+#include "types/ray.h"
 #include "types/texture.h"
 #include "types/vector.h"
 #include <chrono>
@@ -119,7 +120,8 @@ void traceWF(int i) {
         auto &ray = wavefront[i].ray;
         if (ray.terminated) {
             setupRay(ray, x, y);
-            color = {0.0f, 0.0f, 0.0f};
+            ray.light = {0.0f, 0.0f, 0.0f};
+            ray.rayFLAG = PRIMARY_RAY;
         }
 
         ray.interSectionAS = 0;
@@ -128,7 +130,7 @@ void traceWF(int i) {
         // float t = ray.throughPut;
         intersectsP[i] += ray.interSectionTests;
         intersectsA[i] += ray.interSectionAS;
-        color += shade(ray);
+        shade(ray);
         ray.depth++;
             
         if(debugView) {
@@ -140,7 +142,7 @@ void traceWF(int i) {
         }
         if (!ray.terminated)
             continue;
-
+        color = ray.light;
         
         samples[x][y]++;
         randomStates[x][y] = ray.randomState;

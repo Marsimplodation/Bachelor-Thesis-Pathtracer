@@ -3,6 +3,7 @@
 #include "primitives/object.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
+#include "types/ray.h"
 #include "types/texture.h"
 #include "types/vector.h"
 #include <cmath>
@@ -12,7 +13,7 @@
 namespace {
 #define GAMMA 2.2f
 std::vector<Material> materials;
-bool nee = true;
+bool nee = false;
 } // namespace
 
 Material *getMaterial(int idx) { return &materials[idx]; }
@@ -58,13 +59,66 @@ Vector3 getColorOfMaterial(Ray & r, Material & info) {
     return color;
 }
 
+
+Vector3 nextEventEstimation(Ray & r) {
+    //setup ray
+    auto light = getLight(r);
+    if(!light) return {0,0,0};
+    float xi1 = fastRandom(r.randomState);
+    float xi2 = fastRandom(r.randomState);
+    float xi3 = fastRandom(r.randomState);
+    Vector3 min = light->boundingBox.min;
+    Vector3 max = light->boundingBox.max;
+    Vector3 delta = max - min;
+    Vector3 point = min;
+    point.x += xi1 * delta.x;
+    point.y += xi2 * delta.y;
+    point.z += xi3 * delta.z;
+    Vector3 origin = r.origin;
+    Vector3 direction = normalized(point - origin); 
+    Vector3 inv_direction = {1.0f / direction[0], 1.0f / direction[1], 1.0f / direction[2]};  
+    Ray shadowRay = Ray{
+        .origin = origin,
+        .direction = direction,
+        .inv_dir = inv_direction,
+        .tmax = INFINITY
+    };
+    float cosSurface = dotProduct(r.normal, shadowRay.direction);
+    if(cosSurface < EPS) return {};
+
+    //check if light gets hit
+    objectIntersection(shadowRay, *light);
+    float cosLight = -dotProduct(shadowRay.normal, shadowRay.direction);
+    Vector3 path = shadowRay.direction * shadowRay.tmax;
+    if(shadowRay.tmax == INFINITY) return {};
+    shadowRay.tmax -= EPS;
+    float distance = shadowRay.tmax; 
+    findIntersection(shadowRay);
+    if(distance != shadowRay.tmax) return {}; 
+    float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
+    float area = (delta.x * (delta.y + delta.z) + delta.y * delta.z);
+    //calculate color for hit light
+    Material &lightMaterial = materials[shadowRay.materialIdx];
+    if (lightMaterial.pbr.emmision < EPS) return {};
+    Vector3 lightColor = getColorOfMaterial(shadowRay, lightMaterial);
+    gammaCorrect(lightColor);
+    if(lightColor[0] == -1) return {};
+    float inv_pi = 0.318;
+    lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight;
+    return lightColor;
+}
+
 //------- shader ----//
-Vector3 reflectionShader(Ray &r) {
+void reflectionShader(Ray &r) {
     Material &info = materials[r.materialIdx];
     r.origin = r.origin + r.direction * (r.tmax);
     r.direction =
         r.direction - 2.0f * dotProduct(r.direction, r.normal) * r.normal;
-    auto dir = randomCosineWeightedDirection(r);
+    auto randomDirection = randomCosineWeightedDirection(r);
+    auto dir = randomDirection.x * r.tangent;
+    dir += randomDirection.y * r.bitangent;
+    dir += randomDirection.z * r.normal;
+    normalize(dir);
     r.direction = r.direction * (1-info.pbr.roughness) + dir * info.pbr.roughness;
     normalize(r.direction);
     
@@ -77,10 +131,10 @@ Vector3 reflectionShader(Ray &r) {
     r.inv_dir[0] = 1.0f/r.direction[0];
     r.inv_dir[1] = 1.0f/r.direction[1];
     r.inv_dir[2] = 1.0f/r.direction[2];
-    return {};
+    return;
 }
 
-Vector3 refractionShader(Ray &r) {
+void refractionShader(Ray &r) {
     int idx = r.materialIdx;
     Material &info = materials[idx];
 
@@ -126,7 +180,11 @@ Vector3 refractionShader(Ray &r) {
     r.origin = r.origin + r.direction * (r.tmax) + refractDirection * EPS;
     r.throughPut = r.throughPut * color;
     r.direction = refractDirection;
-    auto dir = randomCosineWeightedDirection(r);
+    auto randomDirection = randomCosineWeightedDirection(r);
+    auto dir = randomDirection.x * r.tangent;
+    dir += randomDirection.y * r.bitangent;
+    dir += randomDirection.z * r.normal;
+    normalize(dir);
     r.direction = r.direction * (1-info.pbr.roughness) + dir * info.pbr.roughness;
     normalize(r.direction);
     r.tmax = INFINITY;
@@ -135,11 +193,11 @@ Vector3 refractionShader(Ray &r) {
     r.inv_dir[2] = 1.0f/r.direction[2];
     // r.colorMask = r.colorMask * info->color;
 
-    return {};
+    return;
 }
 
 
-Vector3 lambertShader(Ray &r) {
+void lambertShader(Ray &r) {
     int idx = r.materialIdx;
     Material &info = materials[idx];
     float cos = dotProduct(r.normal, r.direction);
@@ -147,66 +205,30 @@ Vector3 lambertShader(Ray &r) {
     if(color[0] == -1) {
         r.origin = r.origin + r.direction * (r.tmax + 0.01f);
         r.tmax = INFINITY;
-        return {};
+        return;
     }
     gammaCorrect(color);
 
     // reset for next bounce
-    r.throughPut = r.throughPut * color;
     r.origin = r.origin + r.direction * r.tmax;
-    r.direction = randomCosineWeightedDirection(r);
+    
+    auto randomDir = (randomCosineWeightedDirection(r));
+    r.direction = randomDir.x * r.tangent + randomDir.y * r.bitangent + randomDir.z * r.normal;
+    normalize(r.direction);
+    
     r.origin += r.direction * EPS;
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
     r.inv_dir[1] = 1.0f/r.direction[1];
     r.inv_dir[2] = 1.0f/r.direction[2];
-    return {};
-}
-
-Vector3 nextEventEstimation(Ray & r) {
-    //setup ray
-    auto light = getLight(r);
-    if(!light) return {0,0,0};
-    float xi1 = fastRandom(r.randomState);
-    float xi2 = fastRandom(r.randomState);
-    float xi3 = fastRandom(r.randomState);
-    Vector3 min = light->boundingBox.min;
-    Vector3 max = light->boundingBox.max;
-    Vector3 delta = max - min;
-    Vector3 point = min;
-    point.x += xi1 * delta.x;
-    point.y += xi2 * delta.y;
-    point.z += xi3 * delta.z;
-    Vector3 origin = r.origin;
-    Vector3 direction = normalized(point - origin); 
-    Vector3 inv_direction = {1.0f / direction[0], 1.0f / direction[1], 1.0f / direction[2]};  
-    Ray shadowRay = Ray{
-        .origin = origin,
-        .direction = direction,
-        .inv_dir = inv_direction,
-        .tmax = INFINITY
-    };
-    float cosSurface = dotProduct(r.normal, shadowRay.direction);
-    if(cosSurface < EPS) return {};
-
-    //check if light gets hit
-    objectIntersection(shadowRay, *light);
-    float cosLight = -dotProduct(shadowRay.normal, shadowRay.direction);
-    if(shadowRay.tmax == INFINITY) return {};
-    shadowRay.tmax -= EPS;
-    float distance = shadowRay.tmax; 
-    findIntersection(shadowRay);
-    if(distance + 0.01f <= shadowRay.tmax || distance - 0.01f >= shadowRay.tmax) return{};
+    r.throughPut = r.throughPut * (color);
+   
+    //next event estimation
+    Vector3 lightColor{};
+    if(nee) lightColor = nextEventEstimation(r) * color;
+    r.light = r.light + lightColor * r.throughPut;
     
-    //calculate color for hit light
-    Material &mat = materials[shadowRay.materialIdx];
-    if (mat.pbr.emmision < EPS) return {};
-    Vector3 lightColor = getColorOfMaterial(shadowRay, mat);
-    gammaCorrect(lightColor);
-    if(lightColor[0] == -1) return {};
-    float inv_pi = 0.318;
-    lightColor = lightColor * inv_pi * mat.pbr.emmision * cosSurface;
-    return lightColor * r.throughPut;
+    return;
 }
 
 u32 randomState;
@@ -226,16 +248,22 @@ Vector3 shade(Ray &r) {
     }
     r.normal = normal;
 
+    auto flag = r.rayFLAG;
+
     Vector3 lightColor = {};
     if(xi < mat.weights.lambert) {
         lambertShader(r);
-        if(nee) lightColor = nextEventEstimation(r);
+        r.rayFLAG = OTHER;
     } else if (xi < (mat.weights.lambert + mat.weights.reflection)) {
         reflectionShader(r);
+        r.rayFLAG = REFLECTION_RAY;
     } else {
         refractionShader(r);
+        r.rayFLAG = REFLECTION_RAY;
     }
-
-    return r.throughPut * mat.pbr.emmision + lightColor;
+    //handle if material is emmisive
+    //ignore when nee is active and this is a difuse ray
+    if(!nee || (nee && flag != OTHER)) r.light = r.light + mat.pbr.emmision * r.throughPut;
+    return {};
 }
 

@@ -41,8 +41,8 @@ bool triangleIntersection(Ray &ray, Triangle & primitive) {
         return false;
 
     ray.normal = normalized(u * primitive.normal[1] + v * primitive.normal[2] + (1 - u - v) * primitive.normal[0]);
-    ray.tangent = primitive.tangent;
-    ray.bitangent = primitive.bitangent;
+    ray.tangent = normalized(crossProduct(ray.normal, abs(ray.normal.z) < 0.999 ? Vector3{0,0,1} : Vector3{1.0, 0.0, 0.0}));
+    ray.bitangent = crossProduct(ray.normal, ray.tangent); 
     ray.uv = (u * primitive.uv[1] + v * primitive.uv[2] + (1 - u - v) * primitive.uv[0]);
     // calculate the tangent and bitangent vectors as well
     // Set the new length and the current primitive
@@ -64,14 +64,12 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, int materialIdx) {
     return t;
 }
 
-Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector2 uv0, Vector2 uv1, Vector2 uv2, Vector3 tangent, Vector3 bitangent, int materialIdx) {
+Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector2 uv0, Vector2 uv1, Vector2 uv2, int materialIdx) {
     Triangle t{
         .type = TRIANGLE,
         .vertices = {v0, v1, v2},
         .normal = {n0, n1, n2},
         .uv = {uv0, uv1, uv2},
-        .tangent = tangent,
-        .bitangent = bitangent,
         .active = true,
         .materialIdx = materialIdx,
     };
