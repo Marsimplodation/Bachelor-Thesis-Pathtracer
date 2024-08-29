@@ -31,9 +31,9 @@ std::vector<Object> & getObjects() {return objects;}
 
 Object* getLight(Ray & r) {
     if(lights.size() == 0) return 0x0;
-    u32 size = lights.size() - 1;
+    u32 size = lights.size();
     float f = fastRandom(r.randomState);
-    u32 idx = (u32) (f * size);
+    u32 idx = (u32) std::floor((f * (float)size));
     return &lights[idx];
 }
 

@@ -104,7 +104,8 @@ Vector3 nextEventEstimation(Ray & r) {
     gammaCorrect(lightColor);
     if(lightColor[0] == -1) return {};
     float inv_pi = 0.318;
-    lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight;
+    //lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight / area;
+    lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_pi;
     return lightColor;
 }
 
