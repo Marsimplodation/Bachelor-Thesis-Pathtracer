@@ -13,6 +13,8 @@ struct Object {
     AABB boundingBox;
     int root;
     bool active;
+    float surfaceArea;
+    u32 GridIdx[3];
     std::string name;
     std::vector<u32> materials;
 };
@@ -26,5 +28,7 @@ inline Vector3 minBounds(Object &primitive) {
 inline Vector3 maxBounds(Object &primitive) {
     return primitive.boundingBox.max;
 }
+
+u32 getRandomTriangleFromObject(Ray & ray, Object & primitive);
 
 #endif // !OBJECT_H

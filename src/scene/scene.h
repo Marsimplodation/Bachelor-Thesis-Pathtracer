@@ -7,14 +7,15 @@
 #include <vector>
 #define KILLCHANCE 0.15
 void findIntersection(Ray & r);
-void findOcclusion(Ray & r);
 void initScene();
 void destroyScene();
 
 
 std::vector<u32> & getIndicies();
 std::vector<Triangle> & getTris();
+std::vector<Object> & getLights();
 std::vector<Object> & getObjects();
+Object* getLight(Ray & r);
 
 void findIntersection(Ray &ray);
 Vector3 getSceneMinBounds();

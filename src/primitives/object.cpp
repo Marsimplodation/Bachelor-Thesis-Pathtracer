@@ -5,6 +5,7 @@
 #include "triangle.h"
 #include "primitive.h"
 #include "types/bvh.h"
+#include "types/lightFieldGrid.h"
 #include "types/texture.h"
 #include <algorithm>
 #include <cmath>
@@ -28,6 +29,31 @@ bool objectIntersection(Ray &ray, Object &primitive) {
             ray.interSectionTests++;
             hit |= triangleIntersection(ray, trisBuffer[i]);
         }
+    }
+    if(getIntersectMode() == BVH) {
+        findBVHIntesection(ray, primitive.root);
+    }
+    
+    if(getIntersectMode() == GRID) {
+        int axis = 0;
+        float maxDelta = 0.0f;
+        float f0 = std::abs(ray.direction[0]);
+        float f1 = std::abs(ray.direction[1]);
+        float f2 = std::abs(ray.direction[2]);
+
+        if (f0 > maxDelta) {
+            maxDelta = f0;
+            axis = 0;
+        }
+        if (f1 > maxDelta) {
+            maxDelta = f1;
+            axis = 1;
+        }
+        if (f2 > maxDelta) {
+            maxDelta = f2;
+            axis = 2;
+        }
+        intersectGrid(ray, primitive.GridIdx[axis]);
     }
     return hit;
 }
@@ -122,18 +148,6 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
 
 
             }
-             // Compute the tangent and bitangent for the triangle
-            Vector3 deltaPos1 = verts[1] - verts[0];
-            Vector3 deltaPos2 = verts[2] - verts[0];
-            Vector2 deltaUV1 = uvs[1] - uvs[0];
-            Vector2 deltaUV2 = uvs[2] - uvs[0];
-
-            // Calculate the scalar 'r'
-            float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-                
-            Vector3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
-            Vector3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;    
-            // Get the material ID for the current triangle
             int matIdxTri = shape.mesh.material_ids[i / 3];  // Material ID for this specific triangle
             if (matIdxTri >= 0) {
                 if(!matUsed[matIdxTri]) {
@@ -148,18 +162,19 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             int idx = trisBuffer.size();
             trisBuffer.push_back(createTriangle(verts[0], verts[1], verts[2],
                                                    normals[0], normals[1],
-                                                   normals[2], uvs[0], uvs[1], uvs[2], tangent, bitangent, matIdxTri));
+                                                   normals[2], uvs[0], uvs[1], uvs[2], matIdxTri));
             if(i == 0)startIdx = idx;
             endIdx = std::max(endIdx, idx + 1);
         }
 
-        
         //boundingbox
         Vector3 min{INFINITY, INFINITY, INFINITY};
         Vector3 max{-INFINITY, -INFINITY, -INFINITY};
+        float sA = 0.0f;
         Vector3 tmin, tmax{};
         for (int i = startIdx; i < endIdx; i++) {
             auto & vertice = trisBuffer[i];
+            sA += calculateTriangleSurfaceArea(vertice);
             tmin = minBounds(vertice);
             tmax = maxBounds(vertice);
             if (tmin.x < min.x) min.x = tmin.x;
@@ -175,9 +190,16 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             .endIdx = endIdx,
             .boundingBox =  {.min = min, .max=max},
             .active = true,
+            .surfaceArea = sA,
             .name = std::string(shape.name.c_str()),
             .materials = objectMats,
         };
         objectBuffer.push_back(o);
     }
+}
+
+u32 getRandomTriangleFromObject(Ray & ray, Object & primitive) {
+    u32 range = primitive.endIdx - primitive.startIdx;
+    u32 randomIdx = primitive.startIdx + std::floor(fastRandom(ray.randomState) * range);
+    return randomIdx;
 }

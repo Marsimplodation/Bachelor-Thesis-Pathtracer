@@ -4,12 +4,18 @@
 #include "../common.h"
 #include <atomic>
 
-
+#define PRIMARY_RAY 0x00
+#define REFLECTION_RAY 0x01
+#define OTHER 0x02
 struct Ray {
     Vector3 origin;
     Vector3 direction;
     Vector3 inv_dir;
+    
+    //shader stuff
     Vector3 throughPut;
+    Vector3 light;
+
     Vector3 normal;
     Vector3 tangent;
     Vector3 bitangent;
@@ -27,6 +33,8 @@ struct Ray {
 
     //shaderinfo
     int materialIdx;
+    char rayFLAG = PRIMARY_RAY;
 };
 Vector3 randomCosineWeightedDirection(Ray & r);
+Vector2 uniformSampleDisk(Ray & r);
 #endif // !RAY_H

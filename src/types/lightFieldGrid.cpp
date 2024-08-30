@@ -74,36 +74,39 @@ unsigned long getMemory2Plane() {
 }
 
 
-void intersectGrid(Ray &r) {
+void intersectGrid(Ray &r, int idx) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
+   
+    bool object = idx != -1;
+    int axis = idx;
+    if(idx == -1) {
+        float maxDelta = 0.0f;
+        float f0 = std::abs(r.direction[0]);
+        float f1 = std::abs(r.direction[1]);
+        float f2 = std::abs(r.direction[2]);
 
-    float maxDelta = 0.0f;
-    int axis = 0;
-    float f0 = std::abs(r.direction[0]);
-    float f1 = std::abs(r.direction[1]);
-    float f2 = std::abs(r.direction[2]);
-
-    if (f0 > maxDelta) {
-        maxDelta = f0;
-        axis = 0;
-    }
-    if (f1 > maxDelta) {
-        maxDelta = f1;
-        axis = 1;
-    }
-    if (f2 > maxDelta) {
-        maxDelta = f2;
-        axis = 2;
-    }
-    
-    int idx = axis;
+        if (f0 > maxDelta) {
+            maxDelta = f0;
+            axis = 0;
+        }
+        if (f1 > maxDelta) {
+            maxDelta = f1;
+            axis = 1;
+        }
+        if (f2 > maxDelta) {
+            maxDelta = f2;
+            axis = 2;
+        }
+        idx = axis;
+    } 
+    if(object) axis = objectGrids[idx].splitingAxis;
     auto axes = getGridAxes(axis);
     int right = axes[0];
     int up = axes[1];
 
-    bool topLevel = true;
+    bool topLevel = !object;
     toTraverse.clear();
     toTraverse.push_back(idx);
     Vector4 points{};
@@ -125,13 +128,6 @@ void intersectGrid(Ray &r) {
         //get intersection point
         auto in = (r.origin + d1 * r.direction - grid.min) * grid.inv_delta;
         auto out = (r.origin + d2 * r.direction - grid.min) * grid.inv_delta;
-
-        gridMiss |= (in[right] < 0 || in[right] >= 1); 
-        gridMiss |= (in[up] < 0 || in[up] >= 1); 
-        gridMiss |= (out[right] < 0 || out[right] >= 1); 
-        gridMiss |= (out[up] < 0 || out[up] >= 1); 
-        if (gridMiss) continue; 
-
 
         // ray is in channel uv,st
         // to do get all tris in the lut for uvst and loop over them
@@ -344,6 +340,7 @@ void constructGrid() {
             grid.indicies.push_back(primitive.root);
             objectGrids.push_back(grid);
             indicies[axis].push_back(objectGrids.size() - 1);
+            primitive.GridIdx[axis] = objectGrids.size() -1;
             constructGrid(objectGrids.size() - 1);
             printf("%s\n", primitive.name.c_str());
         }

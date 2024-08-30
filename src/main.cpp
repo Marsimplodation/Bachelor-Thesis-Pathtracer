@@ -1,6 +1,7 @@
 #include "common.h"
 #include "scene/SceneFile.h"
 #include "scene/scene.h"
+#include "shader/shader.h"
 #include "tracer.h"
 #include "types/bvh.h"
 #include "types/lightFieldGrid.h"
@@ -18,25 +19,68 @@ namespace {
 void ttrace() {trace(testing);}
 void twindow() {createWindow(testing);}
 
+void printHelp() {
+    printf("usage: pathtracer sceneFile");
+    printf("Arguments: \n"
+            "-S Samples default = 100 \n"
+            "-gs gridSize defaul = 10 \n" 
+            "-os objectGridSize default = 5 \n"
+            "-m maxTris default = 40 \n" 
+            "--testing  \n" 
+            "--2plane_only \n"
+            "--help\n");
+}
+
 int main(int argc, char **argv) {
     if(argc < 2) {
-        printf("usage: pathtracer sceneFile {Samples} {gridSize} {objectGridSize} {maxTris} {testing}");
+        printHelp();
         return -1;
     }
-    testing = argc > 7;
-    bool settings = argc != 2;
     
     u32 maxSamples = 100;
     u32 GridSize = 10;
     u32 GridObjectSize = 5;
     u32 GridMaxTris = 40;
+    bool only2Plane = false;
+    testing = false;
+    auto checkNextArg =[argc](int i){return (i + 1 < argc);};
+    for(int i = 0; i < argc; ++i){
+        std::string arg(argv[i]);
+        if(arg == "-S") {
+            if(!checkNextArg(i)) {
+                printHelp();
+                return -1;
+            }
+            maxSamples = atoi(argv[++i]);
+        } else if(arg == "-gs") {
+            if(!checkNextArg(i)) {
+                printHelp();
+                return -1;
+            }
+            GridSize = atoi(argv[++i]);
+        } else if(arg == "-os") {
+            if(!checkNextArg(i)) {
+                printHelp();
+                return -1;
+            }
+            GridObjectSize = atoi(argv[++i]);
+        } else if(arg == "-m") {
+            if(!checkNextArg(i)) {
+                printHelp();
+                return -1;
+            }
+            GridMaxTris = atoi(argv[++i]);
+        } else if(arg == "--testing") {
+            testing = true;
+        } else if(arg == "--2plane_only") {
+            only2Plane = true;
+        } else if(arg == "--help") {
+            printHelp();
+            return -1;
+        }
 
-    if(settings) {
-        maxSamples = atoi(argv[2]);
-        GridSize =  atoi(argv[3]);
-        GridObjectSize = atoi(argv[4]);
-        GridMaxTris = atoi(argv[5]);
     }
+
     setGridSettings(GridSize, GridObjectSize, GridMaxTris);
 
     setWindowSize(1280, 720);
@@ -45,7 +89,9 @@ int main(int argc, char **argv) {
     initScene();
 
     if(testing) {
-        for (int i = 1; i < 3; i++) {
+        printf("starting test\n");
+        getNEE() = false;
+        for (int i = (only2Plane ? 2 : 1); i < 3; i++) {
             auto tBegin = std::chrono::high_resolution_clock::now();
             setIntersectMode(i);
             initTracer();

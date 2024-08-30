@@ -221,8 +221,7 @@ void displayIntersectSettings() {
     ImGui::Begin("Trace Setttings");
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "intersects: %lu", getIntersectionCount());
     const char *items[] = {"ALL", "BVH", "GRID", "Hybrid"};
-    if(ImGui::Button("rebuild structures")) {
-        buildAS();
+    if(ImGui::Checkbox("NEE", &getNEE())) {
         callReset();
     }
     if (ImGui::BeginCombo("intersect mode", items[getIntersectMode()])) {
