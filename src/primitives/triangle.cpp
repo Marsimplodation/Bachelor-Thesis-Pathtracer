@@ -91,3 +91,20 @@ Vector3 maxBounds(Triangle &primitive) {
         std::max(primitive.vertices[0].z, std::max(primitive.vertices[1].z, primitive.vertices[2].z)),
     };
 }
+
+float calculateTriangleSurfaceArea(Triangle & primitive) {
+    auto edge1 = primitive.vertices[2] - primitive.vertices[0];
+    auto edge2 = primitive.vertices[1] - primitive.vertices[0];
+    auto edge3 = primitive.vertices[2] - primitive.vertices[1];
+
+    float l1 = length(edge1);
+    float l2 = length(edge2);
+    float l3 = length(edge3);
+
+    float semiPerimeter = (l1 + l2 + l3) / 2;
+    float sl1 = semiPerimeter -l1;
+    float sl2 = semiPerimeter -l2;
+    float sl3 = semiPerimeter -l3;
+    float area = sqrtf(semiPerimeter * sl1 * sl2 * sl3);
+    return area;
+}

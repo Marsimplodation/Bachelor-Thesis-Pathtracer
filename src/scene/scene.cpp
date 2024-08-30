@@ -28,6 +28,7 @@ int root {};
 std::vector<u32> & getIndicies() {return indicies;}
 std::vector<Triangle> & getTris() {return tris;}
 std::vector<Object> & getObjects() {return objects;}
+std::vector<Object> & getLights() {return lights;}
 
 Object* getLight(Ray & r) {
     if(lights.size() == 0) return 0x0;

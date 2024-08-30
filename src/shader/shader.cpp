@@ -1,6 +1,7 @@
 #include "shader.h"
 #include "common.h"
 #include "primitives/object.h"
+#include "primitives/triangle.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
 #include "types/ray.h"
@@ -64,16 +65,14 @@ Vector3 nextEventEstimation(Ray & r) {
     //setup ray
     auto light = getLight(r);
     if(!light) return {0,0,0};
-    float xi1 = fastRandom(r.randomState);
-    float xi2 = fastRandom(r.randomState);
-    float xi3 = fastRandom(r.randomState);
-    Vector3 min = light->boundingBox.min;
-    Vector3 max = light->boundingBox.max;
-    Vector3 delta = max - min;
-    Vector3 point = min;
-    point.x += xi1 * delta.x;
-    point.y += xi2 * delta.y;
-    point.z += xi3 * delta.z;
+
+    auto xi = uniformSampleDisk(r);
+    float xi1 = xi.x;
+    float xi2 = xi.y; 
+    float xi3 = 1 - xi1 - xi2;
+    auto & tri = getTris()[getRandomTriangleFromObject(r, *light)];
+    auto point = tri.vertices[1] * xi1 + tri.vertices[2] * xi2 + tri.vertices[0] * xi3;
+
     Vector3 origin = r.origin;
     Vector3 direction = normalized(point - origin); 
     Vector3 inv_direction = {1.0f / direction[0], 1.0f / direction[1], 1.0f / direction[2]};  
@@ -87,25 +86,21 @@ Vector3 nextEventEstimation(Ray & r) {
     if(cosSurface < EPS) return {};
 
     //check if light gets hit
-    objectIntersection(shadowRay, *light);
+    triangleIntersection(shadowRay, tri);
     float cosLight = -dotProduct(shadowRay.normal, shadowRay.direction);
-    Vector3 path = shadowRay.direction * shadowRay.tmax;
-    if(shadowRay.tmax == INFINITY) return {};
     shadowRay.tmax -= EPS;
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
     if(distance != shadowRay.tmax) return {}; 
+  
     float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
-    float area = (delta.x * (delta.y + delta.z) + delta.y * delta.z);
     //calculate color for hit light
     Material &lightMaterial = materials[shadowRay.materialIdx];
-    if (lightMaterial.pbr.emmision < EPS) return {};
     Vector3 lightColor = getColorOfMaterial(shadowRay, lightMaterial);
     gammaCorrect(lightColor);
+    
     if(lightColor[0] == -1) return {};
-    float inv_pi = 0.318;
-    //lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight / area;
-    lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_pi;
+    lightColor = lightColor / 3.14f * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
     return lightColor;
 }
 
@@ -226,7 +221,7 @@ void lambertShader(Ray &r) {
    
     //next event estimation
     Vector3 lightColor{};
-    if(nee) lightColor = nextEventEstimation(r) * color;
+    if(nee) lightColor = nextEventEstimation(r);
     r.light = r.light + lightColor * r.throughPut;
     
     return;

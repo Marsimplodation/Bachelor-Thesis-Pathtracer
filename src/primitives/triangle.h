@@ -18,4 +18,5 @@ Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, int materialIdx);
 Triangle createTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n0, Vector3 n1, Vector3 n2, Vector2 uv0, Vector2 uv1, Vector2 uv2, int materialIdx);
 Vector3 minBounds(Triangle & primitive);
 Vector3 maxBounds(Triangle & primitive);
+float calculateTriangleSurfaceArea(Triangle & primitive);
 #endif // !TRIANGLE_H

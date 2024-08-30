@@ -167,13 +167,14 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             endIdx = std::max(endIdx, idx + 1);
         }
 
-        
         //boundingbox
         Vector3 min{INFINITY, INFINITY, INFINITY};
         Vector3 max{-INFINITY, -INFINITY, -INFINITY};
+        float sA = 0.0f;
         Vector3 tmin, tmax{};
         for (int i = startIdx; i < endIdx; i++) {
             auto & vertice = trisBuffer[i];
+            sA += calculateTriangleSurfaceArea(vertice);
             tmin = minBounds(vertice);
             tmax = maxBounds(vertice);
             if (tmin.x < min.x) min.x = tmin.x;
@@ -189,9 +190,16 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             .endIdx = endIdx,
             .boundingBox =  {.min = min, .max=max},
             .active = true,
+            .surfaceArea = sA,
             .name = std::string(shape.name.c_str()),
             .materials = objectMats,
         };
         objectBuffer.push_back(o);
     }
+}
+
+u32 getRandomTriangleFromObject(Ray & ray, Object & primitive) {
+    u32 range = primitive.endIdx - primitive.startIdx;
+    u32 randomIdx = primitive.startIdx + std::floor(fastRandom(ray.randomState) * range);
+    return randomIdx;
 }

@@ -36,4 +36,5 @@ struct Ray {
     char rayFLAG = PRIMARY_RAY;
 };
 Vector3 randomCosineWeightedDirection(Ray & r);
+Vector2 uniformSampleDisk(Ray & r);
 #endif // !RAY_H
