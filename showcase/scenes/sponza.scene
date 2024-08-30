@@ -1,0 +1,24 @@
+[Models]
+file: objects/spnoza.obj
+pos:  0,0,0 
+scale: 1,1,1 
+
+[Materials]
+name: Armor
+color: 1.0,1.0,1.0 
+emission: 0
+roughness: 0.6
+weights: 0,1,0
+
+name: Glass
+color: 1.0,1.0,1.0 
+emission: 0
+roughness: 0.0
+weights: 0,0,1
+
+
+[Camera]
+pos: 200,-120,8 
+forward: -0.987,0.0,0.125
+dof: 0
+focus: 635
