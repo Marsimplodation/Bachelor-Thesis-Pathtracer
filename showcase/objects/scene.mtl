@@ -1,106 +1,106 @@
-# Blender 4.1.1 MTL File: 'cave.blend'
+# Blender 4.2.1 LTS MTL File: 'None'
 # www.blender.org
 
-newmtl Fire
+newmtl Material.007
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.082157 0.112367 0.104801
+Ni 1.500000
+d 1.000000
+illum 2
+
+newmtl Material.008
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 10.000000 0.016156 1.170884
+Ni 1.500000
+d 1.000000
+illum 2
+
+newmtl Material_0
 Ns 0.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
-Ke 150.000000 33.239182 0.089172
+Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
+map_Bump -o 0 -511 0 -s 512 512 1 -bm 4.000000 textures/_normal000.png
 
-newmtl Material.001
+newmtl Material_1
 Ns 0.000000
-Ka 0.200000 0.200000 0.200000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-d 1.000000
-illum 3
-map_Kd textures/seaside_rock_diff_1k.jpg
-
-newmtl Material.002
-Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.523682 0.062243 0.800016
-Ks 0.500000 0.500000 0.500000
-Ke 5.306807 10.000000 8.094734
-Ni 1.500000
-d 1.000000
-illum 2
-
-newmtl Metal
-Ns 250.000000
-Ka 0.250000 0.250000 0.250000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-d 1.000000
-illum 3
-map_Kd textures/Metal_baseColor.jpeg
-map_Bump textures/-bm 1.000000 Metal_normal.jpeg
-
-newmtl N00_000_00_Body_00_SKIN_(Instance)
-Ns 250.000000
-Ka 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-illum 2
-map_Kd textures/body.png
-map_d textures/body.png
-
-newmtl N00_000_00_FaceMouth_00_FACE_(Instance)
-Ns 250.000000
-Ka 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-illum 2
-map_Kd textures/face.png
-map_d textures/face.png
-
-newmtl Rocks
-Ns 250.000000
-Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd textures/Rocks_baseColor.jpeg
-map_Bump textures/-bm 1.000000 Rocks_normal.jpeg
 
-newmtl Soup
+newmtl Material_5
 Ns 1000.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.136649 0.036482 0.007561
+Kd 1.000000 0.686686 0.171441
 Ks 0.500000 0.500000 0.500000
-Ke 0.976077 0.321241 0.050080
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+
+newmtl Material_6
+Ns 1000.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.407240 0.346704 0.309469
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+
+newmtl Material_7
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 3.067059 4.000000
 Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Wood
-Ns 0.000000
+newmtl dutch_ship_large_01_hull8
+Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.200819 0.128662 0.100716
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd textures/dutch_ship_large_01_hull_albedo.png
+map_d textures/dutch_ship_large_01_hull_albedo.png
+map_Bump -bm 1.000000 textures/dutch_ship_large_01_hull_normal.png
+
+newmtl dutch_ship_large_01_rigging8
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Bump textures/-bm 1.000000 Wood_normal.jpeg
+map_Bump -bm 1.000000 textures/dutch_ship_large_01_rigging_normal.png
 
-newmtl WoodEnd
-Ns 0.000000
+newmtl dutch_ship_large_01_sails8
+Ns 250.000000
 Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd textures/WoodEnd_baseColor.jpeg
-map_Bump textures/-bm 1.000000 WoodEnd_normal.jpeg
+map_Bump -bm 1.000000 textures/dutch_ship_large_01_sails_normal.png
