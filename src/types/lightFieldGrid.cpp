@@ -129,13 +129,6 @@ void intersectGrid(Ray &r, int idx) {
         auto in = (r.origin + d1 * r.direction - grid.min) * grid.inv_delta;
         auto out = (r.origin + d2 * r.direction - grid.min) * grid.inv_delta;
 
-        gridMiss |= (in[right] < 0 || in[right] >= 1); 
-        gridMiss |= (in[up] < 0 || in[up] >= 1); 
-        gridMiss |= (out[right] < 0 || out[right] >= 1); 
-        gridMiss |= (out[up] < 0 || out[up] >= 1); 
-        if (gridMiss) continue; 
-
-
         // ray is in channel uv,st
         // to do get all tris in the lut for uvst and loop over them
         float lutIdx = getLUTIdx(in[right], in[up], out[right], out[up], idx, !topLevel);

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "scene/SceneFile.h"
 #include "scene/scene.h"
+#include "shader/shader.h"
 #include "tracer.h"
 #include "types/bvh.h"
 #include "types/lightFieldGrid.h"
@@ -89,6 +90,7 @@ int main(int argc, char **argv) {
 
     if(testing) {
         printf("starting test\n");
+        getNEE() = false;
         for (int i = (only2Plane ? 2 : 1); i < 3; i++) {
             auto tBegin = std::chrono::high_resolution_clock::now();
             setIntersectMode(i);

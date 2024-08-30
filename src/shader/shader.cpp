@@ -14,7 +14,7 @@
 namespace {
 #define GAMMA 2.2f
 std::vector<Material> materials;
-bool nee = false;
+bool nee = true;
 } // namespace
 
 Material *getMaterial(int idx) { return &materials[idx]; }
@@ -70,7 +70,10 @@ Vector3 nextEventEstimation(Ray & r) {
     float xi1 = xi.x;
     float xi2 = xi.y; 
     float xi3 = 1 - xi1 - xi2;
-    auto & tri = getTris()[getRandomTriangleFromObject(r, *light)];
+    auto & tris = getTris();
+    auto idx = getRandomTriangleFromObject(r, *light);
+    if(idx >= tris.size()) return {};
+    auto & tri = tris[idx];
     auto point = tri.vertices[1] * xi1 + tri.vertices[2] * xi2 + tri.vertices[0] * xi3;
 
     Vector3 origin = r.origin;
