@@ -262,7 +262,7 @@ Vector3 shade(Ray &r) {
     }
     //handle if material is emmisive
     //ignore when nee is active and this is a difuse ray
-    if(!nee || (nee && flag != OTHER)) r.light = r.light + mat.pbr.emmision * r.throughPut;
+    if(!nee || (nee)) r.light = r.light + mat.pbr.emmision * r.throughPut;
     return {};
 }
 

@@ -4,8 +4,8 @@
 #include "shader/shader.h"
 #include "triangle.h"
 #include "primitive.h"
-#include "types/bvh.h"
-#include "types/lightFieldGrid.h"
+#include "accelerationStructures/bvh.h"
+#include "accelerationStructures/lightFieldGrid.h"
 #include "types/texture.h"
 #include <algorithm>
 #include <cmath>
@@ -34,7 +34,7 @@ bool objectIntersection(Ray &ray, Object &primitive) {
         findBVHIntesection(ray, primitive.root);
     }
     
-    if(getIntersectMode() == GRID) {
+    if(getIntersectMode() == TWO_PLANE) {
         int axis = 0;
         float maxDelta = 0.0f;
         float f0 = std::abs(ray.direction[0]);

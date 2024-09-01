@@ -5,7 +5,7 @@
 #include "primitives/triangle.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
-#include "types/bvh.h"
+#include "accelerationStructures/bvh.h"
 #include "types/camera.h"
 #include "types/sat.h"
 #include "types/vector.h"
@@ -573,6 +573,7 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
         points[5] - points[2],
         points[2] - points[7],
     };
+    for(int i=0; i < 12; ++i) normalize(edges[i]);
 
 
 

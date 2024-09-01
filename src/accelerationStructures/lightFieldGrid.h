@@ -3,7 +3,7 @@
 
 
 #include "types/aabb.h"
-#include "types/bvh.h"
+#include "accelerationStructures/bvh.h"
 #include "types/vector.h"
 #include <vector>
 #include "common.h"
