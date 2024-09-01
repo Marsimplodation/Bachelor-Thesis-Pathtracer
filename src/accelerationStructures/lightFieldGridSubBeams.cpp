@@ -189,7 +189,6 @@ void constructBeam(u32 beamIdx, int gridIdx) {
 
         auto maxUVST = beam.maxUVST / (float) gridSize;
         auto minUVST = beam.minUVST / (float )gridSize;
-        auto middleUVST = beam.minUVST + (beam.maxUVST-beam.minUVST) * 0.5f;
         
         Vector3 points[8];
         Vector3 edges[12];
@@ -278,43 +277,35 @@ void constructBeam(u32 beamIdx, int gridIdx) {
             beam.endIdx = endIdx;
             beam.hasTris = true;
         } else {
+            auto steps = gridSize;
+            auto deltaUVST = (beam.maxUVST-beam.minUVST);
+            auto stepSize = 1.0f/steps;
+
             beam.hasTris = false;
             beamsToBuild.push_back(beamIdx);
             for(auto idx : inBeam) beam.indiciesForChilds.push_back(idx);
             //create all 16 combinations of min and max indexable by 0 - 3
             auto startIdx = beams.size() - 1;
 
-            Vector4 combinations[16];
-            Vector4 uvsts[]={beam.minUVST, beam.maxUVST};
-            for (int i = 0, iter=0; i < 2; ++i) {
-                for (int j = 0; j < 2; ++j) {
-                    for (int k = 0; k < 2; ++k) {
-                        for (int h = 0; h < 2; ++h) {
+            std::vector<Vector4> combinations(steps*steps*steps*steps);
+            for (int i = 0, iter=0; i < steps; ++i) {
+                for (int j = 0; j < steps; ++j) {
+                    for (int k = 0; k < steps; ++k) {
+                        for (int h = 0; h < steps; ++h) {
                             combinations[iter++] = {
-                                uvsts[i][0],
-                                uvsts[j][1],
-                                uvsts[k][2],
-                                uvsts[h][3],
+                                beam.minUVST[0] + i * stepSize * deltaUVST[0],
+                                beam.minUVST[1] + j * stepSize * deltaUVST[1],
+                                beam.minUVST[2] + k * stepSize * deltaUVST[2],
+                                beam.minUVST[3] + h * stepSize * deltaUVST[3],
                             };
                         }
                     }
                 }
             }
-            for (int i = 0; i < 16; ++i) {
+            for (int i = 0; i < combinations.size(); ++i) {
                 Vector4 combination = combinations[i];;
-                Vector4 min = {
-                    std::min(combination[0], middleUVST[0]),
-                    std::min(combination[1], middleUVST[1]),
-                    std::min(combination[2], middleUVST[2]),
-                    std::min(combination[3], middleUVST[3]),
-                };
-                Vector4 max = {
-                    std::max(combination[0], middleUVST[0]),
-                    std::max(combination[1], middleUVST[1]),
-                    std::max(combination[2], middleUVST[2]),
-                    std::max(combination[3], middleUVST[3]),
-                };
-                beams.push_back(Beam{.minUVST=min, .maxUVST=max, .parentIdx = beamIdx, .indiciesForChilds = {}});
+                Vector4 max = combination + stepSize * deltaUVST;
+                beams.push_back(Beam{.minUVST=combination, .maxUVST=max, .parentIdx = beamIdx, .indiciesForChilds = {}});
                 u32 bIdx = beams.size() -1;
                 beamsToBuild.push_back(bIdx);
             }
