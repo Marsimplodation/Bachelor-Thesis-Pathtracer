@@ -14,6 +14,7 @@ namespace {
     u32 gridSize = 10;
     u32 maxTrisCount = 40;
     std::vector<Beam> beams;
+    #define SUB_STEPS gridSize
 
     //helper functions
     inline int getLUTIdx(float u, float v, float s, float t) {
@@ -277,16 +278,14 @@ void constructBeam(u32 beamIdx, int gridIdx) {
             beam.endIdx = endIdx;
             beam.hasTris = true;
         } else {
-            auto steps = gridSize;
+            auto steps = SUB_STEPS;
             auto deltaUVST = (beam.maxUVST-beam.minUVST);
             auto stepSize = 1.0f/steps;
 
             beam.hasTris = false;
             beamsToBuild.push_back(beamIdx);
             for(auto idx : inBeam) beam.indiciesForChilds.push_back(idx);
-            //create all 16 combinations of min and max indexable by 0 - 3
             auto startIdx = beams.size() - 1;
-
             std::vector<Vector4> combinations(steps*steps*steps*steps);
             for (int i = 0, iter=0; i < steps; ++i) {
                 for (int j = 0; j < steps; ++j) {
