@@ -4,6 +4,7 @@
 #include "scene/scene.h"
 #include "types/sat.h"
 #include "types/vector.h"
+#include <cmath>
 #include <cstdint>
 #include <unordered_set>
 #include <vector>
@@ -14,7 +15,7 @@ namespace {
     u32 gridSize = 10;
     u32 maxTrisCount = 40;
     std::vector<Beam> beams;
-    #define SUB_STEPS gridSize
+    #define SUB_STEPS 2
 
     //helper functions
     inline int getLUTIdx(float u, float v, float s, float t) {
@@ -24,8 +25,12 @@ namespace {
         t = (int) (t*gridSize);
         return (u * gridSize * gridSize * gridSize) + (v * gridSize * gridSize) + (s * gridSize) + t;
     }
-    inline int getINTLUTIdx(int u, int v, int s, int t) {
-        return (u * gridSize * gridSize * gridSize) + (v * gridSize * gridSize) + (s * gridSize) + t;
+    inline int getBeamIdx(float u, float v, float s, float t) {
+        u = (int) std::floor(u*SUB_STEPS);
+        v = (int) std::floor(v*SUB_STEPS);
+        s = (int) std::floor(s*SUB_STEPS);
+        t = (int) std::floor(t*SUB_STEPS);
+        return (u * SUB_STEPS * SUB_STEPS * SUB_STEPS) + (v * SUB_STEPS * SUB_STEPS) + (s * SUB_STEPS) + t;
     }
     Vector2 getGridAxes(int idx) {
         switch (idx) {
@@ -94,12 +99,11 @@ void intersectSubBeamGrid(Ray &r) {
     toTraverse.push_back(grid.beams[lutIdx]);
     Vector4 points{};
     u32 iter = 0;
-    float u = in[right];
-    float v = in[up];
-    float s = out[right];
-    float t = out[up];
+    const float u = in[right];
+    const float v = in[up];
+    const float s = out[right];
+    const float t = out[up];
     while(toTraverse.size() > 0) {
-        if(iter++ >= 300) return;
         if(r.terminated) return;
         u32 beamIdx = toTraverse.back();
         Beam & beam = beams[beamIdx];
@@ -114,19 +118,29 @@ void intersectSubBeamGrid(Ray &r) {
                 Triangle &triangle = trisBuffer[sIdx];
                 triangleIntersection(r, triangle);
             }
-                return;
+            //no need to traverse the rest of the stack
+            return;
         } else { 
             //ensure the closest aabb is traversed first (this is a stack, so it has to be last in the loop)
-            for (unsigned int i = beam.startIdx; i < beam.endIdx; ++i) {
-                auto &child = beams[i];                
-                auto min = child.minUVST/(float)gridSize;
-                auto max = child.maxUVST/(float)gridSize;
-                if(
-                    u < min[0] || v < min[1] || s < min[2] || t < min[3] ||
-                    u > max[0] || v > max[1] || s > max[2] || t > max[3]
-                ) continue;
-                else toTraverse.push_back(i);
-            }
+            r.interSectionAS++;
+            auto beamDelta = (beam.maxUVST - beam.minUVST)/(float)gridSize;
+            auto rayUVST = Vector4{u,v,s,t};
+            auto rayRelativeUVST = rayUVST - beam.minUVST/(float)gridSize;
+            auto scaledUVST = Vector4{
+                rayRelativeUVST[0] / beamDelta[0],
+                rayRelativeUVST[1] / beamDelta[1],
+                rayRelativeUVST[2] / beamDelta[2],
+                rayRelativeUVST[3] / beamDelta[3] ,
+            };
+            bool missed = false;
+            for(int i = 0; i < 4; ++i) missed |= scaledUVST[i] < 0 || scaledUVST[i] > 1;
+            if (missed) continue;
+            scaledUVST = scaledUVST;
+            u32 sbeamIdx = beam.startIdx + getBeamIdx(scaledUVST[0],
+                                                     scaledUVST[1],
+                                                     scaledUVST[2],
+                                                     scaledUVST[3]);
+            toTraverse.push_back(sbeamIdx);
         }
     }
 }
@@ -280,23 +294,24 @@ void constructBeam(u32 beamIdx, int gridIdx) {
         } else {
             auto steps = SUB_STEPS;
             auto deltaUVST = (beam.maxUVST-beam.minUVST);
-            auto stepSize = 1.0f/steps;
+            auto stepSize = 1.0f/(float)steps;
 
             beam.hasTris = false;
             beamsToBuild.push_back(beamIdx);
             for(auto idx : inBeam) beam.indiciesForChilds.push_back(idx);
-            auto startIdx = beams.size() - 1;
+            auto startIdx = beams.size();
             std::vector<Vector4> combinations(steps*steps*steps*steps);
             for (int i = 0, iter=0; i < steps; ++i) {
                 for (int j = 0; j < steps; ++j) {
                     for (int k = 0; k < steps; ++k) {
                         for (int h = 0; h < steps; ++h) {
-                            combinations[iter++] = {
+                            auto c = Vector4{
                                 beam.minUVST[0] + i * stepSize * deltaUVST[0],
                                 beam.minUVST[1] + j * stepSize * deltaUVST[1],
                                 beam.minUVST[2] + k * stepSize * deltaUVST[2],
                                 beam.minUVST[3] + h * stepSize * deltaUVST[3],
                             };
+                            combinations[getBeamIdx(i*stepSize, j*stepSize, k*stepSize, h*stepSize)] = c;
                         }
                     }
                 }
