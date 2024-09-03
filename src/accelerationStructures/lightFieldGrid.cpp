@@ -20,8 +20,7 @@
 #include <utility>
 
 namespace {
-Grid grids[] = {{.splitingAxis = 0}, {.splitingAxis = 1}, {.splitingAxis = 2}};
-std::vector<Grid> objectGrids = std::vector<Grid>();
+std::vector<Grid> grids = {{.splitingAxis = 0}, {.splitingAxis = 1}, {.splitingAxis = 2}};
 
 //------- helper functions ----//
 Vector2 getGridAxes(int idx) {
@@ -39,8 +38,8 @@ int GRID_SIZE = 8;
 int MAX_TRIS_IN_CHANNEL = 50;
 // Calculate the flattened index of the 4D LUT based on the dimensions and
 // indices
-inline int getLUTIdx(float u, float v, float s, float t, int idx, bool isObject = false) {
-    Grid &grid = isObject ? objectGrids[idx] : grids[idx];
+inline int getLUTIdx(float u, float v, float s, float t, int idx) {
+    Grid &grid = grids[idx];
     u = (int) (u*grid.size);
     v = (int) (v*grid.size);
     s = (int) (s*grid.size);
@@ -59,12 +58,7 @@ void setGridSettings(u32 size, u32 oSize, u32 count) {
 }
 
 unsigned long getMemory2Plane() {
-    unsigned long size = (objectGrids.size() + 3) * sizeof(Grid);
-    for(auto & g: objectGrids) {
-        size += g.gridLutEnd.size() * sizeof(u32);
-        size += g.gridLutStart.size() * sizeof(u32);
-        size += g.indicies.size() * sizeof(u32);
-    }
+    unsigned long size = (grids.size()) * sizeof(Grid);
     for(auto & g: grids) {
         size += g.gridLutEnd.size() * sizeof(u32);
         size += g.gridLutStart.size() * sizeof(u32);
@@ -74,68 +68,60 @@ unsigned long getMemory2Plane() {
 }
 
 
-void intersectGrid(Ray &r, int idx) {
+void intersectGrid(Ray &r) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
    
-    bool object = idx != -1;
+    int idx = 0;
     int axis = idx;
-    if(idx == -1) {
-        float maxDelta = 0.0f;
-        float f0 = std::abs(r.direction[0]);
-        float f1 = std::abs(r.direction[1]);
-        float f2 = std::abs(r.direction[2]);
+    float maxDelta = 0.0f;
+    float f0 = std::abs(r.direction[0]);
+    float f1 = std::abs(r.direction[1]);
+    float f2 = std::abs(r.direction[2]);
 
-        if (f0 > maxDelta) {
-            maxDelta = f0;
-            axis = 0;
-        }
-        if (f1 > maxDelta) {
-            maxDelta = f1;
-            axis = 1;
-        }
-        if (f2 > maxDelta) {
-            maxDelta = f2;
-            axis = 2;
-        }
-        idx = axis;
-    } 
-    if(object) axis = objectGrids[idx].splitingAxis;
+    if (f0 > maxDelta) {
+        maxDelta = f0;
+        axis = 0;
+    }
+    if (f1 > maxDelta) {
+        maxDelta = f1;
+        axis = 1;
+    }
+    if (f2 > maxDelta) {
+        maxDelta = f2;
+        axis = 2;
+    }
+    idx = axis;
     auto axes = getGridAxes(axis);
     int right = axes[0];
     int up = axes[1];
 
-    bool topLevel = !object;
     toTraverse.clear();
     toTraverse.push_back(idx);
     Vector4 points{};
     while(toTraverse.size() > 0) {
         idx = toTraverse.back();
         toTraverse.pop_back();
-        auto & grid = topLevel ? grids[idx] : objectGrids[idx];
+        auto & grid = grids[idx];
         
         //perform grid interesection
         r.interSectionAS++;
+        if(!findIntersection(r, grid.aabb)) continue;
+        
+        r.interSectionAS++;
         float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];
         float d2 = (grid.max[axis] - r.origin[axis]) * r.inv_dir[axis];
-        bool gridMiss = std::max(d1, d2) < 0;
-        if (gridMiss) continue; 
-
-        r.interSectionAS++;
-        if(!findIntersection(r, grid.aabb)) continue;
-       
         //get intersection point
         auto in = (r.origin + d1 * r.direction - grid.min) * grid.inv_delta;
         auto out = (r.origin + d2 * r.direction - grid.min) * grid.inv_delta;
 
         // ray is in channel uv,st
         // to do get all tris in the lut for uvst and loop over them
-        float lutIdx = getLUTIdx(in[right], in[up], out[right], out[up], idx, !topLevel);
+        float lutIdx = getLUTIdx(in[right], in[up], out[right], out[up], idx);
         
         u32 startIdx = grid.gridLutStart[(lutIdx)];
         u32 endIdx = grid.gridLutEnd[(lutIdx)];
-        if(endIdx - startIdx == 0) continue;
         if(grid.hasTris) {
             for (unsigned int i = startIdx; i < endIdx; ++i) {
                 u32 sIdx = grid.indicies[i];
@@ -147,19 +133,16 @@ void intersectGrid(Ray &r, int idx) {
             //ensure the closest aabb is traversed first (this is a stack, so it has to be last in the loop)
             for (unsigned int i = startIdx; i < endIdx; ++i) {
                 u32 sIdx = grid.indicies[i];
-                if(objectGrids[sIdx].aabb.min[axis] > r.origin[axis]) continue;
                 toTraverse.push_back(sIdx);
             }
         } else {
             //ensure the closest aabb is traversed first (this is a stack, so it has to be last in the loop)
             for (unsigned int i = endIdx - 1; i != startIdx -1; --i) {
                 u32 sIdx = grid.indicies[i];
-                if(objectGrids[sIdx].aabb.max[axis] < r.origin[axis]) continue;
                 toTraverse.push_back(sIdx);
             }
             
         }
-        topLevel = false;
     }
 }
 
@@ -179,8 +162,8 @@ void printProgressBar(double progress, int barWidth = 70) {
     std::cout.flush();
 }
 
-void adjustGridSize(int idx, bool isObject = false) {
-    Grid &grid = isObject ? objectGrids[idx] : grids[idx];
+void adjustGridSize(int idx) {
+    Grid &grid = grids[idx];
     // Use grid to access the Grid object
     const auto axis = grid.splitingAxis;
     const auto axes = getGridAxes(axis);
@@ -218,7 +201,7 @@ void constructGrid(int gridIdx) {
     for(int n = 0; n < gridsToBuild.size(); ++n) {
         gridIdx = gridsToBuild[n];
     
-        Grid & grid = objectGrids[gridIdx];
+        Grid & grid = grids[gridIdx];
         BvhNode & node = getNode(grid.indicies.back());
         grid.aabb = getNodeAABB(node.AABBIdx);
         grid.min = grid.aabb.min;
@@ -269,12 +252,12 @@ void constructGrid(int gridIdx) {
 
             for(auto nIdx : bvhIndicies) {
                 auto & n = getNode(nIdx);
-                objectGrids.push_back(Grid{.splitingAxis = splitAxis});
-                u32 size = objectGrids.size();
-                auto & grid = objectGrids[gridIdx];
+                grids.push_back(Grid{.splitingAxis = splitAxis});
+                u32 size = grids.size();
+                auto & grid = grids[gridIdx];
                 grid.indicies.push_back(size - 1);
                 
-                auto & child = objectGrids[size - 1];
+                auto & child = grids[size - 1];
                 child.indicies.clear();
                 for(int i = n.startIdx; i < n.endIdx; ++i) {
                     child.indicies.push_back(bvhGetTrisIndex(i));
@@ -285,18 +268,18 @@ void constructGrid(int gridIdx) {
                 gridsToBuild.push_back(size-1);
             }
         } else {
-            Grid & grid = objectGrids[gridIdx];
+            Grid & grid = grids[gridIdx];
             grid.hasTris = true;
             int tris = grid.indicies.size();
             grid.size = TRIS_GRID_SIZE; 
         }
-        Grid & newGrid = objectGrids[gridIdx];
+        Grid & newGrid = grids[gridIdx];
         float count = newGrid.size * newGrid.size * newGrid.size * newGrid.size;
         newGrid.gridLutEnd.clear();
         newGrid.gridLutEnd.resize(count);
         newGrid.gridLutStart.clear();
         newGrid.gridLutStart.resize(count);
-        adjustGridSize(gridIdx, true);
+        adjustGridSize(gridIdx);
         newGrid.inv_delta[0] = 1.0f / (newGrid.max[0] - newGrid.min[0]);
         newGrid.inv_delta[1] = 1.0f / (newGrid.max[1] - newGrid.min[1]);
         newGrid.inv_delta[2] = 1.0f / (newGrid.max[2] - newGrid.min[2]);
@@ -311,7 +294,7 @@ void constructGrid(int gridIdx) {
             for (int v = 0; v < newGrid.size; v++) {
                 for (int s = 0; s < newGrid.size; s++) {
                     for (int t = 0; t < newGrid.size; t++) {
-                        constructChannel(u, v, s, t, gridIdx, indicies, true);
+                        constructChannel(u, v, s, t, gridIdx, indicies);
                     }
                 }
             }
@@ -326,7 +309,6 @@ void constructGrid() {
     std::vector<u32> indicies[] = {std::vector<u32>(0), std::vector<u32>(0), std::vector<u32>(0)};
 
     // object grid
-    objectGrids.resize(0);
     for (int idx = 0; idx < objectBuffer.size(); ++idx) {
         for (int axis = 0; axis < 3; ++axis) {
             auto &primitive = objectBuffer[idx];
@@ -338,10 +320,10 @@ void constructGrid() {
                 grid.indicies.push_back(i);
             }
             grid.indicies.push_back(primitive.root);
-            objectGrids.push_back(grid);
-            indicies[axis].push_back(objectGrids.size() - 1);
-            primitive.GridIdx[axis] = objectGrids.size() -1;
-            constructGrid(objectGrids.size() - 1);
+            grids.push_back(grid);
+            indicies[axis].push_back(grids.size() - 1);
+            primitive.GridIdx[axis] = grids.size() -1;
+            constructGrid(grids.size() - 1);
             printf("%s\n", primitive.name.c_str());
         }
     }
@@ -394,11 +376,11 @@ void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
     compare.reserve(indicies.size());
 
     for (auto i : indicies) {
-        if(objectGrids[i].splitingAxis != grid.splitingAxis) continue;
-        if (!cuboidInAABB(objectGrids[i].aabb, points, edges)) {
+        if(grids[i].splitingAxis != grid.splitingAxis) continue;
+        if (!cuboidInAABB(grids[i].aabb, points, edges)) {
             continue;
         }
-        compare.push_back({i, objectGrids[i].aabb.min[axis]});
+        compare.push_back({i, grids[i].aabb.min[axis]});
     }
     std::sort(compare.begin(), compare.end(), [](Compare &a, Compare &b){return a.d < b.d;});
     for(auto c : compare) {
@@ -496,11 +478,11 @@ void testChannelAgainstTriangles(Grid &grid, int axis, int up,
     }*/
 }
 
-void constructChannel(float u, float v, float s, float t, int idx, std::vector<u32> indicies, bool isObject) {
+void constructChannel(float u, float v, float s, float t, int idx, std::vector<u32> indicies) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
-    Grid &grid = isObject ? objectGrids[idx] : grids[idx];
+    Grid &grid = grids[idx];
     u = (u) / (float)grid.size;
     v = (v) / (float)grid.size;
     s = (s) / (float)grid.size;
@@ -585,7 +567,7 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
     } else {
         testChannelAgainstTriangles(grid, axis, up, right, points, edges, indicies);
     }
-    int lutIdx = getLUTIdx(u, v, s, t, idx, isObject);
+    int lutIdx = getLUTIdx(u, v, s, t, idx);
     int endIdx = grid.indicies.size();
     grid.gridLutStart[lutIdx] = startIdx;
     grid.gridLutEnd[lutIdx] = endIdx;

@@ -43,6 +43,30 @@ namespace {
     }
 }
 int TRIS_GRID_SIZE = 4;
+void adjustGridSize(int idx) {
+    GridSubBeams &grid = grids[idx];
+    // Use grid to access the Grid object
+    const auto axis = grid.splitingAxis;
+    const auto axes = getGridAxes(axis);
+    const int right = axes[0];
+    const int up = axes[1];
+
+    // expand the grid just a tiny bit, to give wiggle room for floating errors
+    // during intersect testing
+    const float offset = 0.1f;
+    grid.min[axis] -= offset;
+    grid.max[axis] += offset;
+    float deltaF = grid.max[axis] - grid.min[axis];
+    float deltaU = grid.max[up] - grid.min[up];
+    float deltaR = grid.max[right] - grid.min[right];
+    // expand the b just a tiny bit, to give wiggle room for floating errors
+    // during intersect testing
+    grid.min[up] -= offset + deltaF;
+    grid.min[right] -= offset + deltaF;
+    grid.max[up] += offset + deltaF;
+    grid.max[right] += offset + deltaF;
+}
+
 }
 
 
@@ -155,30 +179,6 @@ u64 getMemoryGridBeams() {
 void setGridBeamsSettings(u32 size, u32 count) {
     gridSize = size;
     maxTrisCount = count;
-}
-
-void adjustGridSize(int idx) {
-    GridSubBeams &grid = grids[idx];
-    // Use grid to access the Grid object
-    const auto axis = grid.splitingAxis;
-    const auto axes = getGridAxes(axis);
-    const int right = axes[0];
-    const int up = axes[1];
-
-    // expand the grid just a tiny bit, to give wiggle room for floating errors
-    // during intersect testing
-    const float offset = 0.1f;
-    grid.min[axis] -= offset;
-    grid.max[axis] += offset;
-    float deltaF = grid.max[axis] - grid.min[axis];
-    float deltaU = grid.max[up] - grid.min[up];
-    float deltaR = grid.max[right] - grid.min[right];
-    // expand the b just a tiny bit, to give wiggle room for floating errors
-    // during intersect testing
-    grid.min[up] -= offset + deltaF;
-    grid.min[right] -= offset + deltaF;
-    grid.max[up] += offset + deltaF;
-    grid.max[right] += offset + deltaF;
 }
 
 

@@ -257,8 +257,9 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
         destroyTracer();
         quit = true;
     }
-    const char *items[] = {"ALL.png", "BVH.png", "2Plane.png", "Hybrid.png"};
-    auto file_name = std::string("./render_") + items[getIntersectMode()];
+    const char *items[] = {"ALL.png", "BVH.png", "Subgrids.png", "Subbeams.png"};
+    auto file_name = std::string("./render_") +
+        (getDebugView() ? getDebugShowTris() ? "heatmap_tris_" : "heatmap_as_": "")  + items[getIntersectMode()];
     if(ImGui::Button("Save")) saveImage(file_name.c_str(), renderer, texture);
     ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");
     ImGui::Checkbox("Test Size", &preview);
