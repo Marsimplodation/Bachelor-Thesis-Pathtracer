@@ -7,7 +7,7 @@ namespace {
 Camera camera{
     .origin= {2.0f, 0.0f, -500.0f},
     .forward= {0, 0, 1},
-    .right= {1, 0, 0},
+    .right= {-1, 0, 0},
     .up= {0, 1, 0},
     .focus= 1.0f,
     .fov = 70,

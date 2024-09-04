@@ -94,7 +94,7 @@ Vector3 nextEventEstimation(Ray & r) {
     shadowRay.tmax -= EPS;
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
-    if(distance != shadowRay.tmax) return {}; 
+    if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {}; 
   
     float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
     //calculate color for hit light
