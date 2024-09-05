@@ -395,7 +395,7 @@ void testChannelAgainstTriangles(Grid &grid, int axis, int up,
     auto &trisBuffer = getTris();
 
     for (auto i : indicies) {
-        if (!triInChannel(trisBuffer[i].vertices, trisBuffer[i].normal, points, edges, normals)) {
+        if (!triInChannel(trisBuffer[i].vertices, points, edges, normals)) {
             continue;
         }
         grid.indicies.push_back(i);

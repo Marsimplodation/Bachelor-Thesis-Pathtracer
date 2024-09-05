@@ -270,14 +270,14 @@ void constructBeam(u32 beamIdx, int gridIdx) {
         if(beam.parentIdx == UINT32_MAX) {
             auto & trisBuffer = getTris();
             for(int trisIdx = 0; trisIdx < trisBuffer.size(); ++trisIdx) {
-                if(!triInChannel(trisBuffer[trisIdx].vertices, trisBuffer[trisIdx].normal, points, edges, normals)) continue;
+                if(!triInChannel(trisBuffer[trisIdx].vertices, points, edges, normals)) continue;
                 inBeam.push_back(trisIdx);
             }
         } else {
             auto & trisBuffer = getTris();
             auto & parentNode = beams[beam.parentIdx];
             for(auto trisIdx : parentNode.indiciesForChilds) {
-                if(!triInChannel(trisBuffer[trisIdx].vertices, trisBuffer[trisIdx].normal, points, edges, normals)) continue;
+                if(!triInChannel(trisBuffer[trisIdx].vertices, points, edges, normals)) continue;
                 inBeam.push_back(trisIdx);
             }
 
