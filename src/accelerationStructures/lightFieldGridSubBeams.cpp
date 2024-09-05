@@ -206,7 +206,6 @@ void constructBeam(u32 beamIdx, int gridIdx) {
         auto minUVST = beam.minUVST / (float )gridSize;
         
         Vector3 points[8];
-        Vector3 edges[12];
         // the alorithm needs 4 points
         // choosen points:
         // front left bottom u,v
@@ -253,32 +252,32 @@ void constructBeam(u32 beamIdx, int gridIdx) {
         points[7][up] = grid.min[up] + deltaU * minUVST.w;
         
         
-        edges[0] =  points[4] - points[0];
-        edges[1] =  points[5] - points[0];
-        edges[2] =  points[3] - points[4];
-        edges[3] =  points[1] - points[4];
-        edges[4] =  points[3] - points[7];
-        edges[5] =  points[0] - points[7];
-        edges[6] =  points[1] - points[5];
-        edges[7] =  points[6] - points[1];
-        edges[8] =  points[3] - points[6];
-        edges[9] =  points[2] - points[6];
-        edges[10] =  points[5] - points[2];
-        edges[11] =  points[2] - points[7];
-        for(int i=0; i < 12; ++i) normalize(edges[i]);
+        Vector3 edges[3] = {
+            points[6] - points[1],
+            points[2] - points[6],
+            points[6] - points[3],
+        };
+        for(int i=0; i < 3; ++i) normalize(edges[i]);
+        Vector3 normals[3] = {
+            crossProduct(edges[0], edges[1]),
+            crossProduct(edges[0], edges[2]),
+            crossProduct(edges[2], edges[1]),
+        };
+        for(int i=0; i < 3; ++i) normalize(normals[i]);
+
 
         std::vector<u32> inBeam;
         if(beam.parentIdx == UINT32_MAX) {
             auto & trisBuffer = getTris();
             for(int trisIdx = 0; trisIdx < trisBuffer.size(); ++trisIdx) {
-                if(!triInChannel(trisBuffer[trisIdx].vertices, points, edges)) continue;
+                if(!triInChannel(trisBuffer[trisIdx].vertices, trisBuffer[trisIdx].normal, points, edges, normals)) continue;
                 inBeam.push_back(trisIdx);
             }
         } else {
             auto & trisBuffer = getTris();
             auto & parentNode = beams[beam.parentIdx];
             for(auto trisIdx : parentNode.indiciesForChilds) {
-                if(!triInChannel(trisBuffer[trisIdx].vertices, points, edges)) continue;
+                if(!triInChannel(trisBuffer[trisIdx].vertices, trisBuffer[trisIdx].normal, points, edges, normals)) continue;
                 inBeam.push_back(trisIdx);
             }
 

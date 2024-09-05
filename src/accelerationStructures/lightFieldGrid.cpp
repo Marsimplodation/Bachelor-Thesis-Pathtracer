@@ -367,7 +367,7 @@ void constructGrid() {
 
 //------------------ Channel construction ---------------//
 void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
-                            Vector3 *points, Vector3 *edges,std::vector<u32> & indicies) {
+                            Vector3 *points, Vector3 *edges,Vector3* normals,std::vector<u32> & indicies) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();    
     auto &trisBuffer = getTris();
@@ -377,7 +377,7 @@ void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
 
     for (auto i : indicies) {
         if(grids[i].splitingAxis != grid.splitingAxis) continue;
-        if (!cuboidInAABB(grids[i].aabb, points, edges)) {
+        if (!cuboidInAABB(grids[i].aabb, points, edges, normals)) {
             continue;
         }
         compare.push_back({i, grids[i].aabb.min[axis]});
@@ -389,13 +389,13 @@ void testChannelAgainstAABB(Grid &grid, int axis, int up, int right,
 }
 
 void testChannelAgainstTriangles(Grid &grid, int axis, int up,
-                                 int right, Vector3 *points, Vector3 *edges, std::vector<u32> & indicies) {
+                                 int right, Vector3 *points, Vector3 *edges, Vector3* normals, std::vector<u32> & indicies) {
     auto &objectBuffer = getObjects();
     auto &indicieBuffer = getIndicies();
     auto &trisBuffer = getTris();
 
     for (auto i : indicies) {
-        if (!triInChannel(trisBuffer[i].vertices, points, edges)) {
+        if (!triInChannel(trisBuffer[i].vertices, trisBuffer[i].normal, points, edges, normals)) {
             continue;
         }
         grid.indicies.push_back(i);
@@ -541,21 +541,18 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
     points[7][up] = grid.min[up] + deltaU * t;
 
         // Edges of the cuboid
-    Vector3 edges[12] = {
-        points[4] - points[0],
-        points[5] - points[0],
-        points[3] - points[4],
-        points[1] - points[4],
-        points[3] - points[7],
-        points[0] - points[7],
-        points[1] - points[5],
+    Vector3 edges[3] = {
         points[6] - points[1],
-        points[3] - points[6],
         points[2] - points[6],
-        points[5] - points[2],
-        points[2] - points[7],
+        points[6] - points[3],
     };
-    for(int i=0; i < 12; ++i) normalize(edges[i]);
+    for(int i=0; i < 3; ++i) normalize(edges[i]);
+    Vector3 normals[3] = {
+        crossProduct(edges[0], edges[1]),
+        crossProduct(edges[0], edges[2]),
+        crossProduct(edges[2], edges[1]),
+    };
+    for(int i=0; i < 3; ++i) normalize(normals[i]);
 
 
 
@@ -563,9 +560,9 @@ void constructChannel(float u, float v, float s, float t, int idx, std::vector<u
     int startIdx = grid.indicies.size();
 
     if (!grid.hasTris) {
-        testChannelAgainstAABB(grid, axis, up, right, points, edges, indicies);
+        testChannelAgainstAABB(grid, axis, up, right, points, edges, normals, indicies);
     } else {
-        testChannelAgainstTriangles(grid, axis, up, right, points, edges, indicies);
+        testChannelAgainstTriangles(grid, axis, up, right, points, edges, normals, indicies);
     }
     int lutIdx = getLUTIdx(u, v, s, t, idx);
     int endIdx = grid.indicies.size();

@@ -5,7 +5,7 @@
 #include <algorithm>
 
 
-bool cuboidInAABB(AABB & aabb, Vector3 *verts, Vector3 *edges) {
+bool cuboidInAABB(AABB & aabb, Vector3 *verts, Vector3 *edges, Vector3* normals) {
     // Check if at least one vertex is inside the unit cube
     // Unit cube spans from -0.5 to 0.5 in all axes
     // Helper function to project a point onto an axis
@@ -32,12 +32,18 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts, Vector3 *edges) {
     // Edges of the AABB (only need 3 edges since they are axis-aligned)
     Vector3 edgesA[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     // Create test axes from cross products of edges
-    Vector3 testAxes[36];
+    Vector3 testAxes[9+3+3]; //crossproducts + edges + normals
     int idx = 0;
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 12; j++) {
+        for (int j = 0; j < 3; j++) {
             testAxes[idx++] = crossProduct(edgesA[i], edges[j]);
         }
+    }
+    for (int i = 0; i < 3; i++) {
+        testAxes[idx++] = edges[i];
+    }
+    for (int i = 0; i < 3; i++) {
+        testAxes[idx++] = normals[i];
     }
 
     Vector3 cubeVerts[8] = {
@@ -50,7 +56,7 @@ bool cuboidInAABB(AABB & aabb, Vector3 *verts, Vector3 *edges) {
         {max.x, max.y, min.z},
         {max.x, max.y, max.z}};
     // perform the SAT test
-    for (int i = 0; i < 36; i++) {
+    for (int i = 0; i < 15; i++) {
         float triMin = INFINITY, triMax = -INFINITY;
         float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
 
@@ -168,7 +174,7 @@ bool triInAABB(AABB & aabb, Vector3 *verts) {
 }
 
 
-bool triInChannel(Vector3 *trisVerts, Vector3 * channelVerts, Vector3 *channelEdges) {
+bool triInChannel(Vector3 *trisVerts, Vector3 *trisNormals, Vector3 * channelVerts, Vector3 *channelEdges, Vector3 *channelNormals) {
     // Check if at least one vertex is inside the unit cube
     // Unit cube spans from -0.5 to 0.5 in all axes
     // Check overlap on the coordinate axes
@@ -196,7 +202,7 @@ bool triInChannel(Vector3 *trisVerts, Vector3 * channelVerts, Vector3 *channelEd
             return false;
     }
 
-    // Edge vectors of the triangle and cube
+    // Edge vectors of the triangle 
     Vector3 edges[3] = {{trisVerts[1].x - trisVerts[0].x, trisVerts[1].y - trisVerts[0].y,
                          trisVerts[1].z - trisVerts[0].z},
                         {trisVerts[2].x - trisVerts[1].x, trisVerts[2].y - trisVerts[1].y,
@@ -204,16 +210,28 @@ bool triInChannel(Vector3 *trisVerts, Vector3 * channelVerts, Vector3 *channelEd
                         {trisVerts[0].x - trisVerts[2].x, trisVerts[0].y - trisVerts[2].y,
                          trisVerts[0].z - trisVerts[2].z}};
     // Create the 9 axis on which the test is performed
-    Vector3 testAxes[36];
+    Vector3 testAxes[9 + 3 + 3 + 3 + 3]; //cross products + edges + normals
     int idx = 0;
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 12; j++) {
+        for (int j = 0; j < 3; j++) {
             testAxes[idx++] = crossProduct(edges[i], channelEdges[j]);
         }
     }
+    for (int i = 0; i < 3; i++) {
+        testAxes[idx++] = edges[i];
+    }
+    for (int i = 0; i < 3; i++) {
+        testAxes[idx++] = trisNormals[i];
+    }
+    for (int i = 0; i < 3; i++) {
+        testAxes[idx++] = channelEdges[i];
+    }
+    for (int i = 0; i < 3; i++) {
+        testAxes[idx++] = channelNormals[i]; 
+    }
 
     // perform the SAT test
-    for (int i = 0; i < 36; i++) {
+    for (int i = 0; i < 21; i++) {
         float triMin = INFINITY, triMax = -INFINITY;
         float cubeMinProj = INFINITY, cubeMaxProj = -INFINITY;
 
