@@ -94,7 +94,7 @@ Vector3 nextEventEstimation(Ray & r) {
     shadowRay.tmax -= EPS;
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
-    if(distance != shadowRay.tmax) return {}; 
+    if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {}; 
   
     float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
     //calculate color for hit light
@@ -262,7 +262,7 @@ Vector3 shade(Ray &r) {
     }
     //handle if material is emmisive
     //ignore when nee is active and this is a difuse ray
-    if(!nee || (nee && flag != OTHER)) r.light = r.light + mat.pbr.emmision * r.throughPut;
+    if(!nee || (nee)) r.light = r.light + mat.pbr.emmision * r.throughPut;
     return {};
 }
 

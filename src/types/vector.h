@@ -125,6 +125,15 @@ struct Vector4 {
     float y;
     float z;
     float w;
+    
+    float& operator[](size_t index) {
+        switch (index) {
+            case 0: return x;
+            case 1: return y;
+            case 2: return z;
+            default: return w;
+        }
+    }
 };
 
 //-- Vector 3 --//

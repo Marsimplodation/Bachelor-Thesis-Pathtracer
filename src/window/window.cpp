@@ -1,10 +1,12 @@
 #include "window.h"
+#include "accelerationStructures/lightFieldGrid.h"
+#include "accelerationStructures/lightFieldGridSubBeams.h"
 #include "common.h"
 #include "primitives/object.h"
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "tracer.h"
-#include "types/bvh.h"
+#include "accelerationStructures/bvh.h"
 #include "types/camera.h"
 
 #include <SDL2/SDL.h>
@@ -185,6 +187,14 @@ void displayObjects() {
     displayActiveObject();
 }
 
+void displayMemory() {
+    ImGui::Begin("Memory");
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "BVH %f GB", getMemoryBVH() / 1000000000.0f);
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "2Plane %f GB", getMemory2Plane() / 1000000000.0f);
+    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "SubBeams %f GB", getMemoryGridBeams() / 1000000000.0f);
+    ImGui::End();
+}
+
 void displayCamera() {
     ImGui::Begin("Camera Setttings");
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "Camera");
@@ -220,7 +230,7 @@ void displayCamera() {
 void displayIntersectSettings() {
     ImGui::Begin("Trace Setttings");
     ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1), "intersects: %lu", getIntersectionCount());
-    const char *items[] = {"ALL", "BVH", "GRID", "Hybrid"};
+    const char *items[] = {"ALL", "BVH", "2Plane", "SubBeams"};
     if(ImGui::Checkbox("NEE", &getNEE())) {
         callReset();
     }
@@ -247,8 +257,9 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
         destroyTracer();
         quit = true;
     }
-    const char *items[] = {"ALL.png", "BVH.png", "2Plane.png", "Hybrid.png"};
-    auto file_name = std::string("./render_") + items[getIntersectMode()];
+    const char *items[] = {"ALL.png", "BVH.png", "Subgrids.png", "Subbeams.png"};
+    auto file_name = std::string("./render_") +
+        (getDebugView() ? getDebugShowTris() ? "heatmap_tris_" : "heatmap_as_": "")  + items[getIntersectMode()];
     if(ImGui::Button("Save")) saveImage(file_name.c_str(), renderer, texture);
     ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1), "Window Settings");
     ImGui::Checkbox("Test Size", &preview);
@@ -353,6 +364,7 @@ void createWindow(bool testing) {
         ImGui::End();
         displayObjects();
         displayCamera();
+        displayMemory();
         displayIntersectSettings();
 
         ImGui::Begin("Rendering", nullptr);

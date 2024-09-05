@@ -1,10 +1,11 @@
+#include "accelerationStructures/lightFieldGridSubBeams.h"
 #include "common.h"
 #include "scene/SceneFile.h"
 #include "scene/scene.h"
 #include "shader/shader.h"
 #include "tracer.h"
-#include "types/bvh.h"
-#include "types/lightFieldGrid.h"
+#include "accelerationStructures/bvh.h"
+#include "accelerationStructures/lightFieldGrid.h"
 #include "window/window.h"
 #include <chrono>
 #include <cmath>
@@ -82,6 +83,7 @@ int main(int argc, char **argv) {
     }
 
     setGridSettings(GridSize, GridObjectSize, GridMaxTris);
+    setGridBeamsSettings(GridSize, GridMaxTris);
 
     setWindowSize(1280, 720);
     getMaxSampleCount() = maxSamples;

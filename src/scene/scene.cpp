@@ -1,12 +1,13 @@
 #include "scene.h"
+#include "accelerationStructures/lightFieldGridSubBeams.h"
 #include "common.h"
 #include "primitives/object.h"
 #include "primitives/primitive.h"
 #include "scene/SceneFile.h"
 #include "shader/shader.h"
 #include "types/camera.h"
-#include "types/bvh.h"
-#include "types/lightFieldGrid.h"
+#include "accelerationStructures/bvh.h"
+#include "accelerationStructures/lightFieldGrid.h"
 #include "types/vector.h"
 #include <algorithm>
 #include <cmath>
@@ -83,12 +84,11 @@ void findIntersection(Ray &ray) {
         objectIntersection(ray, objects[idx]);
     }
     }
-    else if (getIntersectMode() == GRID) {
+    else if (getIntersectMode() == TWO_PLANE) {
         intersectGrid(ray);
     }
-    else if (getIntersectMode() == HYBRID) {
-        if(ray.depth == 0) intersectGrid(ray);
-        else findBVHIntesection(ray, root);
+    else if (getIntersectMode() == SUB_BEAMS) {
+        intersectSubBeamGrid(ray);
     }
 }
 
@@ -120,6 +120,8 @@ void initScene() {
     printf("BVH root %d\n", root);
     printf("building grid\n");
     constructGrid();
+    printf("2plane %f GB\n", getMemory2Plane() / 1000000000.0f);
+    //buildGridsWithSubBeams();
     
     cameraSetForward(getSceneFile().cam.forward);
     getCamera()->origin = getSceneFile().cam.pos;

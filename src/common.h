@@ -10,7 +10,7 @@
 #endif // !INFINITY
 float fastRandom(u32 & seed);
 u32 hashCoords(int x, int y);
-enum IntersectMode{ALL, BVH, GRID, HYBRID};
+enum IntersectMode{ALL, BVH, TWO_PLANE, SUB_BEAMS};
 IntersectMode getIntersectMode();
 void setIntersectMode(int i);
 #endif

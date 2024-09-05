@@ -2,7 +2,7 @@
 #include <cstdint>
 
 namespace {
-    IntersectMode mode = GRID;
+    IntersectMode mode = TWO_PLANE;
 }
 
 u32 hashCoords(int x, int y) {

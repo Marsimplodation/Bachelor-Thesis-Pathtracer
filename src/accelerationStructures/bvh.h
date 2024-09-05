@@ -1,9 +1,9 @@
 #ifndef BVH_H
 #define BVH_H
-#include "ray.h"
+#include "types/ray.h"
 #include "scene/scene.h"
 #include "types/aabb.h"
-#include "vector.h"
+#include "types/vector.h"
 #include <cmath>
 #include <vector>
 
