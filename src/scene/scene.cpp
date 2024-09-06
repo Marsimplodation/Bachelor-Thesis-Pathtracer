@@ -121,7 +121,7 @@ void initScene() {
     printf("building grid\n");
     constructGrid();
     printf("2plane %f GB\n", getMemory2Plane() / 1000000000.0f);
-    //buildGridsWithSubBeams();
+    buildGridsWithSubBeams();
     
     cameraSetForward(getSceneFile().cam.forward);
     getCamera()->origin = getSceneFile().cam.pos;

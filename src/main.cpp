@@ -59,6 +59,12 @@ int main(int argc, char **argv) {
                 return -1;
             }
             GridSize = atoi(argv[++i]);
+        } else if(arg == "-ds") {
+            if(!checkNextArg(i)) {
+                printHelp();
+                return -1;
+            }
+            getDebugScale() = atoi(argv[++i]);
         } else if(arg == "-os") {
             if(!checkNextArg(i)) {
                 printHelp();
@@ -93,29 +99,42 @@ int main(int argc, char **argv) {
     if(testing) {
         printf("starting test\n");
         getNEE() = false;
-        for (int i = (only2Plane ? 2 : 1); i < 3; i++) {
-            auto tBegin = std::chrono::high_resolution_clock::now();
-            setIntersectMode(i);
-            initTracer();
-            auto traceT = std::thread(ttrace);
-            auto draw = std::thread(twindow);
+        for (int i = (only2Plane ? 2 : 1); i < 4; i++) {
+            for (int j = 0; j < 3; ++j) {
+                if(j==0) {
+                    getMaxSampleCount() = maxSamples;
+                    getDebugView() = false;
+                }
+                else {
+                    getMaxSampleCount() = 1;
+                    getDebugView() = true;
+                    if(j==1) getDebugShowTris() = false;
+                    if(j==2) getDebugShowTris() = true;
+                }
+                auto tBegin = std::chrono::high_resolution_clock::now();
+                setIntersectMode(i);
+                initTracer();
+                auto traceT = std::thread(ttrace);
+                auto draw = std::thread(twindow);
 
-            traceT.join();
-            
-            auto tNow = std::chrono::high_resolution_clock::now();
-            float elapsed_time_ms = std::chrono::duration<double, std::milli>(tNow - tBegin).count();
-            int seconds = (elapsed_time_ms) / 1000;
-            int minutes = seconds / 60;
-            seconds %= 60;
-            int hours = minutes / 60;
-            minutes %= 60;
-
-            printf("Rendering Time: %f\n", elapsed_time_ms);
-            printf("Triangle Intersections: %lu \n", getIntersectionCount()); 
-            printf("AS Intersections: %lu \n", getStructureIntersectionCount()); 
-            printf("Total Intersections: %lu \n", getStructureIntersectionCount() + getIntersectionCount()); 
-            printf("Memory Consumption: %lu \n", (i == 1) ? getMemoryBVH() : getMemory2Plane()); 
-            draw.join();
+                traceT.join();
+                
+                auto tNow = std::chrono::high_resolution_clock::now();
+                float elapsed_time_ms = std::chrono::duration<double, std::milli>(tNow - tBegin).count();
+                int seconds = (elapsed_time_ms) / 1000;
+                int minutes = seconds / 60;
+                seconds %= 60;
+                int hours = minutes / 60;
+                minutes %= 60;
+                if(j==0) {
+                printf("Rendering Time: %f\n", elapsed_time_ms);
+                printf("Triangle Intersections: %lu \n", getIntersectionCount()); 
+                printf("AS Intersections: %lu \n", getStructureIntersectionCount()); 
+                printf("Total Intersections: %lu \n", getStructureIntersectionCount() + getIntersectionCount()); 
+                printf("Memory Consumption: %lu \n", (i == 1) ? getMemoryBVH() : getMemory2Plane()); 
+                }
+                draw.join();
+            }
 
         }
     } else {

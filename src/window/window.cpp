@@ -422,8 +422,9 @@ void createWindow(bool testing) {
         displayMenu(renderer, texture);
 
         if(testing && getfinishedRendering()) {
-            const char *items[] = {"ALL.png", "BVH.png", "2Plane.png", "Hybrid.png"};
-            auto file_name = std::string("./render/render_") + items[getIntersectMode()];
+            const char *items[] = {"ALL.png", "BVH.png", "Subgrids.png", "Subbeams.png"};
+            auto file_name = std::string("./render/render_") +
+            (getDebugView() ? getDebugShowTris() ? "heatmap_tris_" : "heatmap_as_": "")  + items[getIntersectMode()];
             saveImage(file_name.c_str(), renderer, texture);
             quit = true;
         }
