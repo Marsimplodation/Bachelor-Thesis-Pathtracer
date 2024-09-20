@@ -1,0 +1,70 @@
+{
+  "subgrids-low_d": [
+    {
+      "Rendering Time": "9627"
+    },
+    {
+      "Triangle Intersections": "1202549221"
+    },
+    {
+      "AS Intersections": "2302989739"
+    },
+    {
+      "Total Intersections": "3505538960"
+    },
+    {
+      "Memory Consumption": "263400"
+    }
+  ],
+  "subbeams-low_d": [
+    {
+      "Rendering Time": "11934"
+    },
+    {
+      "Triangle Intersections": "3648889713"
+    },
+    {
+      "AS Intersections": "1377461346"
+    },
+    {
+      "Total Intersections": "5026351059"
+    },
+    {
+      "Memory Consumption": "263400"
+    }
+  ],
+  "subgrids-mid_d": [
+    {
+      "Rendering Time": "17824"
+    },
+    {
+      "Triangle Intersections": "2405943097"
+    },
+    {
+      "AS Intersections": "5854257825"
+    },
+    {
+      "Total Intersections": "8260200922"
+    },
+    {
+      "Memory Consumption": "1406904"
+    }
+  ],
+  "subbeams-mid_d": [
+    {
+      "Rendering Time": "18713"
+    },
+    {
+      "Triangle Intersections": "6484703831"
+    },
+    {
+      "AS Intersections": "1983305039"
+    },
+    {
+      "Total Intersections": "8468008870"
+    },
+    {
+      "Memory Consumption": "1406904"
+    }
+  ]
+}

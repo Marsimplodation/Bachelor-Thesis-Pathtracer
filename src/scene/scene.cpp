@@ -116,12 +116,13 @@ void initScene() {
         printf("building bvh for %s\n", obj.name.c_str());
         obj.root = constructBVH(obj.startIdx, obj.endIdx, -1, true);
         printf("finished bvh for %s\n", obj.name.c_str());
+        printf("bvh for %d\n", getBVHDepth(obj.root));
     }
     printf("BVH root %d\n", root);
     printf("building grid\n");
     constructGrid();
     printf("2plane %f GB\n", getMemory2Plane() / 1000000000.0f);
-    buildGridsWithSubBeams();
+    //buildGridsWithSubBeams();
     
     cameraSetForward(getSceneFile().cam.forward);
     getCamera()->origin = getSceneFile().cam.pos;

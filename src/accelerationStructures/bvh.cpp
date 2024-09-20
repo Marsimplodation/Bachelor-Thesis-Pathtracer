@@ -98,6 +98,14 @@ bool findBVHIntesection(Ray &ray, int nodeIdx) {
     return hit;
 }
 
+int getBVHDepth(int idx) {
+    BvhNode &node = nodes.at(idx);
+    bool leaf = (node.childLeft == -1 && node.childRight == -1);
+    if(leaf) return node.depth;
+    else return std::max(getBVHDepth(node.childLeft),
+                                 getBVHDepth(node.childRight));
+}
+
 //----- BVH Structure -----//
 void destroyBVH() {
     indicies.clear();
@@ -168,9 +176,9 @@ float evaluateSplit(bool isObject) {
     Vector3 extent1 = max1 - min1;
     Vector3 extent2 = max2 - min2;
     Vector3 extent3 = max3 - min3;
-    float area1 = extent1.x * (extent1.y + extent1.x) + extent1.y * extent1.z;
-    float area2 = extent2.x * (extent2.y + extent2.x) + extent2.y * extent2.z;
-    float area3 = extent3.x * (extent3.y + extent3.x) + extent3.y * extent3.z;
+    float area1 = extent1.x * (extent1.y + extent1.z) + extent1.y * extent1.z;
+    float area2 = extent2.x * (extent2.y + extent2.z) + extent2.y * extent2.z;
+    float area3 = extent3.x * (extent3.y + extent3.z) + extent3.y * extent3.z;
     float cTrav = 100.0f;
     float cInter = 1.0f;
     //this should not be necessary
