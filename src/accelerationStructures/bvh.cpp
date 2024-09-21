@@ -304,9 +304,17 @@ int constructBVH(int startIdx, int endIdx, int nodeIdx, const bool isObject) {
                 split=true;
             }
         }
-        //no split possiblew/more expensive
         node.cost = bestSAHScore;
-        if(!split) {
+        //if scene bvh and just two primitives are hold, these should act like childs and thus traversal is finished
+        if(!isObject && node.endIdx - node.startIdx <= 2) {
+            node.childLeft = -1;
+            node.childRight = -1;
+            node.splitAxis = 0;
+            continue;
+        }
+        //no split possible/more expensive
+        //or max triangle count reached
+        if(!split || (isObject && (node.endIdx - node.startIdx <= 8))) {
             node.childLeft = -1;
             node.childRight = -1;
             node.splitAxis = 0;
