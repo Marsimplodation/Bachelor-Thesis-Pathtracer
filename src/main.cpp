@@ -104,8 +104,10 @@ int main(int argc, char **argv) {
                 if(j==0) {
                     getMaxSampleCount() = maxSamples;
                     getDebugView() = false;
+                    getToneMapping() = true;
                 }
                 else {
+                    getToneMapping() = false;
                     getMaxSampleCount() = 1;
                     getDebugView() = true;
                     if(j==1) getDebugShowTris() = false;

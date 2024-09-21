@@ -36,6 +36,10 @@ bool toneMapping = true;
 
 } // namespace
 
+bool &getToneMapping() {
+    return toneMapping;
+}
+
 //credit to stackoverflow
 //https://stackoverflow.com/questions/34255820/save-sdl-texture-to-file
 void saveImage(const char* file_name, SDL_Renderer* renderer, SDL_Texture* texture) {
