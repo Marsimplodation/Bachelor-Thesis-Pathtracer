@@ -214,7 +214,10 @@ void constructGrid(int gridIdx) {
         
         //set defaults
         
-        if(grid.indicies.size() > MAX_TRIS_IN_CHANNEL && !isLeaf(node)) {
+        bool is_scene_leaf = false;
+        bool is_leaf = isLeaf(node);
+        if(is_leaf && !node.hasTris) is_scene_leaf = true;
+        if((!node.hasTris || grid.indicies.size() > MAX_TRIS_IN_CHANNEL) && !isLeaf(node)) {
             childs1.push_back(node.childLeft);
             childs1.push_back(node.childRight);
             for(auto nIdx : childs1) {
@@ -252,6 +255,14 @@ void constructGrid(int gridIdx) {
 
             for(auto nIdx : bvhIndicies) {
                 auto & n = getNode(nIdx);
+                if(isLeaf(n) && !n.hasTris) {
+                    for(int i = n.startIdx; i < n.endIdx; ++i) {
+                        grid.indicies.push_back(getObjects()[bvhGetTrisIndex(i)].GridIdx[grid.splitingAxis]);
+                        grid.hasTris = false;
+                        grid.size = GRID_SIZE; 
+                    }
+                    continue;
+                }
                 grids.push_back(Grid{.splitingAxis = splitAxis});
                 u32 size = grids.size();
                 auto & grid = grids[gridIdx];
@@ -267,7 +278,15 @@ void constructGrid(int gridIdx) {
                 child.aabb = getNodeAABB(n.AABBIdx);
                 gridsToBuild.push_back(size-1);
             }
-        } else {
+        } else if (is_scene_leaf) {
+            Grid & grid = grids[gridIdx];
+            grid.indicies.clear();
+            for(int i = node.startIdx; i < node.endIdx; ++i) {
+                grid.indicies.push_back(getObjects()[bvhGetTrisIndex(i)].GridIdx[grid.splitingAxis]);
+                grid.hasTris = false;
+                grid.size = GRID_SIZE; 
+            }
+        }else {
             Grid & grid = grids[gridIdx];
             grid.hasTris = true;
             int tris = grid.indicies.size();
@@ -346,22 +365,15 @@ void constructGrid() {
         grids[idx].inv_delta[1] = 1.0f / (grids[idx].max[1] - grids[idx].min[1]);
         grids[idx].inv_delta[2] = 1.0f / (grids[idx].max[2] - grids[idx].min[2]);
         grids[idx].hasTris = false;
-        
-        printf("building channel LUT for Grid %d\n", idx);
-        int i = 1;
-        for (int u = 0; u < grids[idx].size; u++) {
-            for (int v = 0; v < grids[idx].size; v++) {
-                for (int s = 0; s < grids[idx].size; s++) {
-                    for (int t = 0; t < grids[idx].size; t++) {
-                        constructChannel(u, v, s, t, idx, indicies[grids[idx].splitingAxis]);
-                        printProgressBar(i++ / count);
-                    }
-                }
-            }
+        grids[idx].splitingAxis = idx;
+        for (int i = 0; i < objectBuffer.size(); ++i) {
+            auto &primitive = objectBuffer[i];
         }
-        printf("\n");
+        //scene bvh root
+        grids[idx].indicies.push_back(0);
+        constructGrid(idx);
+        printf("\ndone building Axis Grid %d\n", idx);
     }
-    printf("\ndone building channel LUT\n");
 }
 
 

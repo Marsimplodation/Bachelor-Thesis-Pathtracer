@@ -1,0 +1,18 @@
+[Models]
+file: objects/synthetic/synthetic_very_high_d.obj
+pos:  0,0,0 
+scale: 1,1,1 
+
+[Materials]
+name: Material.001
+color: 1.0,1.0,1.0 
+emission: 1
+roughness: 0.0
+weights: 1,0,0
+
+
+[Camera]
+pos: 0,0,200
+forward: 0.0,0.0,-1
+dof: 0
+focus: 635

@@ -1,0 +1,35 @@
+[Models]
+file: objects/bistro.obj
+pos:  0,0,0 
+scale: 1,1,1 
+
+[Materials]
+name: Paris_StringLights_01_Orange_Color_Emissive
+emission: 0
+color: 1,0.6,0.01
+
+name: Paris_StringLights_01_White_Color_Emissive
+emission: 0
+color: 1,1,1
+
+name: Paris_StringLights_01_Green_Color_Emissive
+emission: 0
+color: 0.01,1,0.5
+
+name: Paris_StringLights_01_Pink_Color_Emissive
+emission: 0
+color: 1,1,1
+
+name: Paris_StringLights_01_Blue_Color_Emissive
+emission: 0
+color: 0.01,0.8,1.0 
+
+name: Material.001
+emission: 1
+color: 0.95,1.0,0.80 
+
+[Camera]
+pos: -1700,300,0 
+forward: 0.980,0.0,-0.2
+dof: 0
+focus: 635

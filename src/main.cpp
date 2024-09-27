@@ -99,13 +99,15 @@ int main(int argc, char **argv) {
     if(testing) {
         printf("starting test\n");
         getNEE() = false;
-        for (int i = (only2Plane ? 2 : 1); i < 4; i++) {
+        for (int i = (only2Plane ? 2 : 1); i < 3; i++) {
             for (int j = 0; j < 3; ++j) {
                 if(j==0) {
                     getMaxSampleCount() = maxSamples;
                     getDebugView() = false;
+                    getToneMapping() = true;
                 }
                 else {
+                    getToneMapping() = false;
                     getMaxSampleCount() = 1;
                     getDebugView() = true;
                     if(j==1) getDebugShowTris() = false;

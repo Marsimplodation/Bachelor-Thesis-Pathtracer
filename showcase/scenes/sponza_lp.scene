@@ -1,0 +1,18 @@
+[Models]
+file: objects/spnoza_lp.obj
+pos:  0,0,0 
+scale: 1,1,1 
+
+[Materials]
+name: Material.004
+color: 1.0,1.0,1.0 
+emission: 100
+roughness: 0.6
+weights: 1,0,0
+
+
+[Camera]
+pos: -1000,200,8 
+forward: 0.975,0.0,0.125
+dof: 0
+focus: 635
