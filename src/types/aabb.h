@@ -16,6 +16,6 @@ inline Vector3 getSize(AABB &primitive){
     return (primitive.max - primitive.min);
 }
 
-bool findIntersection(const Ray &r, const AABB &b);
+bool findAABBIntersection(const Ray &r, const AABB &b);
 float getIntersectDistance(const Ray &r, const AABB &b);
 #endif // !AABB_H

@@ -6,7 +6,7 @@
 
 
 
-bool findIntersection(const Ray &r, const AABB &b) {
+bool findAABBIntersection(const Ray &r, const AABB &b) {
     // calculate intersection intervals
     float tx1 = (b.min.x - r.origin.x) * r.inv_dir.x;
     float tx2 = (b.max.x - r.origin.x) * r.inv_dir.x;

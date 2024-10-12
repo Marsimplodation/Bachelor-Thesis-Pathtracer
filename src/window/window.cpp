@@ -8,12 +8,15 @@
 #include "tracer.h"
 #include "accelerationStructures/bvh.h"
 #include "types/camera.h"
+#include "types/vector.h"
 
 #include <SDL2/SDL.h>
+#include <SDL_events.h>
 #include <SDL_pixels.h>
 #include <SDL_image.h>
 #include <SDL_render.h>
 #include <SDL_surface.h>
+#include <SDL_video.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_sdlrenderer2.h>
 #include <chrono>
@@ -22,6 +25,7 @@
 #include <iostream>
 #include <ratio>
 #include <string>
+#include <thread>
 #include <vector>
 namespace {
 //INV_GAMMA = 1/2.2f
@@ -33,7 +37,7 @@ Object *selectedObject = 0x0;
 char pixels[4096 * 2160 * 4];
 bool quit, preview;
 bool toneMapping = true;
-
+bool editingColor = false;
 } // namespace
 
 bool &getToneMapping() {
@@ -228,6 +232,19 @@ void displayCamera() {
         callReset();
     }
     
+    if (ImGui::DragFloat("Camera yaw", &cam->yaw)) {
+        rotate_camera({0,0}, 1.0f);
+        callReset();
+    }
+    if (ImGui::DragFloat("Camera ptich", &cam->pitch)) {
+        rotate_camera({0,0}, 1.0f);
+        callReset();
+    }
+    if (ImGui::DragFloat("Camera Speed", &cam->speed)) {
+    }
+    if (ImGui::DragFloat("Camera sensitivy", &cam->sensitivity)) {
+    }
+    
     ImGui::End();
 }
 
@@ -283,6 +300,12 @@ void displayMenu(SDL_Renderer *renderer, SDL_Texture *texture) {
 
 }
 
+//interactive ui
+ImVec2 rendering_pos;
+ImVec2 rendering_size;
+Vector2 keyboard = {0,0};
+Vector2 mouse = {0,0};
+
 void createWindow(bool testing) {
     SDL_Window *window;
     quit = false;
@@ -324,13 +347,99 @@ void createWindow(bool testing) {
     SDL_Event e;
     ImVec2 previewSize(0, 0);
     double elapsed_time_ms = 0.0;
+
+    // Variables to track delta time
+    Uint32 current_time = 0;
+    Uint32 last_time = 0;
+    float delta_time = 0.0f;
+    bool controling = false;
+    bool controling_m = false;
+    float lastMouseX = 0.0f;
+    float lastMouseY = 0.0f;
     while (!quit) {
+        current_time = SDL_GetTicks(); // Get the number of milliseconds since SDL_Init was called
+        delta_time = (current_time - last_time) / 1000.0f; // Convert to seconds
+        last_time = current_time;
+        move_camera(keyboard, delta_time);
+        if(controling && controling_m){
+            controling_m = false;
+            std::thread t(rotate_camera, mouse, delta_time);
+            t.join();}
         while (SDL_PollEvent(&e)) {
             ImGui_ImplSDL2_ProcessEvent(&e);
             if (e.type == SDL_QUIT) {
                 quit = true;
             }
+
+            if(e.type == SDL_KEYDOWN)  {
+                switch (e.key.keysym.sym) {
+                    case SDLK_w: keyboard[0] = 1.0f; break;
+                    case SDLK_s: keyboard[0] = -1.0f; break;
+                    case SDLK_a: keyboard[1] = -1.0f; break;
+                    case SDLK_d: keyboard[1] = 1.0f; break;
+                    default: break;
+                }
+
+            }
+            if(e.type == SDL_KEYUP)  {
+                switch (e.key.keysym.sym) {
+                    case SDLK_w: keyboard[0] = 0.0f; break;
+                    case SDLK_s: keyboard[0] = 0.0f; break;
+                    case SDLK_a: keyboard[1] = 0.0f; break;
+                    case SDLK_d: keyboard[1] = 0.0f; break;
+                    default: break;
+                }
+            }
+            // Mouse button down (equivalent to SAPP_EVENTTYPE_MOUSE_DOWN)
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                int mouseX, mouseY;
+                SDL_GetMouseState(&mouseX, &mouseY);
+
+                // Check if the mouse is inside the rendering area
+                if(!ImGui::IsMouseHoveringRect(rendering_pos, rendering_size, false)) continue;;
+
+                // Hide and lock the mouse
+                SDL_ShowCursor(SDL_DISABLE);
+                SDL_SetRelativeMouseMode(SDL_TRUE); // Lock the mouse
+                controling = true;
+                getPrimaryOnly() = true;
+                callReset();
+            }
+
+            // Mouse button up (equivalent to SAPP_EVENTTYPE_MOUSE_UP)
+            if (e.type == SDL_MOUSEBUTTONUP) {
+                controling = false;
+                // Show and unlock the mouse
+                SDL_ShowCursor(SDL_ENABLE);
+                SDL_SetRelativeMouseMode(SDL_FALSE); // Unlock the mouse
+                if(!ImGui::IsMouseHoveringRect(rendering_pos, rendering_size, false)) continue;;
+                mouse[0] = 0.0f;
+                mouse[1] = 0.0f;
+
+                getPrimaryOnly() = false;
+                callReset();
+            }
+
+            // Mouse movement (equivalent to SAPP_EVENTTYPE_MOUSE_MOVE)
+            if (e.type == SDL_MOUSEMOTION) {
+                controling_m = true;
+                if(!ImGui::IsMouseHoveringRect(rendering_pos, rendering_size, false)) continue;;
+                    mouse[0] = -e.motion.xrel;  // Reverse X-axis
+                    mouse[1] = e.motion.yrel;   // Y-axis (SDL Y-axis goes top to bottom)
+                    lastMouseX = e.motion.x;
+                    lastMouseY = e.motion.y;
+
+                // Store mouse delta values (Note: SDL gives relative motion when in relative mode)
+                if (controling) {
+                    float frame_duration = 0.016f; // Replace this with actual frame duration
+                    int w; int h;
+                    SDL_GetWindowSize(window, &w, &h);
+                    SDL_WarpMouseInWindow(window, w / 2, h / 2);
+                }
+            }
         }
+        
+        // Calculate delta time
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0,
                                255); // Clear the texture to black
@@ -389,6 +498,9 @@ void createWindow(bool testing) {
             HEIGHT = getWindowSize().y;
             tBegin = std::chrono::high_resolution_clock::now();
         }
+        rendering_pos = ImGui::GetWindowPos();
+        rendering_size = ImGui::GetWindowSize();
+        rendering_size = {rendering_size.x + rendering_pos.x, rendering_size.y + rendering_pos.y};
         // Draw pixels
         
         //simple toneMapping

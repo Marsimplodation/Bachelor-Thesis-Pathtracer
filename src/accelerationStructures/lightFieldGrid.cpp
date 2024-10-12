@@ -107,7 +107,7 @@ void intersectGrid(Ray &r) {
         
         //perform grid interesection
         r.interSectionAS++;
-        if(!findIntersection(r, grid.aabb)) continue;
+        if(!findAABBIntersection(r, grid.aabb)) continue;
         
         r.interSectionAS++;
         float d1 = (grid.min[axis] - r.origin[axis]) * r.inv_dir[axis];

@@ -15,9 +15,14 @@ namespace {
 #define GAMMA 2.2f
 std::vector<Material> materials;
 bool nee = true;
+bool primaryOnly = false;
 } // namespace
 
 Material *getMaterial(int idx) { return &materials[idx]; }
+bool &getPrimaryOnly() {
+    return primaryOnly;
+}
+
 
 std::vector<Material> *getMaterials() { return &materials; }
 
@@ -235,9 +240,14 @@ Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
     int idx = r.materialIdx;
     auto & mat = materials[idx];
+    if(r.tmax == INFINITY) return black;
+
+    if(primaryOnly) {
+        r.terminated = true;
+        r.light=  mat.pbr.albedo;
+    }
     float xi = fastRandom(r.randomState);
     
-    if(r.tmax == INFINITY) return black;
     Vector3 normal = r.normal;
     if (mat.pbr.normal.data.size() > 0) {
         Vector4 const normalColor = getTextureAtUV(mat.pbr.normal, r.uv.x, r.uv.y);

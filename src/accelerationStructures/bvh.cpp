@@ -66,7 +66,7 @@ bool findBVHIntesection(Ray &ray, int nodeIdx) {
         bool leaf = (node.childLeft == -1 && node.childRight == -1);
     
         ray.interSectionAS++;
-        if (!findIntersection(ray, boxes[node.AABBIdx])) continue;
+        if (!findAABBIntersection(ray, boxes[node.AABBIdx])) continue;
 
         
         if(!leaf) {

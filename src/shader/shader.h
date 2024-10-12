@@ -27,6 +27,7 @@ struct pbrProbs {
     Texture normal;
 }; 
 
+bool &getPrimaryOnly();
 struct Material {
     pbrProbs pbr;
     ShaderMix weights;

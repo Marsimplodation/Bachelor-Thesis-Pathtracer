@@ -107,7 +107,7 @@ void intersectSubBeamGrid(Ray &r) {
     if (gridMiss) return; 
 
     r.interSectionAS++;
-    if(!findIntersection(r, grid.aabb)) return;
+    if(!findAABBIntersection(r, grid.aabb)) return;
    
     //get intersection point
     auto in = (r.origin + d1 * r.direction - grid.min) / (grid.max - grid.min);
