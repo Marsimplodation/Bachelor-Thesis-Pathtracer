@@ -95,7 +95,7 @@ Vector3 nextEventEstimation(Ray & r) {
 
     //check if light gets hit
     triangleIntersection(shadowRay, tri);
-    float cosLight = -dotProduct(shadowRay.normal, shadowRay.direction);
+    float cosLight = std::max(0.0f, -dotProduct(shadowRay.normal, shadowRay.direction));
     shadowRay.tmax -= EPS;
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
@@ -108,7 +108,7 @@ Vector3 nextEventEstimation(Ray & r) {
     gammaCorrect(lightColor);
     
     if(lightColor[0] == -1) return {};
-    lightColor = lightColor / 3.14f * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
+    lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
     return lightColor;
 }
 

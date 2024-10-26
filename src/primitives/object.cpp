@@ -148,10 +148,10 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
         float sA = 0.0f;
         Vector3 tmin, tmax{};
         for (int i = startIdx; i < endIdx; i++) {
-            auto & vertice = trisBuffer[i];
-            sA += calculateTriangleSurfaceArea(vertice);
-            tmin = minBounds(vertice);
-            tmax = maxBounds(vertice);
+            auto & triangle = trisBuffer[i];
+            sA += calculateTriangleSurfaceArea(triangle);
+            tmin = minBounds(triangle);
+            tmax = maxBounds(triangle);
             if (tmin.x < min.x) min.x = tmin.x;
             if (tmin.y < min.y) min.y = tmin.y;
             if (tmin.z < min.z) min.z = tmin.z;
@@ -175,6 +175,7 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
 
 u32 getRandomTriangleFromObject(Ray & ray, Object & primitive) {
     u32 range = primitive.endIdx - primitive.startIdx;
-    u32 randomIdx = primitive.startIdx + std::floor(fastRandom(ray.randomState) * range);
+    float fidx = fastRandom(ray.randomState) * range;
+    u32 randomIdx = primitive.startIdx + std::floor(fidx);
     return randomIdx;
 }
