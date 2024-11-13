@@ -220,7 +220,7 @@ void lambertShader(Ray &r) {
     r.direction = randomDir.x * r.tangent + randomDir.y * r.bitangent + randomDir.z * r.normal;
     normalize(r.direction);
     
-    r.origin += r.direction * EPS;
+    r.origin += r.normal * 0.001f;
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
     r.inv_dir[1] = 1.0f/r.direction[1];
@@ -244,7 +244,9 @@ Vector3 shade(Ray &r) {
 
     if(primaryOnly) {
         r.terminated = true;
-        r.light=  mat.pbr.albedo;
+        Vector3 color = getColorOfMaterial(r, mat);
+        gammaCorrect(color);
+        r.light=  color;
     }
     float xi = fastRandom(r.randomState);
     
