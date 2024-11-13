@@ -8,8 +8,8 @@
 namespace {
 Camera camera{
     .origin= {2.0f, 0.0f, -500.0f},
-    .forward= {0, 0, 1},
-    .right= {-1, 0, 0},
+    .forward= {0, 0, -1},
+    .right= {1, 0, 0},
     .up= {0, 1, 0},
     .focus= 1.0f,
     .fov = 70,
@@ -29,6 +29,10 @@ void cameraSetForward(Vector3 &v) {
     camera.forward = buff[0];
     camera.up = buff[1];
     camera.right = buff[2];
+}
+
+void setupCamera(float p, float y) {
+    rotate_camera({p, y}, 1.0f / camera.sensitivity);
 }
 
 void cameraSetUp(Vector3 &v) {
@@ -112,7 +116,7 @@ void rotate_camera(Vector2 mouse, float delta) {
     yoffset *= sensitivity;
 
     // Update camera forward
-    camera.yaw += yoffset;
+    camera.yaw -= yoffset;
     camera.pitch += xoffset;
     if (camera.yaw > 90.0f) camera.yaw = 90.0f;
     if (camera.yaw < -90.0f) camera.yaw = -90.0f;
@@ -124,9 +128,9 @@ void rotate_camera(Vector2 mouse, float delta) {
 
     Eigen::Matrix3f rotation;
     create_rotation_matrix(yaw, pitch, 0.0f, rotation);
-    Eigen::Vector3f f = {0,0,1};
+    Eigen::Vector3f f = {0,0,-1};
     Eigen::Vector3f u = {0,1,0};
-    Eigen::Vector3f r = {-1,0,0};
+    Eigen::Vector3f r = {1,0,0};
     // Perform matrix-vector multiplications
     camera.forward.vec = rotation * f;
     camera.up.vec = rotation * u;

@@ -25,7 +25,8 @@ struct SceneFileMaterial {
 
 struct SceneFileCamera {
     Vector3 pos;
-    Vector3 forward;
+    float yaw;
+    float pitch;
     float focus;
     float dof;
 };

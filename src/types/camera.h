@@ -23,4 +23,5 @@ void cameraSetFov(float f);
 void createCameraRay(float x, float y, Ray &ray); 
 void rotate_camera(Vector2 mouse, float delta);
 void move_camera(Vector2 keyboard,float delta);
+void setupCamera(float p, float y);
 #endif // !CAMERA_H

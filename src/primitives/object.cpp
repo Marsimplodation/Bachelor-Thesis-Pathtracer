@@ -141,6 +141,7 @@ void loadObject(const std::string fileName, Vector3 position, Vector3 size,
             if(i == 0)startIdx = idx;
             endIdx = std::max(endIdx, idx + 1);
         }
+        if(endIdx - startIdx == 0) return;
 
         //boundingbox
         Vector3 min{INFINITY, INFINITY, INFINITY};

@@ -124,7 +124,7 @@ void initScene() {
     printf("2plane %f GB\n", getMemory2Plane() / 1000000000.0f);
     //buildGridsWithSubBeams();
     
-    cameraSetForward(getSceneFile().cam.forward);
+    setupCamera(getSceneFile().cam.pitch, getSceneFile().cam.yaw);
     getCamera()->origin = getSceneFile().cam.pos;
     getCamera()->dof = getSceneFile().cam.dof;
     getCamera()->focus = getSceneFile().cam.focus;

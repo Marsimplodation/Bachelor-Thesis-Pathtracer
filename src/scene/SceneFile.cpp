@@ -8,7 +8,9 @@
 #include <cstdlib>
 
 namespace {
-    SceneFile scene;
+    SceneFile scene {
+        .cam = {.pitch = 180.0f},
+    };
     #define MAX_LINE_LENGTH 1024
     #define MAX_STRING_LENGTH 256
 }
@@ -90,7 +92,11 @@ void loadScene(const std::string& file) {
                 int idx = 0;
                 if (sscanf(line, "pos: %f,%f,%f", &scene.cam.pos[0], &scene.cam.pos[1], &scene.cam.pos[2]) == 3) {
                     // position is set
-                } else if (sscanf(line, "forward: %f,%f,%f", &scene.cam.forward[0], &scene.cam.forward[1], &scene.cam.forward[2]) == 3) {
+                }
+                else if (sscanf(line, "yaw: %f", &scene.cam.yaw) == 1) {
+                    // scale is set
+                }
+                else if (sscanf(line, "pitch: %f", &scene.cam.pitch) == 1) {
                     // scale is set
                 }
                 else if (sscanf(line, "dof: %f", &scene.cam.dof) == 1) {
