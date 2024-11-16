@@ -71,9 +71,14 @@ Vector3 nextEventEstimation(Ray & r) {
     auto light = getLight(r);
     if(!light) return {0,0,0};
 
-    auto xi = uniformSampleDisk(r);
-    float xi1 = xi.x;
-    float xi2 = xi.y; 
+   
+    float xi1 = fastRandom(r.randomState);
+    float xi2 = fastRandom(r.randomState);
+    // Ensure xi1 + xi2 <= 1 by sorting and scaling
+    if (xi1 + xi2 > 1.0f) {
+        xi1 = 1.0f - xi1;
+        xi2 = 1.0f - xi2;
+    }
     float xi3 = 1 - xi1 - xi2;
     auto & tris = getTris();
     auto idx = getRandomTriangleFromObject(r, *light);
@@ -230,7 +235,7 @@ void lambertShader(Ray &r) {
     //next event estimation
     Vector3 lightColor{};
     if(nee) lightColor = nextEventEstimation(r);
-    r.light = r.light + lightColor * r.throughPut;
+    r.light = r.light + lightColor * r.throughPut * 0.5f;
     
     return;
 }
@@ -274,7 +279,8 @@ Vector3 shade(Ray &r) {
     }
     //handle if material is emmisive
     //ignore when nee is active and this is a difuse ray
-    if(!nee || (nee)) r.light = r.light + mat.pbr.emmision * r.throughPut;
+    float weight = (nee && flag == OTHER) ? 0.5f : 1.0f;
+    if(!nee || (nee)) r.light = r.light + mat.pbr.emmision * r.throughPut * weight;
     return {};
 }
 
