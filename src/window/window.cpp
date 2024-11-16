@@ -146,6 +146,10 @@ bool DisplayMaterial(Object * o) {
         material->weights.reflection = 1.0f;
         material->weights.refraction = 0.0f;
     }
+    ImGui::Separator();
+    change |= ImGui::Checkbox("Volume", &(material->pbr.isVolume));
+    if(material->pbr.isVolume)change |= ImGui::DragFloat("Density", &(material->pbr.density), 0.01f, 0.0f, 1.0f);
+    ImGui::Separator();
 
     if (material->pbr.texture.data.size() > 0) {
         ImGui::Text("Texture Loaded");

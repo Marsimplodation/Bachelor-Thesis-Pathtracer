@@ -8,6 +8,7 @@
 #include "types/texture.h"
 #include "types/vector.h"
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
@@ -93,7 +94,9 @@ Vector3 nextEventEstimation(Ray & r) {
         .origin = origin,
         .direction = direction,
         .inv_dir = inv_direction,
-        .tmax = INFINITY
+        .tmax = INFINITY,
+        .volumeInfo = RayVolumeInfo{},
+        .rayFLAG = SHADOW_RAY,
     };
     float cosSurface = dotProduct(r.normal, shadowRay.direction);
     if(cosSurface < EPS) return {};
@@ -104,7 +107,7 @@ Vector3 nextEventEstimation(Ray & r) {
     shadowRay.tmax -= EPS;
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
-    if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {}; 
+    if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {0,0,0}; 
   
     float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
     //calculate color for hit light
@@ -113,6 +116,7 @@ Vector3 nextEventEstimation(Ray & r) {
     gammaCorrect(lightColor);
     
     if(lightColor[0] == -1) return {};
+    r.tmax = distance;
     lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
     return lightColor;
 }
@@ -236,8 +240,56 @@ void lambertShader(Ray &r) {
     Vector3 lightColor{};
     if(nee) lightColor = nextEventEstimation(r);
     r.light = r.light + lightColor * r.throughPut * 0.5f;
+    r.tmax = INFINITY;
     
     return;
+}
+
+bool hitVolume(Ray &r) {
+    auto & vol = r.volumeInfo;
+    if(vol.id == UINT32_MAX) return false;
+    if(vol.tmin > r.tmax) return false;
+    auto m_vol = getMaterial(vol.id);
+    float xi = fastRandom(r.randomState);
+    if(xi >= m_vol->pbr.density) return false;
+    float xi2 = fastRandom(r.randomState);
+    float delta = vol.tmax - vol.tmin;
+    float t = vol.tmin + xi2 * delta;
+    if(t >= r.tmax || t < 0) return false;
+    vol.tmax = t;
+    return true;
+}
+
+
+void volumeShader(Ray &r) {
+    auto & i_vol = r.volumeInfo;
+    auto vol = getMaterial(i_vol.id);
+    float density = vol->pbr.density;
+    float t = i_vol.tmax;
+    Vector3 color = getColorOfMaterial(r, *vol);
+    gammaCorrect(color);
+
+    r.origin = r.origin + r.direction * t;
+    
+    auto randomDir = randomUniformDirection(r); 
+    r.normal = (randomUniformDirection(r));
+    r.direction = randomDir;
+    normalize(r.direction);
+    
+    r.tmax = INFINITY;
+    r.inv_dir[0] = 1.0f/r.direction[0];
+    r.inv_dir[1] = 1.0f/r.direction[1];
+    r.inv_dir[2] = 1.0f/r.direction[2];
+    r.throughPut = r.throughPut * fminf(expf(-log(density) * t), 1.0f) * 1.0f / fmaxf(EPS, (density)) * color;
+
+    //next event estimation
+    Vector3 lightColor{};
+    r.tmax = 0.0f;
+    if(nee) lightColor = nextEventEstimation(r);
+    float w = fminf(expf(-log(density) * r.tmax), 1.0f) * 0.5f;
+    r.light += lightColor * r.throughPut * w;
+    //printf("%f\n", r.tmax);
+    r.tmax = INFINITY;
 }
 
 u32 randomState;
@@ -245,8 +297,14 @@ Vector3 shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
     int idx = r.materialIdx;
     auto & mat = materials[idx];
-    if(r.tmax == INFINITY) return black;
 
+
+    if(hitVolume(r)) {
+        volumeShader(r);
+        return {0,0,0};
+    }
+
+    if(r.tmax == INFINITY) return black;
     if(primaryOnly) {
         r.terminated = true;
         Vector3 color = getColorOfMaterial(r, mat);
@@ -277,6 +335,7 @@ Vector3 shade(Ray &r) {
         refractionShader(r);
         r.rayFLAG = REFLECTION_RAY;
     }
+    r.volumeInfo = RayVolumeInfo{};
     //handle if material is emmisive
     //ignore when nee is active and this is a difuse ray
     float weight = (nee && flag == OTHER) ? 0.5f : 1.0f;

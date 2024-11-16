@@ -23,6 +23,9 @@ struct pbrProbs {
     float refractiveIdx2 = 1.5f;
     float emmision = 0.0f;
     float roughness = 0.5f;
+    float density = 0.3f;
+    bool isVolume = false;
+
     Texture texture;
     Texture normal;
 }; 
