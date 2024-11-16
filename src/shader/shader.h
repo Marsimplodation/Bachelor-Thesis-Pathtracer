@@ -24,6 +24,8 @@ struct pbrProbs {
     float emmision = 0.0f;
     float roughness = 0.5f;
     float density = 0.3f;
+    float extinction = 1.0f;
+    float vol_scale = 1000.0f;
     bool isVolume = false;
 
     Texture texture;

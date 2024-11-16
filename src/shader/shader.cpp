@@ -67,7 +67,7 @@ Vector3 getColorOfMaterial(Ray & r, Material & info) {
 }
 
 
-Vector3 nextEventEstimation(Ray & r) {
+Vector3 nextEventEstimation(Ray & r, bool isVolume=false) {
     //setup ray
     auto light = getLight(r);
     if(!light) return {0,0,0};
@@ -99,7 +99,7 @@ Vector3 nextEventEstimation(Ray & r) {
         .rayFLAG = SHADOW_RAY,
     };
     float cosSurface = dotProduct(r.normal, shadowRay.direction);
-    if(cosSurface < EPS) return {};
+    if(!isVolume && cosSurface < EPS) return {};
 
     //check if light gets hit
     triangleIntersection(shadowRay, tri);
@@ -114,9 +114,11 @@ Vector3 nextEventEstimation(Ray & r) {
     Material &lightMaterial = materials[shadowRay.materialIdx];
     Vector3 lightColor = getColorOfMaterial(shadowRay, lightMaterial);
     gammaCorrect(lightColor);
-    
+    if(isVolume) {
+        cosSurface = 1.0f;
+    }
     if(lightColor[0] == -1) return {};
-    r.tmax = distance;
+    r.tmax = distance / light->surfaceArea;
     lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
     return lightColor;
 }
@@ -247,16 +249,23 @@ void lambertShader(Ray &r) {
 
 bool hitVolume(Ray &r) {
     auto & vol = r.volumeInfo;
-    if(vol.id == UINT32_MAX) return false;
-    if(vol.tmin > r.tmax) return false;
+    
+    if(vol.id == UINT32_MAX) {
+        return false;
+    }
+    if(vol.tmin > r.tmax) {
+        return false;
+    }
+
     auto m_vol = getMaterial(vol.id);
+    
     float xi = fastRandom(r.randomState);
-    if(xi >= m_vol->pbr.density) return false;
+    if(xi > m_vol->pbr.density) return false;
+
     float xi2 = fastRandom(r.randomState);
-    float delta = vol.tmax - vol.tmin;
-    float t = vol.tmin + xi2 * delta;
-    if(t >= r.tmax || t < 0) return false;
-    vol.tmax = t;
+    float delta = fminf(r.tmax, vol.tmax) - fmaxf(0.0f, vol.tmin);
+    float t = fmaxf(0.0f, vol.tmin) + xi2 * delta;
+    r.tmax = t;
     return true;
 }
 
@@ -265,31 +274,23 @@ void volumeShader(Ray &r) {
     auto & i_vol = r.volumeInfo;
     auto vol = getMaterial(i_vol.id);
     float density = vol->pbr.density;
-    float t = i_vol.tmax;
+    float t = r.tmax;
     Vector3 color = getColorOfMaterial(r, *vol);
     gammaCorrect(color);
-
-    r.origin = r.origin + r.direction * t;
     
-    auto randomDir = randomUniformDirection(r); 
-    r.normal = (randomUniformDirection(r));
-    r.direction = randomDir;
-    normalize(r.direction);
-    
-    r.tmax = INFINITY;
-    r.inv_dir[0] = 1.0f/r.direction[0];
-    r.inv_dir[1] = 1.0f/r.direction[1];
-    r.inv_dir[2] = 1.0f/r.direction[2];
-    r.throughPut = r.throughPut * fminf(expf(-log(density) * t), 1.0f) * 1.0f / fmaxf(EPS, (density)) * color;
-
+    float delta = i_vol.tmax - fmaxf(0.0f, i_vol.tmin);
+    vol->pbr.extinction = powf(density, 2.2f) * vol->pbr.vol_scale;
     //next event estimation
     Vector3 lightColor{};
+    r.origin = r.origin + r.direction * r.tmax;
     r.tmax = 0.0f;
-    if(nee) lightColor = nextEventEstimation(r);
-    float w = fminf(expf(-log(density) * r.tmax), 1.0f) * 0.5f;
-    r.light += lightColor * r.throughPut * w;
-    //printf("%f\n", r.tmax);
-    r.tmax = INFINITY;
+    lightColor = nextEventEstimation(r, true);
+    float w = 0.5f;
+    if(r.tmax > 0) {
+        float transmitance_nee = fminf(expf(-vol->pbr.extinction * r.tmax), 1.0f);
+        r.light += lightColor * r.throughPut * w * transmitance_nee * color;
+    }
+    r.terminated = true;
 }
 
 u32 randomState;

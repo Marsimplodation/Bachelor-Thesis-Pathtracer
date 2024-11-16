@@ -149,6 +149,8 @@ bool DisplayMaterial(Object * o) {
     ImGui::Separator();
     change |= ImGui::Checkbox("Volume", &(material->pbr.isVolume));
     if(material->pbr.isVolume)change |= ImGui::DragFloat("Density", &(material->pbr.density), 0.01f, 0.0f, 1.0f);
+    if(material->pbr.isVolume)change |= ImGui::DragFloat("Coef", &(material->pbr.extinction), 0.01f, 0.0f, 1.0f);
+    if(material->pbr.isVolume)change |= ImGui::DragFloat("Volume Scale", &(material->pbr.vol_scale), 0.01f, 0.0f, 1.0f);
     ImGui::Separator();
 
     if (material->pbr.texture.data.size() > 0) {
