@@ -17,7 +17,13 @@ namespace {
 std::vector<Material> materials;
 bool nee = true;
 bool primaryOnly = false;
+
+VolumetricFog volumetricFog;
+SkyBox skybox;
+
 } // namespace
+VolumetricFog &getVolumetricFog(){return volumetricFog;}
+SkyBox & getSkyBox(){return skybox;}
 
 Material *getMaterial(int idx) { return &materials[idx]; }
 bool &getPrimaryOnly() {
@@ -95,7 +101,6 @@ Vector3 nextEventEstimation(Ray & r, bool isVolume=false) {
         .direction = direction,
         .inv_dir = inv_direction,
         .tmax = INFINITY,
-        .volumeInfo = RayVolumeInfo{},
         .rayFLAG = SHADOW_RAY,
     };
     float cosSurface = dotProduct(r.normal, shadowRay.direction);
@@ -248,47 +253,35 @@ void lambertShader(Ray &r) {
 }
 
 bool hitVolume(Ray &r) {
-    auto & vol = r.volumeInfo;
-    
-    if(vol.id == UINT32_MAX) {
-        return false;
-    }
-    if(vol.tmin > r.tmax) {
-        return false;
-    }
+    if (!volumetricFog.isVolume) return false;
 
-    auto m_vol = getMaterial(vol.id);
-    
+    // Determine if the ray interacts with the volume
     float xi = fastRandom(r.randomState);
-    if(xi > m_vol->pbr.density) return false;
+    if(xi > (1-expf(-volumetricFog.density*5))) return false;
 
+    // Sample travel distance based on density (exponential distribution)
     float xi2 = fastRandom(r.randomState);
-    float delta = fminf(r.tmax, vol.tmax) - fmaxf(0.0f, vol.tmin);
-    float t = fmaxf(0.0f, vol.tmin) + xi2 * delta;
-    r.tmax = t;
+
+    r.tmax = r.tmin + xi2 * r.tmax;
     return true;
 }
 
-
 void volumeShader(Ray &r) {
-    auto & i_vol = r.volumeInfo;
-    auto vol = getMaterial(i_vol.id);
-    float density = vol->pbr.density;
-    float t = r.tmax;
-    Vector3 color = getColorOfMaterial(r, *vol);
-    gammaCorrect(color);
-    
-    float delta = i_vol.tmax - fmaxf(0.0f, i_vol.tmin);
-    vol->pbr.extinction = powf(density, 2.2f) * vol->pbr.vol_scale;
-    //next event estimation
-    Vector3 lightColor{};
+
+    // Reset for the next bounce
     r.origin = r.origin + r.direction * r.tmax;
+    r.tmax = INFINITY;
+    Vector3 lightColor{};
     r.tmax = 0.0f;
     lightColor = nextEventEstimation(r, true);
     float w = 0.5f;
     if(r.tmax > 0) {
-        float transmitance_nee = fminf(expf(-vol->pbr.extinction * r.tmax), 1.0f);
-        r.light += lightColor * r.throughPut * w * transmitance_nee * color;
+        Vector3 attenuation{
+            expf(volumetricFog.absorption[0] * -r.tmax),
+            expf(volumetricFog.absorption[1] * -r.tmax),
+            expf(volumetricFog.absorption[2] * -r.tmax),
+        };
+        r.light += lightColor * r.throughPut * w * attenuation;
     }
     r.terminated = true;
 }
@@ -300,12 +293,39 @@ Vector3 shade(Ray &r) {
     auto & mat = materials[idx];
 
 
+    if(r.tmax == INFINITY) {
+        if(hitVolume(r)) {
+            volumeShader(r);
+        }
+        if(!skybox.isActive) return black;
+        // Convert direction to spherical coordinates
+        float theta = acos(r.direction.y);           // Elevation angle
+        float phi = atan2(r.direction.z, r.direction.x);     // Azimuth angle
+        phi = phi < 0 ? phi + 2.0 * M_PI : phi;
+
+        // Convert to UV coordinates
+        float u = phi / (2.0 * M_PI);
+        float v = theta / M_PI;
+
+        // Sample the texture (e.g., bilinear sampling)
+        if (skybox.texture.data.empty())
+            return black;
+        else {
+            Vector4 fgColor = getTextureAtUV(skybox.texture, u,v);
+            float opacity = fgColor.w;
+            Vector3 color = {fgColor.x, fgColor.y, fgColor.z};
+            gammaCorrect(color);
+            r.light = r.light + skybox.emmision * color * r.throughPut;
+        }
+        return black;
+
+    };
     if(hitVolume(r)) {
         volumeShader(r);
         return {0,0,0};
     }
 
-    if(r.tmax == INFINITY) return black;
+
     if(primaryOnly) {
         r.terminated = true;
         Vector3 color = getColorOfMaterial(r, mat);
@@ -336,7 +356,6 @@ Vector3 shade(Ray &r) {
         refractionShader(r);
         r.rayFLAG = REFLECTION_RAY;
     }
-    r.volumeInfo = RayVolumeInfo{};
     //handle if material is emmisive
     //ignore when nee is active and this is a difuse ray
     float weight = (nee && flag == OTHER) ? 0.5f : 1.0f;

@@ -17,16 +17,23 @@ struct ShaderMix {
     float refraction = 0.0f;
 };
 
+struct SkyBox {
+    bool isActive = false;
+    float emmision = 1.0f;
+    Texture texture;
+};
+
+struct VolumetricFog {
+    Vector3 absorption = {1,1,1};
+    float density = 0.3f;
+    bool isVolume = false;
+};
 struct pbrProbs {
     Vector3 albedo;
     float refractiveIdx1 = 1.0f;
     float refractiveIdx2 = 1.5f;
     float emmision = 0.0f;
     float roughness = 0.5f;
-    float density = 0.3f;
-    float extinction = 1.0f;
-    float vol_scale = 1000.0f;
-    bool isVolume = false;
 
     Texture texture;
     Texture normal;
@@ -44,4 +51,6 @@ Vector3 shade(Ray &r);
 int addMaterial(Material m);
 Material * getMaterial(int idx);
 std::vector<Material> *getMaterials(); 
+VolumetricFog &getVolumetricFog();
+SkyBox & getSkyBox();
 #endif // !SHADER_H

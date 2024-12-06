@@ -37,23 +37,7 @@ bool triangleIntersection(Ray &ray, Triangle & primitive) {
         return false;
 
     // Test whether this is the foremost primitive in front of the camera
-    // If not volume
     float const t = dotProduct(edge2, qVec) * inv_det;
-    auto mat = getMaterial(primitive.materialIdx);
-    if(mat->pbr.isVolume) {
-        bool isSame = (ray.volumeInfo.id == primitive.materialIdx); 
-        if(isSame) {
-            ray.volumeInfo.tmin = fminf(t, ray.volumeInfo.tmin);
-            ray.volumeInfo.tmax = fmaxf(t, ray.volumeInfo.tmax);
-        }
-        else if(t < ray.volumeInfo.tmin) {
-            ray.volumeInfo.id = primitive.materialIdx;
-            ray.volumeInfo.tmin = t; 
-            ray.volumeInfo.tmax = t; 
-        }
-        return false;
-    }
-
     if (t < 0.00001f || ray.tmax < t)
         return false;
 

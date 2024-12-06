@@ -84,7 +84,6 @@ void setupRay(Ray & ray, int x, int y) {
         xIn = (float)WIDTH / float(HEIGHT) * xIn;
     ray.throughPut = {1.0f, 1.0f, 1.0f};
     ray.depth = 0;
-    ray.volumeInfo = RayVolumeInfo{};
     createCameraRay(xIn, yIn, ray);
 }
 
@@ -125,9 +124,6 @@ void traceWF(int i) {
             ray.rayFLAG = PRIMARY_RAY;
         }
 
-        ray.volumeInfo.id = UINT_MAX;
-        ray.volumeInfo.tmax = -INFINITY;
-        ray.volumeInfo.tmin = INFINITY;
 
         ray.interSectionAS = 0;
         ray.interSectionTests = 0;
