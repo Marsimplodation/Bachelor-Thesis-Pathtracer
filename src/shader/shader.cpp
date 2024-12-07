@@ -230,13 +230,12 @@ void lambertShader(Ray &r) {
     gammaCorrect(color);
 
     // reset for next bounce
-    r.origin = r.origin + r.direction * r.tmax;
+    r.origin = r.origin + r.direction * (r.tmax - 0.01f);
     
     auto randomDir = (randomCosineWeightedDirection(r));
     r.direction = randomDir.x * r.tangent + randomDir.y * r.bitangent + randomDir.z * r.normal;
     normalize(r.direction);
     
-    r.origin += r.normal * 0.001f;
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
     r.inv_dir[1] = 1.0f/r.direction[1];
@@ -296,6 +295,7 @@ void shade(Ray &r) {
 
 
     if(r.tmax == INFINITY) {
+        r.terminated = true;
         if(hitVolume(r)) {
             volumeShader(r);
         }
@@ -335,14 +335,14 @@ void shade(Ray &r) {
     }
     float xi = fastRandom(r.randomState);
     
-    Vector3 normal = r.normal;
     if (mat.pbr.normal.data.size() > 0) {
         Vector4 const normalColor = getTextureAtUV(mat.pbr.normal, r.uv.x, r.uv.y);
         Vector3 const textureNormal = Vector3{2.0f * normalColor.x, 2.0f * normalColor.y, 2.0f * normalColor.z} - Vector3{1, 1, 1};
-        normal = textureNormal.x * r.tangent + textureNormal.y * r.bitangent + textureNormal.z * r.normal;
-        normalize(normal);
+        r.normal = textureNormal.x * r.tangent + textureNormal.y * r.bitangent + textureNormal.z * r.normal;
+        normalize(r.normal);
+        r.tangent = normalized(crossProduct(r.normal, abs(r.normal.z) < 0.999 ? Vector3{0,0,1} : Vector3{1.0, 0.0, 0.0}));
+        r.bitangent = crossProduct(r.normal, r.tangent); 
     }
-    r.normal = normal;
 
     auto flag = r.rayFLAG;
 
