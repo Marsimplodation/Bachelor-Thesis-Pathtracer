@@ -288,8 +288,9 @@ void volumeShader(Ray &r) {
 }
 
 u32 randomState;
-Vector3 shade(Ray &r) {
+void shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
+    if(r.terminated) return;
     int idx = r.materialIdx;
     auto & mat = materials[idx];
 
@@ -298,7 +299,7 @@ Vector3 shade(Ray &r) {
         if(hitVolume(r)) {
             volumeShader(r);
         }
-        if(!skybox.isActive) return black;
+        if(!skybox.isActive) return;
         // Convert direction to spherical coordinates
         float theta = acos(r.direction.y);           // Elevation angle
         float phi = atan2(r.direction.z, r.direction.x);     // Azimuth angle
@@ -308,9 +309,8 @@ Vector3 shade(Ray &r) {
         float u = phi / (2.0 * M_PI);
         float v = theta / M_PI;
 
-        // Sample the texture (e.g., bilinear sampling)
         if (skybox.texture.data.empty())
-            return black;
+            return;
         else {
             Vector4 fgColor = getTextureAtUV(skybox.texture, u,v);
             float opacity = fgColor.w;
@@ -318,12 +318,12 @@ Vector3 shade(Ray &r) {
             gammaCorrect(color);
             r.light = r.light + skybox.emmision * color * r.throughPut;
         }
-        return black;
+        return;
 
     };
     if(hitVolume(r)) {
         volumeShader(r);
-        return {0,0,0};
+        return;
     }
 
 
@@ -361,6 +361,7 @@ Vector3 shade(Ray &r) {
     //ignore when nee is active and this is a difuse ray
     float weight = (nee && flag == OTHER) ? 0.5f : 1.0f;
     if(!nee || (nee)) r.light = r.light + mat.pbr.emmision * r.throughPut * weight;
-    return {};
+    r.tmax = INFINITY;
+    return;
 }
 

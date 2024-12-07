@@ -68,6 +68,7 @@ void findIntersection(Ray &ray) {
 
     if(ray.depth > 2 && xi * max(ray.throughPut) < KILLCHANCE) {
         ray.terminated = true;
+        return;
     } else if(ray.depth > 2)
         ray.throughPut *= 1.0f/((1-KILLCHANCE)*max(ray.throughPut));
     

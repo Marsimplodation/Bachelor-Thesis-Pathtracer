@@ -48,7 +48,7 @@ struct Material {
 };
 
 bool &getNEE();
-Vector3 shade(Ray &r);
+void shade(Ray &r);
 int addMaterial(Material m);
 Material * getMaterial(int idx);
 std::vector<Material> *getMaterials(); 

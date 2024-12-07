@@ -101,6 +101,7 @@ void intersectGrid(Ray &r) {
     toTraverse.push_back(idx);
     Vector4 points{};
     while(toTraverse.size() > 0) {
+        if(r.terminated) break;
         idx = toTraverse.back();
         toTraverse.pop_back();
         auto & grid = grids[idx];
