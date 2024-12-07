@@ -1,3 +1,6 @@
+[World]
+sky: objects/skys/sky.png
+
 [Models]
 file: objects/spnoza_lp.obj
 pos:  0,0,0 

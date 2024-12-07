@@ -253,16 +253,17 @@ void lambertShader(Ray &r) {
 }
 
 bool hitVolume(Ray &r) {
-    if (!volumetricFog.isVolume) return false;
+    if (!volumetricFog.isActive) return false;
 
     // Determine if the ray interacts with the volume
     float xi = fastRandom(r.randomState);
-    if(xi > (1-expf(-volumetricFog.density*5))) return false;
+    if(xi > (1-expf(-volumetricFog.density*volumetricFog.coef))) return false;
 
     // Sample travel distance based on density (exponential distribution)
     float xi2 = fastRandom(r.randomState);
+    const float maxTravelDistance = 10000.0f;
 
-    r.tmax = r.tmin + xi2 * r.tmax;
+    r.tmax = r.tmin + xi2 * fminf(maxTravelDistance,r.tmax);
     return true;
 }
 
@@ -274,15 +275,15 @@ void volumeShader(Ray &r) {
     Vector3 lightColor{};
     r.tmax = 0.0f;
     lightColor = nextEventEstimation(r, true);
-    float w = 0.5f;
     if(r.tmax > 0) {
         Vector3 attenuation{
-            expf(volumetricFog.absorption[0] * -r.tmax),
-            expf(volumetricFog.absorption[1] * -r.tmax),
-            expf(volumetricFog.absorption[2] * -r.tmax),
+            expf(volumetricFog.absorption[0] * -r.tmax * volumetricFog.coef),
+            expf(volumetricFog.absorption[1] * -r.tmax * volumetricFog.coef),
+            expf(volumetricFog.absorption[2] * -r.tmax * volumetricFog.coef),
         };
-        r.light += lightColor * r.throughPut * w * attenuation;
+        r.light += lightColor * r.throughPut * attenuation;
     }
+    r.direction = randomUniformDirection(r);
     r.terminated = true;
 }
 

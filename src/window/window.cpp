@@ -161,9 +161,12 @@ bool DisplayMaterial(Object * o) {
 void displayWorld() {
     ImGui::Begin("World properties");
     bool change = false;
-    change |= ImGui::Checkbox("Volumetric Fog", &(getVolumetricFog().isVolume));
-    if(getVolumetricFog().isVolume)change |= ImGui::DragFloat("Density", &(getVolumetricFog().density), 0.01f, 0.0f, 1.0f);
-    if(getVolumetricFog().isVolume)change |= ImGui::ColorEdit3("Absorption", (float *)&(getVolumetricFog().absorption));
+    change |= ImGui::Checkbox("Volumetric Fog", &(getVolumetricFog().isActive));
+    if(getVolumetricFog().isActive){
+            change |= ImGui::DragFloat("Density", &(getVolumetricFog().density), 0.01f, 0.0f, 1.0f);
+            change |= ImGui::DragFloat("Coef", &(getVolumetricFog().coef), 0.1f, 0.0f, 10.0f);
+            change |= ImGui::ColorEdit3("Absorption", (float *)&(getVolumetricFog().absorption));
+    } 
     ImGui::Separator();
     change |= ImGui::Checkbox("Skybox", &(getSkyBox().isActive));
     if(getSkyBox().isActive) change |= ImGui::DragFloat("Emmision", &(getSkyBox().emmision), 0.01f, 0.0f, 1.0f);

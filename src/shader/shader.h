@@ -26,7 +26,8 @@ struct SkyBox {
 struct VolumetricFog {
     Vector3 absorption = {1,1,1};
     float density = 0.3f;
-    bool isVolume = false;
+    float coef = 5.0f;
+    bool isActive = false;
 };
 struct pbrProbs {
     Vector3 albedo;
