@@ -146,6 +146,7 @@ bool DisplayMaterial(Object * o) {
         material->weights.reflection = 1.0f;
         material->weights.refraction = 0.0f;
     }
+    ImGui::Separator();
 
     if (material->pbr.texture.data.size() > 0) {
         ImGui::Text("Texture Loaded");
@@ -155,6 +156,30 @@ bool DisplayMaterial(Object * o) {
     }
 
     return change;
+}
+
+void displayWorld() {
+    ImGui::Begin("World properties");
+    bool change = false;
+    change |= ImGui::Checkbox("Volumetric Fog", &(getVolumetricFog().isActive));
+    if(getVolumetricFog().isActive){
+            change |= ImGui::DragFloat("Density", &(getVolumetricFog().density), 0.001f, 0.0f, 1.0f, "%.4f");
+            change |= ImGui::ColorEdit3("Absorption", (float *)&(getVolumetricFog().absorption));
+    } 
+    ImGui::Separator();
+    change |= ImGui::Checkbox("Skybox", &(getSkyBox().isActive));
+    if(getSkyBox().isActive) change |= ImGui::DragFloat("Emmision", &(getSkyBox().emmision), 0.01f, 0.0f, 1.0f);
+    
+    if (getSkyBox().texture.data.size() > 0) {
+        ImGui::Text("Sky Loaded");
+    } else {
+        ImGui::Text("No Sky Loaded");
+    }
+    if (change)
+        callReset();
+
+    ImGui::End();
+
 }
 
 void displayActiveObject() {
@@ -476,6 +501,7 @@ void createWindow(bool testing) {
                            seconds);
         ImGui::End();
         displayObjects();
+        displayWorld();
         displayCamera();
         displayMemory();
         displayIntersectSettings();

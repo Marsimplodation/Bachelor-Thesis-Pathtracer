@@ -8,6 +8,7 @@
 #include "types/texture.h"
 #include "types/vector.h"
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
@@ -16,7 +17,13 @@ namespace {
 std::vector<Material> materials;
 bool nee = true;
 bool primaryOnly = false;
+
+VolumetricFog volumetricFog;
+SkyBox skybox;
+
 } // namespace
+VolumetricFog &getVolumetricFog(){return volumetricFog;}
+SkyBox & getSkyBox(){return skybox;}
 
 Material *getMaterial(int idx) { return &materials[idx]; }
 bool &getPrimaryOnly() {
@@ -66,7 +73,7 @@ Vector3 getColorOfMaterial(Ray & r, Material & info) {
 }
 
 
-Vector3 nextEventEstimation(Ray & r) {
+Vector3 nextEventEstimation(Ray & r, bool isVolume=false) {
     //setup ray
     auto light = getLight(r);
     if(!light) return {0,0,0};
@@ -93,10 +100,11 @@ Vector3 nextEventEstimation(Ray & r) {
         .origin = origin,
         .direction = direction,
         .inv_dir = inv_direction,
-        .tmax = INFINITY
+        .tmax = INFINITY,
+        .rayFLAG = SHADOW_RAY,
     };
     float cosSurface = dotProduct(r.normal, shadowRay.direction);
-    if(cosSurface < EPS) return {};
+    if(!isVolume && cosSurface < EPS) return {};
 
     //check if light gets hit
     triangleIntersection(shadowRay, tri);
@@ -104,16 +112,27 @@ Vector3 nextEventEstimation(Ray & r) {
     shadowRay.tmax -= EPS;
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
-    if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {}; 
-  
+    if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {0,0,0}; 
     float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
+
     //calculate color for hit light
     Material &lightMaterial = materials[shadowRay.materialIdx];
     Vector3 lightColor = getColorOfMaterial(shadowRay, lightMaterial);
-    gammaCorrect(lightColor);
-    
     if(lightColor[0] == -1) return {};
+    gammaCorrect(lightColor);
+
+    //volume specific stuff, attenuation and unneeded cosine
+    Vector3 attenuation{1,1,1};
+    if(isVolume) {
+        cosSurface = 1.0f;
+        attenuation = Vector3{
+            expf(volumetricFog.absorption[0] * -distance * volumetricFog.density),
+            expf(volumetricFog.absorption[1] * -distance * volumetricFog.density),
+            expf(volumetricFog.absorption[2] * -distance * volumetricFog.density),
+        };
+    }
     lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
+    if(isVolume) lightColor = lightColor * attenuation; 
     return lightColor;
 }
 
@@ -219,13 +238,12 @@ void lambertShader(Ray &r) {
     gammaCorrect(color);
 
     // reset for next bounce
-    r.origin = r.origin + r.direction * r.tmax;
+    r.origin = r.origin + r.direction * (r.tmax - 0.01f);
     
     auto randomDir = (randomCosineWeightedDirection(r));
     r.direction = randomDir.x * r.tangent + randomDir.y * r.bitangent + randomDir.z * r.normal;
     normalize(r.direction);
     
-    r.origin += r.normal * 0.001f;
     r.tmax = INFINITY;
     r.inv_dir[0] = 1.0f/r.direction[0];
     r.inv_dir[1] = 1.0f/r.direction[1];
@@ -236,16 +254,72 @@ void lambertShader(Ray &r) {
     Vector3 lightColor{};
     if(nee) lightColor = nextEventEstimation(r);
     r.light = r.light + lightColor * r.throughPut * 0.5f;
+    r.tmax = INFINITY;
     
     return;
 }
 
+bool hitVolume(Ray &r) {
+    if (!volumetricFog.isActive) return false;
+    float xi = fastRandom(r.randomState);
+    float xi2 = fastRandom(r.randomState);
+    
+    float t = -log(1-xi)/volumetricFog.density;
+    if(t >= r.tmax) return false;
+    if(xi2 < volumetricFog.density) return false;
+    
+    //do the volume Shading
+    Vector3 attenuation{
+        expf(volumetricFog.absorption[0] * -t * volumetricFog.density),
+        expf(volumetricFog.absorption[1] * -t * volumetricFog.density),
+        expf(volumetricFog.absorption[2] * -t * volumetricFog.density),
+    };
+    r.throughPut = r.throughPut * attenuation;
+
+    // Setup ray for NEE + do NEE
+    Vector3 lightColor{};
+    r.origin = r.origin + r.direction * t;
+    lightColor = nextEventEstimation(r, true);
+    r.light += lightColor * r.throughPut * attenuation;
+    r.terminated = true;
+    return true;
+}
+
+
 u32 randomState;
-Vector3 shade(Ray &r) {
+void shade(Ray &r) {
     Vector3 black{0.0f, 0.0f, 0.0f};
+    if(r.terminated) return;
     int idx = r.materialIdx;
     auto & mat = materials[idx];
-    if(r.tmax == INFINITY) return black;
+
+
+    if(hitVolume(r)) return;
+    if(r.tmax == INFINITY) {
+        r.terminated = true;
+        if(!skybox.isActive) return;
+        // Convert direction to spherical coordinates
+        float theta = acos(r.direction.y);           // Elevation angle
+        float phi = atan2(r.direction.z, r.direction.x);     // Azimuth angle
+        phi = phi < 0 ? phi + 2.0 * M_PI : phi;
+
+        // Convert to UV coordinates
+        float u = phi / (2.0 * M_PI);
+        float v = theta / M_PI;
+
+        if (skybox.texture.data.empty())
+            return;
+        else {
+            Vector4 fgColor = getTextureAtUV(skybox.texture, u,v);
+            float opacity = fgColor.w;
+            Vector3 color = {fgColor.x, fgColor.y, fgColor.z};
+            gammaCorrect(color);
+            r.light = r.light + skybox.emmision * color * r.throughPut;
+        }
+        return;
+
+    };
+
 
     if(primaryOnly) {
         r.terminated = true;
@@ -255,14 +329,14 @@ Vector3 shade(Ray &r) {
     }
     float xi = fastRandom(r.randomState);
     
-    Vector3 normal = r.normal;
     if (mat.pbr.normal.data.size() > 0) {
         Vector4 const normalColor = getTextureAtUV(mat.pbr.normal, r.uv.x, r.uv.y);
         Vector3 const textureNormal = Vector3{2.0f * normalColor.x, 2.0f * normalColor.y, 2.0f * normalColor.z} - Vector3{1, 1, 1};
-        normal = textureNormal.x * r.tangent + textureNormal.y * r.bitangent + textureNormal.z * r.normal;
-        normalize(normal);
+        r.normal = textureNormal.x * r.tangent + textureNormal.y * r.bitangent + textureNormal.z * r.normal;
+        normalize(r.normal);
+        r.tangent = normalized(crossProduct(r.normal, abs(r.normal.z) < 0.999 ? Vector3{0,0,1} : Vector3{1.0, 0.0, 0.0}));
+        r.bitangent = crossProduct(r.normal, r.tangent); 
     }
-    r.normal = normal;
 
     auto flag = r.rayFLAG;
 
@@ -281,6 +355,7 @@ Vector3 shade(Ray &r) {
     //ignore when nee is active and this is a difuse ray
     float weight = (nee && flag == OTHER) ? 0.5f : 1.0f;
     if(!nee || (nee)) r.light = r.light + mat.pbr.emmision * r.throughPut * weight;
-    return {};
+    r.tmax = INFINITY;
+    return;
 }
 

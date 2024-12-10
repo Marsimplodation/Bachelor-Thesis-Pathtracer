@@ -3,10 +3,14 @@
 #include "vector.h"
 #include "../common.h"
 #include <atomic>
+#include <cmath>
+#include <cstdint>
 
 #define PRIMARY_RAY 0x00
 #define REFLECTION_RAY 0x01
-#define OTHER 0x02
+#define SHADOW_RAY 0x02
+#define OTHER 0x03
+
 struct Ray {
     Vector3 origin;
     Vector3 direction;
@@ -37,4 +41,5 @@ struct Ray {
 };
 Vector3 randomCosineWeightedDirection(Ray & r);
 Vector2 uniformSampleDisk(Ray & r);
+Vector3 randomUniformDirection(Ray & r);
 #endif // !RAY_H

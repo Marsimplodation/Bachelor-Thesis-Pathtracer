@@ -124,6 +124,7 @@ void traceWF(int i) {
             ray.rayFLAG = PRIMARY_RAY;
         }
 
+
         ray.interSectionAS = 0;
         ray.interSectionTests = 0;
         findIntersection(ray);

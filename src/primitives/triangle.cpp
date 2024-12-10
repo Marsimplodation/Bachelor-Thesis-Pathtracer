@@ -1,4 +1,5 @@
 #include "triangle.h"
+#include "shader/shader.h"
 #include "types/vector.h"
 #include <algorithm>
 #include <cmath>

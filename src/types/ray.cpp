@@ -27,3 +27,12 @@ Vector3 randomCosineWeightedDirection(Ray & r) {
     direction.z = sqrt(max(0.0f, 1.0f - direction.x * direction.x - direction.y * direction.y));
     return direction;
 }
+Vector3 randomUniformDirection(Ray & r) {
+    float z = 2.0f * fastRandom(r.randomState) - 1.0f; // Random z in range [-1, 1]
+    float phi = 2.0f * 3.14f * fastRandom(r.randomState); // Random phi in range [0, 2π]
+    
+    float x = sqrt(1.0f - z * z) * cos(phi); // Convert to Cartesian coordinates
+    float y = sqrt(1.0f - z * z) * sin(phi);
+
+    return Vector3(x, y, z); // Return the uniformly distributed vector
+}

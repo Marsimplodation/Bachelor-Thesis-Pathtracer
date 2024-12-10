@@ -1,4 +1,5 @@
 #include "SceneFile.h"
+#include "shader/shader.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -32,6 +33,15 @@ void loadScene(const std::string& file) {
         char keyword[MAX_STRING_LENGTH];
         if (sscanf(line, "%s", keyword) != 1) continue;;
 
+        if (strstr(line, "[World") != NULL) {
+            char filePath[MAX_LINE_LENGTH]; 
+            
+            while (fgets(line, MAX_LINE_LENGTH, f) && !strchr(line, '[')) {
+                if (sscanf(line, "sky: %s", filePath) == 1) {
+                    loadTexture(getSkyBox().texture, filePath);
+                }
+            }
+        }
         // Parse Models
         if (strstr(line, "[Models") != NULL) {
             SceneFileModel model;
