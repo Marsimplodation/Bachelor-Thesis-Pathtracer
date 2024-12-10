@@ -113,18 +113,26 @@ Vector3 nextEventEstimation(Ray & r, bool isVolume=false) {
     float distance = shadowRay.tmax; 
     findIntersection(shadowRay);
     if(distance <= shadowRay.tmax - 0.01f || distance >= shadowRay.tmax + 0.01f) return {0,0,0}; 
-  
     float inv_square_distance = std::min(1.0f, (1.0f/(distance*distance)));
+
     //calculate color for hit light
     Material &lightMaterial = materials[shadowRay.materialIdx];
     Vector3 lightColor = getColorOfMaterial(shadowRay, lightMaterial);
+    if(lightColor[0] == -1) return {};
     gammaCorrect(lightColor);
+
+    //volume specific stuff, attenuation and unneeded cosine
+    Vector3 attenuation{1,1,1};
     if(isVolume) {
         cosSurface = 1.0f;
+        attenuation = Vector3{
+            expf(volumetricFog.absorption[0] * -distance * volumetricFog.density),
+            expf(volumetricFog.absorption[1] * -distance * volumetricFog.density),
+            expf(volumetricFog.absorption[2] * -distance * volumetricFog.density),
+        };
     }
-    if(lightColor[0] == -1) return {};
-    r.tmax = distance / light->surfaceArea;
     lightColor = lightColor * lightMaterial.pbr.emmision * cosSurface * inv_square_distance * cosLight * light->surfaceArea * getLights().size();
+    if(isVolume) lightColor = lightColor * attenuation; 
     return lightColor;
 }
 
@@ -253,38 +261,30 @@ void lambertShader(Ray &r) {
 
 bool hitVolume(Ray &r) {
     if (!volumetricFog.isActive) return false;
-
-    // Determine if the ray interacts with the volume
     float xi = fastRandom(r.randomState);
-    if(xi > (1-expf(-volumetricFog.density*volumetricFog.coef))) return false;
-
-    // Sample travel distance based on density (exponential distribution)
     float xi2 = fastRandom(r.randomState);
-    const float maxTravelDistance = 10000.0f;
+    
+    float t = -log(1-xi)/volumetricFog.density;
+    if(t >= r.tmax) return false;
+    if(xi2 < volumetricFog.density) return false;
+    
+    //do the volume Shading
+    Vector3 attenuation{
+        expf(volumetricFog.absorption[0] * -t * volumetricFog.density),
+        expf(volumetricFog.absorption[1] * -t * volumetricFog.density),
+        expf(volumetricFog.absorption[2] * -t * volumetricFog.density),
+    };
+    r.throughPut = r.throughPut * attenuation;
 
-    r.tmax = r.tmin + xi2 * fminf(maxTravelDistance,r.tmax);
+    // Setup ray for NEE + do NEE
+    Vector3 lightColor{};
+    r.origin = r.origin + r.direction * t;
+    lightColor = nextEventEstimation(r, true);
+    r.light += lightColor * r.throughPut * attenuation;
+    r.terminated = true;
     return true;
 }
 
-void volumeShader(Ray &r) {
-
-    // Reset for the next bounce
-    r.origin = r.origin + r.direction * r.tmax;
-    r.tmax = INFINITY;
-    Vector3 lightColor{};
-    r.tmax = 0.0f;
-    lightColor = nextEventEstimation(r, true);
-    if(r.tmax > 0) {
-        Vector3 attenuation{
-            expf(volumetricFog.absorption[0] * -r.tmax * volumetricFog.coef),
-            expf(volumetricFog.absorption[1] * -r.tmax * volumetricFog.coef),
-            expf(volumetricFog.absorption[2] * -r.tmax * volumetricFog.coef),
-        };
-        r.light += lightColor * r.throughPut * attenuation;
-    }
-    r.direction = randomUniformDirection(r);
-    r.terminated = true;
-}
 
 u32 randomState;
 void shade(Ray &r) {
@@ -294,11 +294,9 @@ void shade(Ray &r) {
     auto & mat = materials[idx];
 
 
+    if(hitVolume(r)) return;
     if(r.tmax == INFINITY) {
         r.terminated = true;
-        if(hitVolume(r)) {
-            volumeShader(r);
-        }
         if(!skybox.isActive) return;
         // Convert direction to spherical coordinates
         float theta = acos(r.direction.y);           // Elevation angle
@@ -321,10 +319,6 @@ void shade(Ray &r) {
         return;
 
     };
-    if(hitVolume(r)) {
-        volumeShader(r);
-        return;
-    }
 
 
     if(primaryOnly) {

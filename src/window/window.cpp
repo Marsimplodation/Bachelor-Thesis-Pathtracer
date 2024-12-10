@@ -163,8 +163,7 @@ void displayWorld() {
     bool change = false;
     change |= ImGui::Checkbox("Volumetric Fog", &(getVolumetricFog().isActive));
     if(getVolumetricFog().isActive){
-            change |= ImGui::DragFloat("Density", &(getVolumetricFog().density), 0.01f, 0.0f, 1.0f);
-            change |= ImGui::DragFloat("Coef", &(getVolumetricFog().coef), 0.1f, 0.0f, 10.0f);
+            change |= ImGui::DragFloat("Density", &(getVolumetricFog().density), 0.001f, 0.0f, 1.0f, "%.4f");
             change |= ImGui::ColorEdit3("Absorption", (float *)&(getVolumetricFog().absorption));
     } 
     ImGui::Separator();
