@@ -30,10 +30,21 @@ private:
     void cleanup();
 
     //members
+    GLFWwindow* window;
     VkInstance instance;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
-    GLFWwindow* window;
+    VkQueue graphicsQueue;
+    
+    //validation
+    const std::vector<const char*> validationLayers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
+    #ifdef NDEBUG
+        const bool enableValidationLayers = false;
+    #else
+        const bool enableValidationLayers = true;
+    #endif
 };
 
 //Helper function

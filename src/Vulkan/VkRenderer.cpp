@@ -40,6 +40,7 @@ void VkRenderer::mainLoop() {
 }
 
 void VkRenderer::cleanup() {
+    vkDestroyDevice(this->device, nullptr);
     vkDestroyInstance(this->instance, nullptr);
     glfwDestroyWindow(this->window);
     glfwTerminate();
