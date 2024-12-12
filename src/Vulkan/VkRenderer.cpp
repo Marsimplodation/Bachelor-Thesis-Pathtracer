@@ -1,15 +1,12 @@
 #include "VkRenderer.h"
 #include "GLFW/glfw3.h"
-#include "common.h"
+#include "../common.h"
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
+
 
 namespace {
     inline void checkIfResultIsCorrect(const VkResult & result, const char * error) {
@@ -19,6 +16,7 @@ namespace {
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
+    
 
     #ifdef NDEBUG
         const bool enableValidationLayers = false;
@@ -60,7 +58,7 @@ bool VkRenderer::checkValidationLayerSupport() {
 void VkRenderer::createInstance() {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
-    }
+    } else if(enableValidationLayers){printf("Validation active\n");}
 
     VkApplicationInfo appinfo{};
     appinfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -90,23 +88,27 @@ void VkRenderer::createInstance() {
     checkIfResultIsCorrect(result, "Failed to create instance"); 
 }
 
+
+
 void VkRenderer::initVulkan() {
     createInstance();
-    u32 extensionCount = 0;
-    
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    printf("supported vulkan extensions: %d\n", extensionCount);
-    for (const auto & e : extensions) {
-        printf("%s\n", e.extensionName);
-    }
-    
+    pickPhysicalDevice();
 }
 
 void VkRenderer::mainLoop() {
-    while(!glfwWindowShouldClose(this->window)) {
+    while (!glfwWindowShouldClose(this->window)) {
+        // Poll for events
         glfwPollEvents();
+
+        // Check if 'q' key is pressed
+        if (glfwGetKey(this->window, GLFW_KEY_Q) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(this->window, GLFW_TRUE);  // Close the window
+        }
+
+        // Add your rendering code here (e.g., clear the window, draw stuff, etc.)
+
+        // Swap buffers to update the window
+        glfwSwapBuffers(this->window);
     }
 
 }
