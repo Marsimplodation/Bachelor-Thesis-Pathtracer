@@ -1,11 +1,4 @@
 #include "VkRenderer.h"
-#include "GLFW/glfw3.h"
-#include "../common.h"
-#include <cstdint>
-#include <cstring>
-#include <stdexcept>
-#include <vector>
-#include <vulkan/vulkan_core.h>
 
 bool QueueFamilyIndices::isComplete() {
     return this->graphicsFamily.has_value();

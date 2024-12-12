@@ -1,13 +1,13 @@
 #ifndef VKRENDERER_H
 #include "../common.h"
 #include <optional>
-
-#include <cstdio>
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include "GLFW/glfw3.h"
+#include "../common.h"
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+#include <vector>
+#include <vulkan/vulkan_core.h>
 
 struct QueueFamilyIndices {
     std::optional<u32> graphicsFamily;
@@ -25,14 +25,22 @@ private:
     bool checkValidationLayerSupport();
     void createInstance();
     void pickPhysicalDevice();
+    void createLogicalDevice();
     void mainLoop();
     void cleanup();
 
     //members
     VkInstance instance;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkDevice device;
     GLFWwindow* window;
 };
+
+//Helper function
+inline void checkIfVkResultIsCorrect(const VkResult & result, const char * error) {
+    if(result == VK_SUCCESS) return;
+    throw std::runtime_error(error);
+}
 
 
 #endif // !VKRENDERER_H
