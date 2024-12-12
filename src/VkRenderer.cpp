@@ -1,6 +1,6 @@
 #include "VkRenderer.h"
 #include "GLFW/glfw3.h"
-#include "types.h"
+#include "common.h"
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
