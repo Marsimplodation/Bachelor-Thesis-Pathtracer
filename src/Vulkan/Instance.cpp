@@ -46,7 +46,7 @@ void VkRenderer::createInstance() {
     }
     else createInfo.enabledLayerCount = 0;
 
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &this->instance);
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
     checkIfVkResultIsCorrect(result, "Failed to create instance"); 
 }
 

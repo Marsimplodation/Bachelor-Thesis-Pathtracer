@@ -1,7 +1,8 @@
 #ifndef VKRENDERER_H
 #include "../common.h"
 #include <optional>
-#include "GLFW/glfw3.h"
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 #include "../common.h"
 #include <cstdint>
 #include <cstring>
@@ -11,8 +12,8 @@
 
 struct QueueFamilyIndices {
     std::optional<u32> graphicsFamily;
+    std::optional<u32> presentFamily;
     bool isComplete();
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 };
 
 class VkRenderer {
@@ -26,8 +27,12 @@ private:
     void createInstance();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createSurface();
     void mainLoop();
     void cleanup();
+
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    bool isDeviceSuitable(VkPhysicalDevice device);
 
     //members
     GLFWwindow* window;
@@ -35,6 +40,8 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
     VkQueue graphicsQueue;
+    VkQueue presentQueue;
+    VkSurfaceKHR surface;
     
     //validation
     const std::vector<const char*> validationLayers = {

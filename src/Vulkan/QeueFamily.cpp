@@ -1,10 +1,11 @@
 #include "VkRenderer.h"
 
 bool QueueFamilyIndices::isComplete() {
-    return this->graphicsFamily.has_value();
+    return graphicsFamily.has_value() &&
+            presentFamily.has_value();
 }
 
-QueueFamilyIndices QueueFamilyIndices::findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices VkRenderer::findQueueFamilies(VkPhysicalDevice device) {
     QueueFamilyIndices indices;
     u32 queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -15,6 +16,13 @@ QueueFamilyIndices QueueFamilyIndices::findQueueFamilies(VkPhysicalDevice device
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
         }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
         if(indices.isComplete()) break;
         i++;
     }
