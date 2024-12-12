@@ -1,5 +1,18 @@
 #include "VkRenderer.h"
+#include <set>
+#include <vulkan/vulkan_core.h>
 
+bool VkRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    u32 extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+    for (const auto & extension: extensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+    return requiredExtensions.empty();
+}
 bool VkRenderer::isDeviceSuitable(VkPhysicalDevice device){
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
@@ -8,7 +21,8 @@ bool VkRenderer::isDeviceSuitable(VkPhysicalDevice device){
     QueueFamilyIndices indices = findQueueFamilies(device);
     return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
             features.geometryShader &&
-            indices.isComplete();
+            indices.isComplete() &&
+            checkDeviceExtensionSupport(device);
 };
 
 void VkRenderer::pickPhysicalDevice() {

@@ -23,16 +23,17 @@ private:
     //functions
     void initWindow();
     void initVulkan();
-    bool checkValidationLayerSupport();
     void createInstance();
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSurface();
     void mainLoop();
     void cleanup();
-
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    bool checkValidationLayerSupport();
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+
 
     //members
     GLFWwindow* window;
@@ -42,6 +43,11 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkSurfaceKHR surface;
+
+    const std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME
+    };
     
     //validation
     const std::vector<const char*> validationLayers = {
