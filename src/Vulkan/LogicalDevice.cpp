@@ -1,4 +1,6 @@
 #include "VkRenderer.h"
+#include <iostream>
+#include <ostream>
 #include <set>
 #include <vulkan/vulkan_core.h>
 
@@ -17,12 +19,41 @@ void VkRenderer::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
+    
+    // Check for ray tracing and acceleration structure support
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures{};
+    rayTracingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+    accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+
+    // Chain both feature structs
+    VkPhysicalDeviceFeatures2 deviceFeatures2{};
+    deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.pNext = &rayTracingFeatures;  // First, link ray tracing features
+    rayTracingFeatures.pNext = &accelerationStructureFeatures;  // Then link acceleration structure features
+
+    // Query the physical device for these features
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+
+    // Check if ray tracing and acceleration structure are supported
+    if (!rayTracingFeatures.rayTracingPipeline) {
+        std::cerr << "Ray tracing is not supported on this device, even though the extension is available!" << std::endl;
+        return;
+    }
+
+    if (!accelerationStructureFeatures.accelerationStructure) {
+        std::cerr << "Acceleration structure is not supported on this device, even though the extension is available!" << std::endl;
+        return;
+    }
+
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = uniqueQueueFamilies.size();
-    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pEnabledFeatures = nullptr;
+    createInfo.pNext = &deviceFeatures2;
     createInfo.enabledExtensionCount = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
     
@@ -37,4 +68,17 @@ void VkRenderer::createLogicalDevice() {
     checkIfVkResultIsCorrect(result, "failed to create logical deivce");
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    
+
+    //load raytracing extension
+    vkCreateRayTracingPipelinesKHR = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(
+        vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR")
+    );
+    vkCreateAccelerationStructureKHR = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(
+        vkGetDeviceProcAddr(device, "vkCreateAccelerationStructureKHR")
+    );
+    vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR >(
+        vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR")
+    );
+
 }

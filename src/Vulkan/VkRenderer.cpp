@@ -44,6 +44,7 @@ void VkRenderer::mainLoop() {
 }
 
 void VkRenderer::cleanup() {
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }

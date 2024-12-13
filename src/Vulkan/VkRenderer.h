@@ -36,6 +36,7 @@ private:
     void createSwapChain();
     void createImageViews();
     void createGraphicsPipeline();
+    void buildAccelerationStructures();
     void mainLoop();
     void cleanup();
     bool checkValidationLayerSupport();
@@ -46,6 +47,8 @@ private:
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    VkShaderModule createShaderModule(const std::vector<char>& code);
+
 
 
     //members
@@ -59,14 +62,25 @@ private:
     VkSwapchainKHR swapChain;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline rtPipeline;
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
+
+    VkAccelerationStructureKHR topLevelAS;
+    VkAccelerationStructureKHR bottomLevelAS;
+
     
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_SPIRV_1_4_EXTENSION_NAME
     };
     
     //validation
@@ -78,6 +92,11 @@ private:
     #else
         const bool enableValidationLayers = true;
     #endif
+
+    //extensions
+    PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
+    PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
+    PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
 };
 
 //Helper function
