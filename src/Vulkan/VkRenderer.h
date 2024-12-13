@@ -33,6 +33,9 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSurface();
+    void createSwapChain();
+    void createImageViews();
+    void createGraphicsPipeline();
     void mainLoop();
     void cleanup();
     bool checkValidationLayerSupport();
@@ -40,6 +43,9 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 
     //members
@@ -50,7 +56,12 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkSurfaceKHR surface;
-
+    VkSwapchainKHR swapChain;
+    VkFormat swapChainImageFormat;
+    VkExtent2D swapChainExtent;
+    
+    std::vector<VkImage> swapChainImages;
+    std::vector<VkImageView> swapChainImageViews;
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,

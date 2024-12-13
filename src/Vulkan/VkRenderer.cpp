@@ -20,6 +20,9 @@ void VkRenderer::initVulkan() {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSwapChain();
+    createImageViews();
+    createGraphicsPipeline();
 }
 
 void VkRenderer::mainLoop() {
@@ -41,6 +44,10 @@ void VkRenderer::mainLoop() {
 }
 
 void VkRenderer::cleanup() {
+    for (auto imageView : swapChainImageViews) {
+        vkDestroyImageView(device, imageView, nullptr);
+    }
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);

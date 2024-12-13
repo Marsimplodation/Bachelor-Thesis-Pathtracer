@@ -19,10 +19,18 @@ bool VkRenderer::isDeviceSuitable(VkPhysicalDevice device){
     vkGetPhysicalDeviceProperties(device, &properties);
     vkGetPhysicalDeviceFeatures(device, &features);
     QueueFamilyIndices indices = findQueueFamilies(device);
+
+    bool extensionsSupported = checkDeviceExtensionSupport(device); 
+    if(!extensionsSupported) return false;
+    bool swapChainAdequate = false;
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+    swapChainAdequate |= !swapChainSupport.formats.empty() &&
+                            !swapChainSupport.presentModes.empty();
+
     return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
             features.geometryShader &&
             indices.isComplete() &&
-            checkDeviceExtensionSupport(device);
+            swapChainAdequate;
 };
 
 void VkRenderer::pickPhysicalDevice() {
