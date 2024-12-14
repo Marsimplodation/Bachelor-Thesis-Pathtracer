@@ -49,6 +49,7 @@ void VkRenderer::createSyncObjects() {
 }
 
 void VkRenderer::drawFrame() {
+    printf("---- new frame ---\n");
     vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &inFlightFence);
 
@@ -62,7 +63,7 @@ void VkRenderer::drawFrame() {
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
@@ -101,31 +102,62 @@ void VkRenderer::mainLoop() {
 
         vkDeviceWaitIdle(device);
 }
+
 void VkRenderer::cleanup() {
+    // Wait for the device to finish operations before cleanup
+    vkDeviceWaitIdle(device);
+
+    // Cleanup synchronization objects
+    vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+    vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+    vkDestroyFence(device, inFlightFence, nullptr);
+
+    // Cleanup Vulkan objects in reverse order of their creation, considering dependencies
+    vkDestroyPipeline(device, rtPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+    vkDestroyAccelerationStructureKHR(device, topLevelAS, nullptr);
+        // Free allocated device memory
+    //vkFreeMemory(device, topLevelASMemory, nullptr);
+    vkFreeMemory(device, imageMemory, nullptr);
+    vkFreeMemory(device, vertexBufferMemory, nullptr);
+    vkFreeMemory(device, raygenMemory, nullptr);
+    vkFreeMemory(device, missMemory, nullptr);
+    vkFreeMemory(device, hitMemory, nullptr);
+
     vkDestroyBuffer(device, hitBuffer, nullptr);
     vkDestroyBuffer(device, missBuffer, nullptr);
     vkDestroyBuffer(device, raygenBuffer, nullptr);
     vkDestroyBuffer(device, vertexBuffer, nullptr);
-    vkDestroyAccelerationStructureKHR(device, topLevelAS, nullptr);
-    vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-    vkDestroyFence(device, inFlightFence, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
     vkDestroyRenderPass(device, renderPass, nullptr);
+
+    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
     vkDestroyCommandPool(device, commandPool, nullptr);
+
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }
+    vkDestroyImageView(device, storageImageView, nullptr);
+    vkDestroyImage(device, storageImage, nullptr);
+
     vkDestroySwapchainKHR(device, swapChain, nullptr);
+
     vkDestroySurfaceKHR(instance, surface, nullptr);
+
     vkDestroyDevice(device, nullptr);
+
     vkDestroyInstance(instance, nullptr);
+
     glfwDestroyWindow(window);
     glfwTerminate();
 }
+
 
 

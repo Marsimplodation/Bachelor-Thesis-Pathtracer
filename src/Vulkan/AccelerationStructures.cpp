@@ -28,7 +28,7 @@ void VkRenderer::buildAccelerationStructures() {
     VkAccelerationStructureCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
     createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-    createInfo.size = 0;  // No geometry, just an empty AS
+    createInfo.size = sizeof(vertices[0]) * vertices.size();
     createInfo.buffer = vertexBuffer;
 
     VkAccelerationStructureKHR topLevelAS;

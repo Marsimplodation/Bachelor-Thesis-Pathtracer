@@ -111,13 +111,17 @@ VkResult VkRenderer::CreateSBTBuffers(VkDeviceSize raygenSize, VkDeviceSize miss
 
 
 void VkRenderer::createDescriptorPool() {
-    VkDescriptorPoolSize poolSizes[1] = {};
+    VkDescriptorPoolSize poolSizes[3] = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = 3; // Change to 3 for the 3 descriptors (raygen, miss, hit)
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    poolSizes[1].descriptorCount = 1; 
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    poolSizes[2].descriptorCount = 1; 
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
+    poolInfo.poolSizeCount = 3;
     poolInfo.pPoolSizes = poolSizes;
     poolInfo.maxSets = 1;  // Only need 1 descriptor set (if you're allocating 1 per frame)
 
@@ -141,13 +145,24 @@ void VkRenderer::updateDescriptorSet() {
     hitBufferInfo.offset = 0;
     hitBufferInfo.range = VK_WHOLE_SIZE;
 
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageView = storageImageView; // The image view for the storage image
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL; // Layout for storage images
+
+    VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWrite{};
+    accelerationStructureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+    accelerationStructureWrite.accelerationStructureCount = 1;
+    accelerationStructureWrite.pAccelerationStructures = &topLevelAS;
+
     VkWriteDescriptorSet writeDescriptorSets[] = {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &raygenBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &missBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &hitBufferInfo, nullptr }
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &hitBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo, nullptr, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, &accelerationStructureWrite, descriptorSet, 4, 0, 1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, nullptr, nullptr, nullptr},
     };
 
-    vkUpdateDescriptorSets(device, 3, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 4, writeDescriptorSets, 0, nullptr);
 }
 
 
@@ -174,6 +189,47 @@ void VkRenderer::createCommandBuffer() {
     checkIfVkResultIsCorrect(result, "Failed to create command buffer");
 }
 
+void TransitionImageLayout(
+    VkCommandBuffer commandBuffer,
+    VkImage image,
+    VkImageLayout oldLayout,
+    VkImageLayout newLayout,
+    VkPipelineStageFlags srcStage,
+    VkPipelineStageFlags dstStage) {
+    
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    } else if (newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = 0;
+    }
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        srcStage, dstStage,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
+}
+
 void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     // Begin Command Buffer Recording
     VkCommandBufferBeginInfo beginInfo{};
@@ -193,6 +249,25 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     vkCmdEndRenderPass(commandBuffer);
 
 
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = storageImage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = 0;  // No need for src access mask when transitioning from UNDEFINED
+    barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer,
+                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                         0, 0, nullptr, 0, nullptr, 1, &barrier);
       
     // Bind the Ray Tracing Pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline);
@@ -214,10 +289,12 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     bufferDeviceAddressInfo.buffer = missBuffer;
     missSBT.deviceAddress =  vkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
     missSBT.size = shaderGroupHandleSize;  
+    missSBT.stride = shaderGroupHandleSize;
 
     bufferDeviceAddressInfo.buffer = hitBuffer;
     hitSBT.deviceAddress = vkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
     hitSBT.size = shaderGroupHandleSize;
+    hitSBT.stride = shaderGroupHandleSize;
     
     updateDescriptorSet();
     vkCmdBindDescriptorSets(
@@ -242,6 +319,68 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         swapChainExtent.height, // Ray tracing image height
         1               // Depth (for 2D images, use 1)
     );
+
+    // Transition the storage image for transfer
+    TransitionImageLayout(
+        commandBuffer,
+        storageImage,
+        VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT
+    );
+
+    // Transition the swapchain image for transfer
+    TransitionImageLayout(
+        commandBuffer,
+        swapChainImages[imageIndex],
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT
+    );
+    VkImageCopy imageCopyRegion{};
+    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageCopyRegion.srcSubresource.mipLevel = 0;
+    imageCopyRegion.srcSubresource.baseArrayLayer = 0;
+    imageCopyRegion.srcSubresource.layerCount = 1;
+    imageCopyRegion.srcOffset = { 0, 0, 0 };
+
+    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageCopyRegion.dstSubresource.mipLevel = 0;
+    imageCopyRegion.dstSubresource.baseArrayLayer = 0;
+    imageCopyRegion.dstSubresource.layerCount = 1;
+    imageCopyRegion.dstOffset = { 0, 0, 0 };
+
+    imageCopyRegion.extent = {
+        swapChainExtent.width,
+        swapChainExtent.height,
+        1
+    };
+
+    vkCmdCopyImage(
+        commandBuffer,
+        storageImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1, &imageCopyRegion
+    );
+    TransitionImageLayout(
+        commandBuffer,
+        swapChainImages[imageIndex],
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+    );
+    TransitionImageLayout(
+        commandBuffer,
+        storageImage,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_IMAGE_LAYOUT_GENERAL,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+    );
+
 
 
 

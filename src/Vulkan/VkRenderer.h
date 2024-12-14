@@ -100,12 +100,18 @@ private:
     //buffers
     VkBuffer raygenBuffer, missBuffer, hitBuffer;
     VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
 
     //Shaders
     VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;
     VkDeviceSize shaderGroupBaseAlignment;
     VkDeviceSize shaderGroupHandleSize;
+
+    //image to render too
+    VkImage storageImage;
+    VkImageView storageImageView;
+    VkDeviceMemory imageMemory;
 
 
     VkAccelerationStructureKHR topLevelAS;

@@ -54,13 +54,26 @@ void VkRenderer::createDescriptorLayout() {
     hitBinding.descriptorCount = 1;
     hitBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;  // This buffer is used by the closest hit shader.
 
+    VkDescriptorSetLayoutBinding storageImageBinding{};
+    storageImageBinding.binding = 3; // Binding number in the shader
+    storageImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    storageImageBinding.descriptorCount = 1; // Number of storage images (usually 1)
+    storageImageBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR; // Which shader stages can access this image
+    storageImageBinding.pImmutableSamplers = nullptr; // Not used for storage images
+    //
+    VkDescriptorSetLayoutBinding asBinding{};
+    asBinding.binding = 4;
+    asBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    asBinding.descriptorCount = 1;
+    asBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR; // Adjust depending on which shaders need the AS
+    asBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding};
+    VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding};
 
     // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo.bindingCount = 3;  // Number of bindings
+    layoutCreateInfo.bindingCount = 4;  // Number of bindings
     layoutCreateInfo.pBindings = bindings;
     VkResult result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayout);
     if (result != VK_SUCCESS) {
@@ -135,7 +148,7 @@ void VkRenderer::createGraphicsPipeline() {
     closestHitGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups = {raygenGroup, closestHitGroup, missGroup};
-    //buildAccelerationStructures();
+    buildAccelerationStructures();
     createDescriptorLayout();
 
 
