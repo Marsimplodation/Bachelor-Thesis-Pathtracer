@@ -1,4 +1,5 @@
 #include "VkRenderer.h"
+#include <cstring>
 #include <fstream>
 #include <vulkan/vulkan_core.h>
 
@@ -27,14 +28,54 @@ VkShaderModule VkRenderer::createShaderModule(const std::vector<char>& code) {
     return shaderModule;
 }
 
+void copyShaderCodeToBuffer(VkDevice device, VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize) {
+    void* mappedMemory;
+    vkMapMemory(device, bufferMemory, 0, shaderSize, 0, &mappedMemory);
+    memcpy(mappedMemory, shaderCode, static_cast<size_t>(shaderSize));
+    vkUnmapMemory(device, bufferMemory);
+}
+
+void VkRenderer::createDescriptorLayout() {
+    VkDescriptorSetLayoutBinding raygenBinding = {};
+    raygenBinding.binding = 0;
+    raygenBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    raygenBinding.descriptorCount = 1;
+    raygenBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;  // This buffer is used by the raygen shader.
+
+    VkDescriptorSetLayoutBinding missBinding = {};
+    missBinding.binding = 1;
+    missBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    missBinding.descriptorCount = 1;
+    missBinding.stageFlags = VK_SHADER_STAGE_MISS_BIT_KHR;  // This buffer is used by the miss shader.
+
+    VkDescriptorSetLayoutBinding hitBinding = {};
+    hitBinding.binding = 2;
+    hitBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    hitBinding.descriptorCount = 1;
+    hitBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;  // This buffer is used by the closest hit shader.
+
+
+    VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding};
+
+    // Create the descriptor set layout
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
+    layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutCreateInfo.bindingCount = 3;  // Number of bindings
+    layoutCreateInfo.pBindings = bindings;
+    VkResult result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayout);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+}
 
 void VkRenderer::createGraphicsPipeline() {
     auto rgenShaderCode = readFile("Shaders/raygen.spv");
     auto closestHitShaderCode = readFile("Shaders/closesthit.spv");
     auto missShaderCode = readFile("Shaders/miss.spv");
-    auto rgenShaderModule = createShaderModule(rgenShaderCode);
-    auto closesthitShaderModule = createShaderModule(closestHitShaderCode);
-    auto missShaderModule = createShaderModule(missShaderCode);
+
+    rgenShaderModule = createShaderModule(rgenShaderCode);
+    closesthitShaderModule = createShaderModule(closestHitShaderCode);
+    missShaderModule = createShaderModule(missShaderCode);
 
     VkPipelineShaderStageCreateInfo rgenShaderStageInfo{};
     rgenShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -57,6 +98,16 @@ void VkRenderer::createGraphicsPipeline() {
     VkPipelineShaderStageCreateInfo shaderStages[] = {rgenShaderStageInfo,
                                                         closesthitShaderStageInfo,
                                                         missShaderStageInfo};
+    VkDeviceSize raygenSize = rgenShaderCode.size(); // Size of your raygen shader
+    VkDeviceSize missSize = missShaderCode.size();     // Size of your miss shader
+    VkDeviceSize hitSize = closestHitShaderCode.size();       // Size of your hit shader
+
+    VkResult result = CreateSBTBuffers(raygenSize, missSize, hitSize,
+                                       &raygenBuffer, &raygenMemory,
+                                       &missBuffer, &missMemory,
+                                       &hitBuffer, &hitMemory);
+
+
 
     
     // Create Ray Tracing Shader Groups
@@ -84,8 +135,18 @@ void VkRenderer::createGraphicsPipeline() {
     closestHitGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups = {raygenGroup, closestHitGroup, missGroup};
-    buildAccelerationStructures();
-    
+    //buildAccelerationStructures();
+    createDescriptorLayout();
+
+
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &descriptorSetLayout;
+
+    result = vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
+    checkIfVkResultIsCorrect(result, "Failed to allocate descriptor set");
 
 
 
@@ -95,12 +156,8 @@ void VkRenderer::createGraphicsPipeline() {
     pipelineLayoutCreateInfo.setLayoutCount = 1; // Add descriptor set layouts here if needed
     pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
 
-    VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+    result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
     checkIfVkResultIsCorrect(result, "Failed to create pipeline layout");
-    
-
-
-
 
     // Create the Ray Tracing Pipeline
     VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCreateInfo = {};
@@ -116,10 +173,50 @@ void VkRenderer::createGraphicsPipeline() {
     checkIfVkResultIsCorrect(result, "Failed to create raytracing pipeline");
 
 
-    
+    std::vector<uint8_t> shaderHandleStorage(shaderGroupHandleSize * 3);
+    vkGetRayTracingShaderGroupHandlesKHR(device, rtPipeline, 0, 3, shaderHandleStorage.size(), shaderHandleStorage.data());
 
+
+    copyShaderCodeToBuffer(device, raygenMemory, shaderHandleStorage.data(), shaderGroupHandleSize);
+    copyShaderCodeToBuffer(device, hitMemory, shaderHandleStorage.data() + shaderGroupHandleSize, shaderGroupHandleSize);
+    copyShaderCodeToBuffer(device, missMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
+
+
+    
     vkDestroyShaderModule(device, rgenShaderModule, nullptr);
     vkDestroyShaderModule(device, closesthitShaderModule, nullptr);
     vkDestroyShaderModule(device, missShaderModule, nullptr);
 
+}
+
+void VkRenderer::createRenderPasses(){
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapChainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create render pass!");
+    }
 }

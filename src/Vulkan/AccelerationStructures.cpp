@@ -15,7 +15,6 @@ void VkRenderer::buildAccelerationStructures() {
         {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 1
         {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}   // Vertex 2
     };
-    VkBuffer vertexBuffer;
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = sizeof(vertices[0]) * vertices.size();
@@ -35,23 +34,5 @@ void VkRenderer::buildAccelerationStructures() {
     VkAccelerationStructureKHR topLevelAS;
     VkResult result = vkCreateAccelerationStructureKHR(device, &createInfo, nullptr, &topLevelAS);
     checkIfVkResultIsCorrect(result, "Failed to create empty acceleration structure");
-
-    // Create descriptor set layout for the acceleration structure (if you plan to use it later)
-    VkDescriptorSetLayoutBinding asBinding = {};
-    asBinding.binding = 0;
-    asBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-    asBinding.descriptorCount = 1;
-    asBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-
-    VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo = {};
-    setLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    setLayoutCreateInfo.bindingCount = 1;
-    setLayoutCreateInfo.pBindings = &asBinding;
-
-    result = vkCreateDescriptorSetLayout(device, &setLayoutCreateInfo, nullptr, &descriptorSetLayout);
-    checkIfVkResultIsCorrect(result, "Failed to create descriptor set layout for AS");
-
-    // Since this is just an empty AS for now, we don't need any further steps
-    // to bind the AS to the descriptor set or allocate memory for it
 }
 

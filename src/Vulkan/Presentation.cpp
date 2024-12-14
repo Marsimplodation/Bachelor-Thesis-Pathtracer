@@ -137,3 +137,5 @@ void VkRenderer::createImageViews() {
         checkIfVkResultIsCorrect(result, "Failed to create image views");
     }
 }
+
+

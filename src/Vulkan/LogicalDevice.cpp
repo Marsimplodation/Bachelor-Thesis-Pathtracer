@@ -26,12 +26,16 @@ void VkRenderer::createLogicalDevice() {
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
     accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR bufferDeviceAddressFeatures{};
+     bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
 
     // Chain both feature structs
     VkPhysicalDeviceFeatures2 deviceFeatures2{};
     deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     deviceFeatures2.pNext = &rayTracingFeatures;  // First, link ray tracing features
     rayTracingFeatures.pNext = &accelerationStructureFeatures;  // Then link acceleration structure features
+    accelerationStructureFeatures.pNext = &bufferDeviceAddressFeatures;
 
     // Query the physical device for these features
     vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
@@ -46,6 +50,16 @@ void VkRenderer::createLogicalDevice() {
         std::cerr << "Acceleration structure is not supported on this device, even though the extension is available!" << std::endl;
         return;
     }
+    //queery some shaderSpecific info
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProperties = {};
+    rtProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+    VkPhysicalDeviceProperties2 deviceProperties = {};
+    deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    deviceProperties.pNext = &rtProperties;
+    vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
+    // Access the properties
+    shaderGroupBaseAlignment = rtProperties.shaderGroupBaseAlignment;
+    shaderGroupHandleSize = rtProperties.shaderGroupHandleSize;
 
 
     VkDeviceCreateInfo createInfo{};
@@ -70,6 +84,8 @@ void VkRenderer::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
     
 
+    
+
     //load raytracing extension
     vkCreateRayTracingPipelinesKHR = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(
         vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR")
@@ -79,6 +95,20 @@ void VkRenderer::createLogicalDevice() {
     );
     vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR >(
         vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR")
+    );
+    vkCmdTraceRaysKHR  = reinterpret_cast<PFN_vkCmdTraceRaysKHR>(
+        vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR")
+    );
+
+    vkDestroyAccelerationStructureKHR  = reinterpret_cast< PFN_vkDestroyAccelerationStructureKHR >(
+        vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureKHR")
+    );
+
+   vkGetBufferDeviceAddressKHR   = reinterpret_cast< PFN_vkGetBufferDeviceAddressKHR>(
+        vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR")
+    );
+    vkGetRayTracingShaderGroupHandlesKHR = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(
+        vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR")
     );
 
 }

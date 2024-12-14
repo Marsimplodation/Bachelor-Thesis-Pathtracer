@@ -1,25 +1,16 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout(location = 0) rayPayloadEXT vec3 hitColor;
+
+layout(location = 0) rayPayloadEXT vec3 hitColor; // The color to output
 
 void main() {
-    vec3 origin = vec3(0.0, 0.0, -5.0);
-    vec3 direction = normalize(vec3(gl_LaunchIDEXT.xy - vec2(0.5), 1.0));
-
-    traceRayEXT(
-        topLevelAS, 
-        gl_RayFlagsOpaqueEXT, 
-        0xFF, 
-        0,    // SBT record offset
-        1,    // SBT record stride
-        0,    // Miss shader index
-        origin, 
-        0.0, 
-        direction, 
-        100.0, 
-        0
-    );
+    // Simple color based on the ray's launch ID (pixel coordinates)
+    vec3 color = vec3(gl_LaunchIDEXT.x / 1024.0, gl_LaunchIDEXT.y / 768.0, 1.0); // Example gradient color
+    
+    // Assign the color to the ray payload (this will be the output color)
+    hitColor = color;
+    return;
 }
+
 

@@ -36,8 +36,18 @@ private:
     void createSwapChain();
     void createImageViews();
     void createGraphicsPipeline();
+    void createDescriptorLayout();
+    void createCommandPool();
+    void createFramebuffers();
+    void createRenderPasses();
+    void createDescriptorPool();
+    void createCommandBuffer();
+    void updateDescriptorSet();
     void buildAccelerationStructures();
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void mainLoop();
+    void createSyncObjects();
+    void drawFrame();
     void cleanup();
     bool checkValidationLayerSupport();
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -48,6 +58,18 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule createShaderModule(const std::vector<char>& code);
+    
+    u32 FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
+    VkResult  CreateBuffer(VkDeviceSize size,
+                 VkBufferUsageFlags usage,
+                 VkMemoryPropertyFlags properties,
+                VkBuffer* buffer,
+                 VkDeviceMemory* bufferMemory,
+                 bool requiresDeviceAddress = false);
+    VkResult CreateSBTBuffers(VkDeviceSize raygenSize, VkDeviceSize missSize, VkDeviceSize hitSize,
+                              VkBuffer* raygenBuffer, VkDeviceMemory* raygenMemory,
+                              VkBuffer* missBuffer, VkDeviceMemory* missMemory,
+                              VkBuffer* hitBuffer, VkDeviceMemory* hitMemory);
 
 
 
@@ -67,6 +89,24 @@ private:
     VkDescriptorSetLayout descriptorSetLayout;
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
+    VkRenderPass renderPass;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+    //buffers
+    VkBuffer raygenBuffer, missBuffer, hitBuffer;
+    VkBuffer vertexBuffer;
+    VkDeviceMemory raygenMemory, missMemory, hitMemory;
+
+    //Shaders
+    VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;
+    VkDeviceSize shaderGroupBaseAlignment;
+    VkDeviceSize shaderGroupHandleSize;
+
 
     VkAccelerationStructureKHR topLevelAS;
     VkAccelerationStructureKHR bottomLevelAS;
@@ -74,13 +114,13 @@ private:
     
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-        VK_KHR_SPIRV_1_4_EXTENSION_NAME
+        VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
     };
     
     //validation
@@ -97,6 +137,10 @@ private:
     PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
     PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
     PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
+    PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
+    PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR  = nullptr;
+    PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = nullptr;
+    PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
 };
 
 //Helper function
