@@ -1,5 +1,8 @@
 #include "VkRenderer.h"
+#include "GLFW/glfw3.h"
+#include <algorithm>
 #include <vulkan/vulkan_core.h>
+
 void VkRenderer::run() {
     initWindow();
     initVulkan();
@@ -48,8 +51,7 @@ void VkRenderer::createSyncObjects() {
 
 }
 
-void VkRenderer::drawFrame() {
-    printf("---- new frame ---\n");
+void VkRenderer::drawFrame(float deltaTime) {
     vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &inFlightFence);
 
@@ -57,7 +59,7 @@ void VkRenderer::drawFrame() {
     vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
     vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-    recordCommandBuffer(commandBuffer, imageIndex);
+    recordCommandBuffer(commandBuffer, imageIndex, deltaTime);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -74,6 +76,7 @@ void VkRenderer::drawFrame() {
     VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
+
 
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
@@ -96,13 +99,27 @@ void VkRenderer::drawFrame() {
 
 void VkRenderer::mainLoop() {
     double lastTime = glfwGetTime();  // Initial time
+    gui = ImguiModule();
+    gui.init(device, physicalDevice, instance, graphicsQueue, renderPass, swapChainImages.size(), window);
+
+    bool guiButtonAvailable = true;
+
     while (!glfwWindowShouldClose(window)) {
         double currentTime = glfwGetTime();
         float deltaTime = float(currentTime - lastTime);
         lastTime = currentTime;
-        printf("FPS: %f\n", 1/deltaTime);
+        //printf("FPS: %f\n", 1/deltaTime);
         glfwPollEvents();
-        drawFrame();
+
+        // Keyboard input handling
+        if (guiButtonAvailable &&  glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+            guiButtonAvailable = false;
+            gui.active = !gui.active;
+        }
+        if (glfwGetKey(window, GLFW_KEY_U) == GLFW_RELEASE) {
+            guiButtonAvailable = true;
+        }
+        drawFrame(deltaTime);
     }
 
     vkDeviceWaitIdle(device);
@@ -111,6 +128,7 @@ void VkRenderer::mainLoop() {
 void VkRenderer::cleanup() {
     // Wait for the device to finish operations before cleanup
     vkDeviceWaitIdle(device);
+    gui.destroy(device);
 
     // Cleanup synchronization objects
     vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);

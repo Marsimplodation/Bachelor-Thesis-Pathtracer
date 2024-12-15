@@ -41,7 +41,9 @@ VkSurfaceFormatKHR VkRenderer::chooseSwapSurfaceFormat(const std::vector<VkSurfa
 
 VkPresentModeKHR VkRenderer::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (const auto& mode : availablePresentModes) {
-        if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        //use vsync instead
+        //if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        if (mode == VK_PRESENT_MODE_FIFO_KHR) {
             return mode;
         }
     }

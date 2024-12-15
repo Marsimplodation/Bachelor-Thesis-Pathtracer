@@ -230,23 +230,12 @@ void TransitionImageLayout(
         1, &barrier);
 }
 
-void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime) {
     // Begin Command Buffer Recording
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     checkIfVkResultIsCorrect(result, "failed to begin recording command buffer!");
-    
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-    VkClearValue clearColor = {{{1.0f, 0.0f, 0.0f, 1.0f}}};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
-    renderPassInfo.renderArea.extent = swapChainExtent; 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdEndRenderPass(commandBuffer);
 
 
     VkImageMemoryBarrier barrier{};
@@ -319,6 +308,7 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         swapChainExtent.height, // Ray tracing image height
         1               // Depth (for 2D images, use 1)
     );
+    
 
     // Transition the storage image for transfer
     TransitionImageLayout(
@@ -381,7 +371,17 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
     );
 
-
+    
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+    renderPassInfo.clearValueCount = 0;
+    renderPassInfo.pClearValues = VK_NULL_HANDLE;
+    renderPassInfo.renderArea.extent = swapChainExtent; 
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        gui.update(commandBuffer, deltaTime);
+    vkCmdEndRenderPass(commandBuffer);
 
 
     // End Command Buffer Recording

@@ -1,5 +1,6 @@
 #ifndef VKRENDERER_H
 #include "../common.h"
+#include "../UI/ImguiModule.h"
 #include <optional>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -44,11 +45,11 @@ private:
     void createCommandBuffer();
     void updateDescriptorSet();
     void buildAccelerationStructures();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime);
     void copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize);
     void mainLoop();
     void createSyncObjects();
-    void drawFrame();
+    void drawFrame(float deltaTime);
     void cleanup();
     bool checkValidationLayerSupport();
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -96,6 +97,7 @@ private:
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
     VkRenderPass renderPass;
+    ImguiModule gui;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     //buffers

@@ -14,8 +14,15 @@ FetchContent_Declare(
 FetchContent_Declare(
   glm
   GIT_REPOSITORY https://github.com/g-truc/glm.git
-  GIT_TAG        0.9.9.8 # Replace with the desired version tag or branch
+  GIT_TAG 1.0.1 # Replace with the desired version tag or branch
 )
+
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.6
+)
+FetchContent_MakeAvailable(imgui)
 
 # Make GLM available
 FetchContent_MakeAvailable(glm)
@@ -24,8 +31,24 @@ FetchContent_MakeAvailable(glm)
 FetchContent_MakeAvailable(glfw)
 # Find Vulkan
 find_package(Vulkan REQUIRED)
-# Project name
-# Set C++ standard (if it's a C++ project)
+
+add_library(imgui
+  ${imgui_SOURCE_DIR}/imgui.cpp
+  ${imgui_SOURCE_DIR}/imgui.h
+  ${imgui_SOURCE_DIR}/imconfig.h
+  ${imgui_SOURCE_DIR}/imgui_demo.cpp
+  ${imgui_SOURCE_DIR}/imgui_draw.cpp
+  ${imgui_SOURCE_DIR}/imgui_internal.h
+  ${imgui_SOURCE_DIR}/imgui_tables.cpp
+  ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+  ${imgui_SOURCE_DIR}/imstb_rectpack.h
+  ${imgui_SOURCE_DIR}/imstb_textedit.h
+  ${imgui_SOURCE_DIR}/imstb_truetype.h
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp)
+
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,8 +57,16 @@ file(GLOB_RECURSE SOURCES
 		"src/*.cpp"
 		"src/*.h"
 )
+
+# Add Vulkan, GLFW, and ImGui include directories
+include_directories(
+    ${GLFW_INCLUDE_DIRS}
+    ${imgui_SOURCE_DIR}
+)
+
 # Add executable
 add_executable(${PROJECT_NAME}  ${SOURCES})
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} PRIVATE imgui) 
