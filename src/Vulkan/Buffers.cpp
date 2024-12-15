@@ -162,7 +162,7 @@ void VkRenderer::updateDescriptorSet() {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, &accelerationStructureWrite, descriptorSet, 4, 0, 1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, nullptr, nullptr, nullptr},
     };
 
-    vkUpdateDescriptorSets(device, 4, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 5, writeDescriptorSets, 0, nullptr);
 }
 
 

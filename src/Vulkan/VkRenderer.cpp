@@ -95,12 +95,17 @@ void VkRenderer::drawFrame() {
 }
 
 void VkRenderer::mainLoop() {
-        while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
-            drawFrame();
-        }
+    double lastTime = glfwGetTime();  // Initial time
+    while (!glfwWindowShouldClose(window)) {
+        double currentTime = glfwGetTime();
+        float deltaTime = float(currentTime - lastTime);
+        lastTime = currentTime;
+        printf("FPS: %f\n", 1/deltaTime);
+        glfwPollEvents();
+        drawFrame();
+    }
 
-        vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(device);
 }
 
 void VkRenderer::cleanup() {
@@ -116,6 +121,7 @@ void VkRenderer::cleanup() {
     vkDestroyPipeline(device, rtPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
+    vkDestroyAccelerationStructureKHR(device, bottomLevelAS, nullptr);
     vkDestroyAccelerationStructureKHR(device, topLevelAS, nullptr);
         // Free allocated device memory
     //vkFreeMemory(device, topLevelASMemory, nullptr);
@@ -124,11 +130,15 @@ void VkRenderer::cleanup() {
     vkFreeMemory(device, raygenMemory, nullptr);
     vkFreeMemory(device, missMemory, nullptr);
     vkFreeMemory(device, hitMemory, nullptr);
+    vkFreeMemory(device, topLevelASMemory, nullptr);
+    vkFreeMemory(device, bottomLevelASMemory, nullptr);
 
     vkDestroyBuffer(device, hitBuffer, nullptr);
     vkDestroyBuffer(device, missBuffer, nullptr);
     vkDestroyBuffer(device, raygenBuffer, nullptr);
     vkDestroyBuffer(device, vertexBuffer, nullptr);
+    vkDestroyBuffer(device, topLevelASBuffer, nullptr);
+    vkDestroyBuffer(device, bottomLevelASBuffer, nullptr);
 
     vkDestroyRenderPass(device, renderPass, nullptr);
 

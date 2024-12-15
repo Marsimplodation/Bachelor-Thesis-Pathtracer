@@ -111,4 +111,9 @@ void VkRenderer::createLogicalDevice() {
         vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR")
     );
 
+    vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
+        vkGetDeviceProcAddr(device, "vkCmdBuildAccelerationStructuresKHR")
+    );
+
+
 }

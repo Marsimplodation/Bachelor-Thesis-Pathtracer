@@ -45,6 +45,7 @@ private:
     void updateDescriptorSet();
     void buildAccelerationStructures();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize);
     void mainLoop();
     void createSyncObjects();
     void drawFrame();
@@ -100,8 +101,10 @@ private:
     //buffers
     VkBuffer raygenBuffer, missBuffer, hitBuffer;
     VkBuffer vertexBuffer;
+    VkBuffer bottomLevelASBuffer, topLevelASBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
+    VkDeviceMemory bottomLevelASMemory, topLevelASMemory;
 
     //Shaders
     VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;
@@ -147,6 +150,7 @@ private:
     PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR  = nullptr;
     PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = nullptr;
     PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+    PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
 };
 
 //Helper function

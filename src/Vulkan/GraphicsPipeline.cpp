@@ -28,7 +28,7 @@ VkShaderModule VkRenderer::createShaderModule(const std::vector<char>& code) {
     return shaderModule;
 }
 
-void copyShaderCodeToBuffer(VkDevice device, VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize) {
+void VkRenderer::copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize) {
     void* mappedMemory;
     vkMapMemory(device, bufferMemory, 0, shaderSize, 0, &mappedMemory);
     memcpy(mappedMemory, shaderCode, static_cast<size_t>(shaderSize));
@@ -73,7 +73,7 @@ void VkRenderer::createDescriptorLayout() {
     // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo.bindingCount = 4;  // Number of bindings
+    layoutCreateInfo.bindingCount = 5;  // Number of bindings
     layoutCreateInfo.pBindings = bindings;
     VkResult result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayout);
     if (result != VK_SUCCESS) {
@@ -190,9 +190,9 @@ void VkRenderer::createGraphicsPipeline() {
     vkGetRayTracingShaderGroupHandlesKHR(device, rtPipeline, 0, 3, shaderHandleStorage.size(), shaderHandleStorage.data());
 
 
-    copyShaderCodeToBuffer(device, raygenMemory, shaderHandleStorage.data(), shaderGroupHandleSize);
-    copyShaderCodeToBuffer(device, hitMemory, shaderHandleStorage.data() + shaderGroupHandleSize, shaderGroupHandleSize);
-    copyShaderCodeToBuffer(device, missMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
+    copyDataToBuffer(raygenMemory, shaderHandleStorage.data(), shaderGroupHandleSize);
+    copyDataToBuffer(hitMemory, shaderHandleStorage.data() + shaderGroupHandleSize, shaderGroupHandleSize);
+    copyDataToBuffer(missMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
 
 
     
