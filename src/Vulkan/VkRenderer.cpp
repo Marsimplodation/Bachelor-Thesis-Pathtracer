@@ -28,10 +28,10 @@ void VkRenderer::initVulkan() {
     createImageViews();
     createDescriptorPool();
     createRenderPasses();
-    createGraphicsPipeline();
     createFramebuffers();
     createCommandPool();
     createCommandBuffer();
+    createRaytracingPipeline();
     createSyncObjects();
 }
 

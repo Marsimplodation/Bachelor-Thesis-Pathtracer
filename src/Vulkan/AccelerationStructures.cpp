@@ -63,6 +63,14 @@ void VkRenderer::buildAccelerationStructures() {
     tlasCreateInfo.size = sizeof(VkAccelerationStructureKHR);
     tlasCreateInfo.buffer = topLevelASBuffer;
 
+    /*
+    vkBuildAccelerationStructuresKHR(
+        VkDevice device,
+        VkDeferredOperationKHR deferredOperation,
+        uint32_t infoCount,
+        const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+        const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos)*/
+
 
     result = vkCreateAccelerationStructureKHR(device, &tlasCreateInfo, nullptr, &topLevelAS);
     checkIfVkResultIsCorrect(result, "Failed to create empty acceleration structure");

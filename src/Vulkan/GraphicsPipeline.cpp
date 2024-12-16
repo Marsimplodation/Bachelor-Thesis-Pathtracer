@@ -81,7 +81,7 @@ void VkRenderer::createDescriptorLayout() {
     }
 }
 
-void VkRenderer::createGraphicsPipeline() {
+void VkRenderer::createRaytracingPipeline() {
     auto rgenShaderCode = readFile("Shaders/raygen.spv");
     auto closestHitShaderCode = readFile("Shaders/closesthit.spv");
     auto missShaderCode = readFile("Shaders/miss.spv");
@@ -193,6 +193,20 @@ void VkRenderer::createGraphicsPipeline() {
     copyDataToBuffer(raygenMemory, shaderHandleStorage.data(), shaderGroupHandleSize);
     copyDataToBuffer(hitMemory, shaderHandleStorage.data() + shaderGroupHandleSize, shaderGroupHandleSize);
     copyDataToBuffer(missMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
+
+    // Define Ray Tracing Shader Binding Table (SBT)
+    
+    raygenSBT.deviceAddress = getBufferAdress(raygenBuffer);
+    raygenSBT.stride = shaderGroupHandleSize;
+    raygenSBT.size = raygenSBT.stride;  
+
+    missSBT.deviceAddress = getBufferAdress(missBuffer); 
+    missSBT.size = shaderGroupHandleSize;  
+    missSBT.stride = shaderGroupHandleSize;
+
+    hitSBT.deviceAddress = getBufferAdress(hitBuffer); 
+    hitSBT.size = shaderGroupHandleSize;
+    hitSBT.stride = shaderGroupHandleSize;
 
 
     

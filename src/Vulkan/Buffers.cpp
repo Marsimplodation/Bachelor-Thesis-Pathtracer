@@ -2,6 +2,15 @@
 #include <cstdio>
 #include <vulkan/vulkan_core.h>
 
+//--- INFOS ---//
+VkDeviceAddress VkRenderer::getBufferAdress(const VkBuffer & bufferHandle) {
+    VkBufferDeviceAddressInfo bufferDeviceAddressInfo{};
+    bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
+    bufferDeviceAddressInfo.pNext = nullptr; // No additional structures.
+    bufferDeviceAddressInfo.buffer = bufferHandle;
+    return vkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
+}
+
 //--- Frame Buffers --- //
 void VkRenderer::createFramebuffers() {
     swapChainFramebuffers.resize(swapChainImageViews.size());
@@ -230,14 +239,21 @@ void TransitionImageLayout(
         1, &barrier);
 }
 
-void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime) {
+void VkRenderer::endCommandBuffer() {
+    // End Command Buffer Recording
+    VkResult result = vkEndCommandBuffer(commandBuffer);
+    checkIfVkResultIsCorrect(result, "failed to end recording command buffer!");
+}
+void VkRenderer::beginCommandBuffer() {
     // Begin Command Buffer Recording
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     checkIfVkResultIsCorrect(result, "failed to begin recording command buffer!");
+}
 
 
+void VkRenderer::traceImage() {
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -261,29 +277,7 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     // Bind the Ray Tracing Pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipeline);
 
-    // Define Ray Tracing Shader Binding Table (SBT)
-    VkStridedDeviceAddressRegionKHR raygenSBT{};
-    VkStridedDeviceAddressRegionKHR missSBT{};
-    VkStridedDeviceAddressRegionKHR hitSBT{};
-    VkStridedDeviceAddressRegionKHR callableSBT{};
 
-    VkBufferDeviceAddressInfo bufferDeviceAddressInfo{};
-    bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
-    bufferDeviceAddressInfo.pNext = nullptr; // No additional structures.
-    bufferDeviceAddressInfo.buffer = raygenBuffer;
-    raygenSBT.deviceAddress = vkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
-    raygenSBT.stride = shaderGroupHandleSize;
-    raygenSBT.size = raygenSBT.stride;  
-
-    bufferDeviceAddressInfo.buffer = missBuffer;
-    missSBT.deviceAddress =  vkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
-    missSBT.size = shaderGroupHandleSize;  
-    missSBT.stride = shaderGroupHandleSize;
-
-    bufferDeviceAddressInfo.buffer = hitBuffer;
-    hitSBT.deviceAddress = vkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
-    hitSBT.size = shaderGroupHandleSize;
-    hitSBT.stride = shaderGroupHandleSize;
     
     updateDescriptorSet();
     vkCmdBindDescriptorSets(
@@ -308,8 +302,9 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         swapChainExtent.height, // Ray tracing image height
         1               // Depth (for 2D images, use 1)
     );
-    
+}
 
+void VkRenderer::copyTracedImageToSwapchain(int imageIndex) {
     // Transition the storage image for transfer
     TransitionImageLayout(
         commandBuffer,
@@ -370,8 +365,14 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
     );
+}
 
-    
+void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime) {
+    beginCommandBuffer();
+    traceImage();
+    copyTracedImageToSwapchain(imageIndex);
+
+    //render pass for drawing UI    
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
@@ -384,10 +385,7 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     vkCmdEndRenderPass(commandBuffer);
 
 
-    // End Command Buffer Recording
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+    endCommandBuffer();
 }
 
 

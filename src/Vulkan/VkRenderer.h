@@ -36,17 +36,21 @@ private:
     void createSurface();
     void createSwapChain();
     void createImageViews();
-    void createGraphicsPipeline();
+    void createRaytracingPipeline();
     void createDescriptorLayout();
     void createCommandPool();
     void createFramebuffers();
     void createRenderPasses();
     void createDescriptorPool();
     void createCommandBuffer();
+    void beginCommandBuffer();
+    void endCommandBuffer();
     void updateDescriptorSet();
     void buildAccelerationStructures();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime);
     void copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize);
+    void copyTracedImageToSwapchain(int imageIndex);
+    void traceImage();
     void mainLoop();
     void createSyncObjects();
     void drawFrame(float deltaTime);
@@ -60,6 +64,7 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule createShaderModule(const std::vector<char>& code);
+    VkDeviceAddress getBufferAdress(const VkBuffer & bufferHandle);
     
     u32 FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
     VkResult  CreateBuffer(VkDeviceSize size,
@@ -112,6 +117,11 @@ private:
     VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;
     VkDeviceSize shaderGroupBaseAlignment;
     VkDeviceSize shaderGroupHandleSize;
+    VkStridedDeviceAddressRegionKHR raygenSBT{};
+    VkStridedDeviceAddressRegionKHR missSBT{};
+    VkStridedDeviceAddressRegionKHR hitSBT{};
+    VkStridedDeviceAddressRegionKHR callableSBT{};
+
 
     //image to render too
     VkImage storageImage;
