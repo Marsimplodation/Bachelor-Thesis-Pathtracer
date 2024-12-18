@@ -31,6 +31,8 @@ void VkRenderer::initVulkan() {
     createFramebuffers();
     createCommandPool();
     createCommandBuffer();
+    //loadGeometry();
+    createGeometryBuffers();
     createRaytracingPipeline();
     createSyncObjects();
 }
@@ -145,18 +147,22 @@ void VkRenderer::cleanup() {
     //vkFreeMemory(device, topLevelASMemory, nullptr);
     vkFreeMemory(device, imageMemory, nullptr);
     vkFreeMemory(device, vertexBufferMemory, nullptr);
+    vkFreeMemory(device, indexBufferMemory, nullptr);
     vkFreeMemory(device, raygenMemory, nullptr);
     vkFreeMemory(device, missMemory, nullptr);
     vkFreeMemory(device, hitMemory, nullptr);
     vkFreeMemory(device, topLevelASMemory, nullptr);
+    vkFreeMemory(device, instanceASMemory, nullptr);
     vkFreeMemory(device, bottomLevelASMemory, nullptr);
 
     vkDestroyBuffer(device, hitBuffer, nullptr);
     vkDestroyBuffer(device, missBuffer, nullptr);
     vkDestroyBuffer(device, raygenBuffer, nullptr);
     vkDestroyBuffer(device, vertexBuffer, nullptr);
+    vkDestroyBuffer(device, indexBuffer, nullptr);
     vkDestroyBuffer(device, topLevelASBuffer, nullptr);
     vkDestroyBuffer(device, bottomLevelASBuffer, nullptr);
+    vkDestroyBuffer(device, instanceASBuffer, nullptr);
 
     vkDestroyRenderPass(device, renderPass, nullptr);
 

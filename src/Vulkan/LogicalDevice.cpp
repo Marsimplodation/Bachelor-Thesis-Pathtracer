@@ -114,6 +114,7 @@ void VkRenderer::createLogicalDevice() {
     vkCmdBuildAccelerationStructuresKHR = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(
         vkGetDeviceProcAddr(device, "vkCmdBuildAccelerationStructuresKHR")
     );
-
-
+    vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(
+        vkGetDeviceProcAddr(device, "vkGetAccelerationStructureDeviceAddressKHR")
+    );
 }

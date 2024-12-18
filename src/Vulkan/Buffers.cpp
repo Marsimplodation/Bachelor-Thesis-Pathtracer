@@ -388,4 +388,33 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     endCommandBuffer();
 }
 
+//------ Geometry ----//
+void VkRenderer::createGeometryBuffers() {
+    //create AS BUFFERS
+    // Triangle vertex data (positions and colors)
+    vertices = {
+        {{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},  // Vertex 0
+        {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 1
+        {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},   // Vertex 2
+    };
+    indices = {
+        0,1,2,
+    };
+    
+    CreateBuffer(sizeof(Vertex) * vertices.size(),
+                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                 | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                 &vertexBuffer,
+                 &vertexBufferMemory, true);
+    CreateBuffer(sizeof(u32) * indices.size(),
+                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                 | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                 &indexBuffer,
+                 &indexBufferMemory, true);
 
+
+    copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
+    copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
+}

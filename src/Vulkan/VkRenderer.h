@@ -47,9 +47,12 @@ private:
     void endCommandBuffer();
     void updateDescriptorSet();
     void buildAccelerationStructures();
+    void buildBottomLevelAS();
+    void buildTopLevelAS();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime);
     void copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize);
     void copyTracedImageToSwapchain(int imageIndex);
+    void createGeometryBuffers();
     void traceImage();
     void mainLoop();
     void createSyncObjects();
@@ -108,10 +111,14 @@ private:
     //buffers
     VkBuffer raygenBuffer, missBuffer, hitBuffer;
     VkBuffer vertexBuffer;
-    VkBuffer bottomLevelASBuffer, topLevelASBuffer;
+    VkBuffer indexBuffer;
+    VkBuffer bottomLevelASBuffer, topLevelASBuffer, instanceASBuffer;
     VkDeviceMemory vertexBufferMemory;
+    VkDeviceMemory indexBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
-    VkDeviceMemory bottomLevelASMemory, topLevelASMemory;
+    VkDeviceMemory bottomLevelASMemory, topLevelASMemory, instanceASMemory;
+    std::vector<Vertex> vertices;
+    std::vector<u32> indices;
 
     //Shaders
     VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;
@@ -163,6 +170,7 @@ private:
     PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = nullptr;
     PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
     PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
+    PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
 };
 
 //Helper function

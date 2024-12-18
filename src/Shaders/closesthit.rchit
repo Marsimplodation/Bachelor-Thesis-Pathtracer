@@ -1,9 +1,12 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-layout(location = 0) rayPayloadInEXT vec3 hitColor;
-hitAttributeEXT vec3 hitAttribute;
+struct RayPayload {
+    vec3 hitColor;
+    float hitDistance;
+};
+layout(location = 0) rayPayloadInEXT RayPayload rayPayload;
 
 void main() {
-    hitColor = vec3(1.0, 0.0, 0.0); // Triangle color (red)
+    rayPayload.hitColor = vec3(1.0, 1.0, 0.0); // Example: set miss color to blue
 }

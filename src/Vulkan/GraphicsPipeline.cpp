@@ -42,17 +42,18 @@ void VkRenderer::createDescriptorLayout() {
     raygenBinding.descriptorCount = 1;
     raygenBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;  // This buffer is used by the raygen shader.
 
-    VkDescriptorSetLayoutBinding missBinding = {};
-    missBinding.binding = 1;
-    missBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    missBinding.descriptorCount = 1;
-    missBinding.stageFlags = VK_SHADER_STAGE_MISS_BIT_KHR;  // This buffer is used by the miss shader.
 
     VkDescriptorSetLayoutBinding hitBinding = {};
     hitBinding.binding = 2;
     hitBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     hitBinding.descriptorCount = 1;
     hitBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;  // This buffer is used by the closest hit shader.
+    
+    VkDescriptorSetLayoutBinding missBinding = {};
+    missBinding.binding = 1;
+    missBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    missBinding.descriptorCount = 1;
+    missBinding.stageFlags = VK_SHADER_STAGE_MISS_BIT_KHR;  // This buffer is used by the miss shader.
 
     VkDescriptorSetLayoutBinding storageImageBinding{};
     storageImageBinding.binding = 3; // Binding number in the shader
@@ -109,16 +110,8 @@ void VkRenderer::createRaytracingPipeline() {
     missShaderStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {rgenShaderStageInfo,
-                                                        closesthitShaderStageInfo,
-                                                        missShaderStageInfo};
-    VkDeviceSize raygenSize = rgenShaderCode.size(); // Size of your raygen shader
-    VkDeviceSize missSize = missShaderCode.size();     // Size of your miss shader
-    VkDeviceSize hitSize = closestHitShaderCode.size();       // Size of your hit shader
-
-    VkResult result = CreateSBTBuffers(raygenSize, missSize, hitSize,
-                                       &raygenBuffer, &raygenMemory,
-                                       &missBuffer, &missMemory,
-                                       &hitBuffer, &hitMemory);
+                                                        missShaderStageInfo,
+                                                        closesthitShaderStageInfo};
 
 
 
@@ -132,23 +125,22 @@ void VkRenderer::createRaytracingPipeline() {
     raygenGroup.anyHitShader = VK_SHADER_UNUSED_KHR;  // Make sure to set these to unused
     raygenGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 
+    VkRayTracingShaderGroupCreateInfoKHR closestHitGroup = {};
+    closestHitGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+    closestHitGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+    closestHitGroup.closestHitShader = 2;  // Closest Hit Shader Index
+    closestHitGroup.anyHitShader = VK_SHADER_UNUSED_KHR;  // Make sure to set these to unused
+    closestHitGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+
     VkRayTracingShaderGroupCreateInfoKHR missGroup = {};
     missGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
     missGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-    missGroup.generalShader = 2;  // Miss Shader Index
+    missGroup.generalShader = 1;  // Miss Shader Index
     missGroup.closestHitShader = VK_SHADER_UNUSED_KHR;  // Closest Hit Shader Index
     missGroup.anyHitShader = VK_SHADER_UNUSED_KHR;  // Make sure to set these to unused
     missGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 
-    VkRayTracingShaderGroupCreateInfoKHR closestHitGroup = {};
-    closestHitGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-    closestHitGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-    closestHitGroup.closestHitShader = 1;  // Closest Hit Shader Index
-    closestHitGroup.anyHitShader = VK_SHADER_UNUSED_KHR;  // Make sure to set these to unused
-    closestHitGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
-
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups = {raygenGroup, closestHitGroup, missGroup};
-    buildAccelerationStructures();
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups = {raygenGroup, missGroup, closestHitGroup};
     createDescriptorLayout();
 
 
@@ -158,7 +150,7 @@ void VkRenderer::createRaytracingPipeline() {
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &descriptorSetLayout;
 
-    result = vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
+    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
     checkIfVkResultIsCorrect(result, "Failed to allocate descriptor set");
 
 
@@ -186,19 +178,24 @@ void VkRenderer::createRaytracingPipeline() {
     checkIfVkResultIsCorrect(result, "Failed to create raytracing pipeline");
 
 
+    result = CreateSBTBuffers(shaderGroupHandleSize, shaderGroupHandleSize, shaderGroupHandleSize,
+                                       &raygenBuffer, &raygenMemory,
+                                       &missBuffer, &missMemory,
+                                       &hitBuffer, &hitMemory);
+
     std::vector<uint8_t> shaderHandleStorage(shaderGroupHandleSize * 3);
     vkGetRayTracingShaderGroupHandlesKHR(device, rtPipeline, 0, 3, shaderHandleStorage.size(), shaderHandleStorage.data());
 
 
     copyDataToBuffer(raygenMemory, shaderHandleStorage.data(), shaderGroupHandleSize);
-    copyDataToBuffer(hitMemory, shaderHandleStorage.data() + shaderGroupHandleSize, shaderGroupHandleSize);
-    copyDataToBuffer(missMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
+    copyDataToBuffer(missMemory, shaderHandleStorage.data() + 1* shaderGroupHandleSize, shaderGroupHandleSize);
+    copyDataToBuffer(hitMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
 
     // Define Ray Tracing Shader Binding Table (SBT)
     
     raygenSBT.deviceAddress = getBufferAdress(raygenBuffer);
     raygenSBT.stride = shaderGroupHandleSize;
-    raygenSBT.size = raygenSBT.stride;  
+    raygenSBT.size = shaderGroupHandleSize;  
 
     missSBT.deviceAddress = getBufferAdress(missBuffer); 
     missSBT.size = shaderGroupHandleSize;  
@@ -213,6 +210,7 @@ void VkRenderer::createRaytracingPipeline() {
     vkDestroyShaderModule(device, rgenShaderModule, nullptr);
     vkDestroyShaderModule(device, closesthitShaderModule, nullptr);
     vkDestroyShaderModule(device, missShaderModule, nullptr);
+    buildAccelerationStructures();
 
 }
 
