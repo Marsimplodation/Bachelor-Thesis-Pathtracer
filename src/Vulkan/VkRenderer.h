@@ -96,14 +96,14 @@ private:
     VkExtent2D swapChainExtent;
     VkPipelineLayout pipelineLayout;
     VkPipeline rtPipeline;
-    VkDescriptorSetLayout descriptorSetLayout;
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
     VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSet;
+    VkDescriptorSet descriptorSets[2];
+    VkDescriptorSetLayout descriptorSetLayouts[2];
     VkRenderPass renderPass;
     ImguiModule gui;
     std::vector<VkFramebuffer> swapChainFramebuffers;

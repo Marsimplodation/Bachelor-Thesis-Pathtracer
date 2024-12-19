@@ -120,7 +120,7 @@ VkResult VkRenderer::CreateSBTBuffers(VkDeviceSize raygenSize, VkDeviceSize miss
 
 
 void VkRenderer::createDescriptorPool() {
-    VkDescriptorPoolSize poolSizes[3] = {};
+    VkDescriptorPoolSize poolSizes[4] = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = 3; // Change to 3 for the 3 descriptors (raygen, miss, hit)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -128,11 +128,15 @@ void VkRenderer::createDescriptorPool() {
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
     poolSizes[2].descriptorCount = 1; 
 
+    //set 1
+    poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[3].descriptorCount = 2; 
+
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 3;
+    poolInfo.poolSizeCount = 4;
     poolInfo.pPoolSizes = poolSizes;
-    poolInfo.maxSets = 1;  // Only need 1 descriptor set (if you're allocating 1 per frame)
+    poolInfo.maxSets = 2;  // Only need 1 descriptor set (if you're allocating 1 per frame)
 
     VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
     checkIfVkResultIsCorrect(result, "Failed to create descriptor pool");
@@ -153,6 +157,16 @@ void VkRenderer::updateDescriptorSet() {
     hitBufferInfo.buffer = hitBuffer;
     hitBufferInfo.offset = 0;
     hitBufferInfo.range = VK_WHOLE_SIZE;
+    
+    VkDescriptorBufferInfo vertexBufferInfo = {};
+    vertexBufferInfo.buffer = vertexBuffer;
+    vertexBufferInfo.offset = 0;
+    vertexBufferInfo.range = VK_WHOLE_SIZE;
+    
+    VkDescriptorBufferInfo indexBufferInfo = {};
+    indexBufferInfo.buffer = indexBuffer;
+    indexBufferInfo.offset = 0;
+    indexBufferInfo.range = VK_WHOLE_SIZE;
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageView = storageImageView; // The image view for the storage image
@@ -163,25 +177,31 @@ void VkRenderer::updateDescriptorSet() {
     accelerationStructureWrite.accelerationStructureCount = 1;
     accelerationStructureWrite.pAccelerationStructures = &topLevelAS;
 
-    VkWriteDescriptorSet asSet{};
-    asSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    asSet.dstSet = descriptorSet;
-    asSet.dstBinding = 4;
-    asSet.dstArrayElement = 0;
-    asSet.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-    asSet.pNext = &accelerationStructureWrite;
-    asSet.descriptorCount = 1;
-
+    /*
+    typedef struct VkWriteDescriptorSet {
+        VkStructureType                  sType;
+        const void*                      pNext;
+        VkDescriptorSet                  dstSet;
+        uint32_t                         dstBinding;
+        uint32_t                         dstArrayElement;
+        uint32_t                         descriptorCount;
+        VkDescriptorType                 descriptorType;
+        const VkDescriptorImageInfo*     pImageInfo;
+        const VkDescriptorBufferInfo*    pBufferInfo;
+        const VkBufferView*              pTexelBufferView;
+    } VkWriteDescriptorSet;*/
     VkWriteDescriptorSet writeDescriptorSets[] = {
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &raygenBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &missBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &hitBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo, nullptr, nullptr },
-        asSet,
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &raygenBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &missBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &hitBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo, nullptr, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, &accelerationStructureWrite, descriptorSets[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &imageInfo, nullptr, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
         
     };
 
-    vkUpdateDescriptorSets(device, 5, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 7, writeDescriptorSets, 0, nullptr);
 }
 
 
@@ -295,8 +315,8 @@ void VkRenderer::traceImage() {
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, 
         pipelineLayout, 
         0,  // Descriptor set binding point
-        1,  // Number of descriptor sets
-        &descriptorSet,  // The descriptor set to bind
+        2,  // Number of descriptor sets
+        descriptorSets,  // The descriptor set to bind
         0,  // Dynamic offsets count (if using dynamic descriptors)
         nullptr  // Dynamic offsets (if applicable)
     );
@@ -404,64 +424,80 @@ void VkRenderer::createGeometryBuffers() {
     // Triangle vertex data (positions and colors)
     
 // Cube vertex data (positions and colors)
+    
+
 vertices = {
     // Front face (Red)
-    {{-1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 0
-    {{ 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 1
-    {{ 1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 2
-    {{-1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 3
-
+    {{-1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}, // Vertex 0
+    {{ 1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}, // Vertex 1
+    {{ 1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}, // Vertex 2
+    {{-1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}}, // Vertex 3
+    
     // Back face (Green)
-    {{-1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 4
-    {{ 1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 5
-    {{ 1.0f,  1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 6
-    {{-1.0f,  1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 7
+    {{-1.0f,  1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 4
+    {{ 1.0f,  1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 5
+    {{ 1.0f, -1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 6
+    {{-1.0f, -1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 7
 
     // Left face (Blue)
-    {{-1.0f, -1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 8
-    {{-1.0f, -1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 9
-    {{-1.0f,  1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 10
-    {{-1.0f,  1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 11
+    {{-1.0f,  1.0f,  1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 8
+    {{-1.0f,  1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 9
+    {{-1.0f, -1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 10
+    {{-1.0f, -1.0f,  1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 11
 
     // Right face (Yellow)
-    {{ 1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 12
-    {{ 1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 13
-    {{ 1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 14
-    {{ 1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 15
+    {{ 1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 12
+    {{ 1.0f,  1.0f, -1.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 13
+    {{ 1.0f, -1.0f, -1.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 14
+    {{ 1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}}, // Vertex 15
 
-    // Top face (Magenta)
-    {{-1.0f,  1.0f,  1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 16
-    {{ 1.0f,  1.0f,  1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 17
-    {{ 1.0f,  1.0f, -1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 18
-    {{-1.0f,  1.0f, -1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 19
+    // Top face (Cyan)
+    {{-1.0f,  1.0f,  1.0f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 16
+    {{ 1.0f,  1.0f,  1.0f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 17
+    {{ 1.0f,  1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 18
+    {{-1.0f,  1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 19
 
-    // Bottom face (Cyan)
-    {{-1.0f, -1.0f,  1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 20
-    {{ 1.0f, -1.0f,  1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 21
-    {{ 1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 22
-    {{-1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 23
+    // Bottom face (Magenta)
+    {{-1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 20
+    {{ 1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 21
+    {{ 1.0f, -1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 22
+    {{-1.0f, -1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}}, // Vertex 23
 };
 
-// Cube indices data (6 faces, each with 2 triangles)
+
+    
 indices = {
-    0, 1, 2, 0, 2, 3, // Front face
-    4, 5, 6, 4, 6, 7, // Back face
-    8, 9, 10, 8, 10, 11, // Left face
-    12, 13, 14, 12, 14, 15, // Right face
-    16, 17, 18, 16, 18, 19, // Top face
-    20, 21, 22, 20, 22, 23  // Bottom face
+    // Front face
+    0, 1, 2, 0, 2, 3,
+    
+    // Back face
+    4, 5, 6, 4, 6, 7,
+    
+    // Left face
+    8, 9, 10, 8, 10, 11,
+    
+    // Right face
+    12, 13, 14, 12, 14, 15,
+    
+    // Top face
+    16, 17, 18, 16, 18, 19,
+    
+    // Bottom face
+    20, 21, 22, 20, 22, 23
 };
+
+    
 
     
     CreateBuffer(sizeof(Vertex) * vertices.size(),
                  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
-                 | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+                 | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                  &vertexBuffer,
                  &vertexBufferMemory, true);
     CreateBuffer(sizeof(u32) * indices.size(),
                  VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
-                 | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+                 | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                  &indexBuffer,
                  &indexBufferMemory, true);

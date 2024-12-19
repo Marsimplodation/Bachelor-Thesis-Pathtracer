@@ -1,6 +1,5 @@
 #include "VkRenderer.h"
 #include "GLFW/glfw3.h"
-#include <algorithm>
 #include <vulkan/vulkan_core.h>
 
 void VkRenderer::run() {
@@ -168,7 +167,8 @@ void VkRenderer::cleanup() {
     vkDestroyRenderPass(device, renderPass, nullptr);
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[0], nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[1], nullptr);
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 

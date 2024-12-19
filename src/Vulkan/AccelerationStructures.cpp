@@ -14,7 +14,7 @@ void VkRenderer::buildBottomLevelAS() {
     geometry.geometry.triangles.vertexData.deviceAddress = getBufferAdress(vertexBuffer);
     geometry.geometry.triangles.vertexStride = sizeof(Vertex);
     geometry.geometry.triangles.maxVertex = vertices.size();
-    geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+    geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
 
     // Describe index data
     geometry.geometry.triangles.indexData.deviceAddress = getBufferAdress(indexBuffer);

@@ -10,10 +10,10 @@
 float fastRandom(u32 & seed);
 u32 hashCoords(int x, int y);
 
-#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 struct Vertex {
-     glm::vec3 position;
-     glm::vec3 color;
+     glm::vec4 position;
+     glm::vec4 color;
 };
 
 #endif

@@ -68,15 +68,41 @@ void VkRenderer::createDescriptorLayout() {
     asBinding.descriptorCount = 1;
     asBinding.stageFlags = VK_SHADER_STAGE_ALL;
     asBinding.pImmutableSamplers = nullptr;
-
     VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding};
 
-    // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutCreateInfo.bindingCount = 5;  // Number of bindings
     layoutCreateInfo.pBindings = bindings;
-    VkResult result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayout);
+    VkResult result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayouts[0]);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+    
+    //SET 1
+    VkDescriptorSetLayoutBinding vertexBufferBinding{};
+    vertexBufferBinding.binding = 0;
+    vertexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    vertexBufferBinding.descriptorCount = 1;
+    vertexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    vertexBufferBinding.pImmutableSamplers = nullptr;
+    
+    VkDescriptorSetLayoutBinding indexBufferBinding{};
+    indexBufferBinding.binding = 1;
+    indexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    indexBufferBinding.descriptorCount = 1;
+    indexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    indexBufferBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding};
+
+    // Create the descriptor set layout
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo_set1 = {};
+    layoutCreateInfo_set1.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutCreateInfo_set1.bindingCount = 2;  // Number of bindings
+    layoutCreateInfo_set1.pBindings = bindings_set1;
+    
+    result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo_set1, nullptr, &descriptorSetLayouts[1]);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
@@ -147,10 +173,10 @@ void VkRenderer::createRaytracingPipeline() {
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descriptorSetLayout;
+    allocInfo.descriptorSetCount = 2;
+    allocInfo.pSetLayouts = descriptorSetLayouts;
 
-    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
+    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets);
     checkIfVkResultIsCorrect(result, "Failed to allocate descriptor set");
 
 
@@ -158,8 +184,8 @@ void VkRenderer::createRaytracingPipeline() {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     // You will add descriptor set layouts for ray tracing resources (acceleration structures, buffers, etc.)
-    pipelineLayoutCreateInfo.setLayoutCount = 1; // Add descriptor set layouts here if needed
-    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutCreateInfo.setLayoutCount = 2; // Add descriptor set layouts here if needed
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
 
     result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
     checkIfVkResultIsCorrect(result, "Failed to create pipeline layout");
