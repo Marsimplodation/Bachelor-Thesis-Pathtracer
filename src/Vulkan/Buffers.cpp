@@ -402,14 +402,56 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 void VkRenderer::createGeometryBuffers() {
     //create AS BUFFERS
     // Triangle vertex data (positions and colors)
-    vertices = {
-        {{0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},  // Vertex 0
-        {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 1
-        {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},   // Vertex 2
-    };
-    indices = {
-        0,1,2,
-    };
+    
+// Cube vertex data (positions and colors)
+vertices = {
+    // Front face (Red)
+    {{-1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 0
+    {{ 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 1
+    {{ 1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 2
+    {{-1.0f,  1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}, // Vertex 3
+
+    // Back face (Green)
+    {{-1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 4
+    {{ 1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 5
+    {{ 1.0f,  1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 6
+    {{-1.0f,  1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}}, // Vertex 7
+
+    // Left face (Blue)
+    {{-1.0f, -1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 8
+    {{-1.0f, -1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 9
+    {{-1.0f,  1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 10
+    {{-1.0f,  1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}}, // Vertex 11
+
+    // Right face (Yellow)
+    {{ 1.0f, -1.0f,  1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 12
+    {{ 1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 13
+    {{ 1.0f,  1.0f, -1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 14
+    {{ 1.0f,  1.0f,  1.0f}, {1.0f, 1.0f, 0.0f}}, // Vertex 15
+
+    // Top face (Magenta)
+    {{-1.0f,  1.0f,  1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 16
+    {{ 1.0f,  1.0f,  1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 17
+    {{ 1.0f,  1.0f, -1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 18
+    {{-1.0f,  1.0f, -1.0f}, {1.0f, 0.0f, 1.0f}}, // Vertex 19
+
+    // Bottom face (Cyan)
+    {{-1.0f, -1.0f,  1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 20
+    {{ 1.0f, -1.0f,  1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 21
+    {{ 1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 22
+    {{-1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 1.0f}}, // Vertex 23
+};
+
+// Cube indices data (6 faces, each with 2 triangles)
+indices = {
+    0, 1, 2, 0, 2, 3, // Front face
+    4, 5, 6, 4, 6, 7, // Back face
+    8, 9, 10, 8, 10, 11, // Left face
+    12, 13, 14, 12, 14, 15, // Right face
+    16, 17, 18, 16, 18, 19, // Top face
+    20, 21, 22, 20, 22, 23  // Bottom face
+};
+
     
     CreateBuffer(sizeof(Vertex) * vertices.size(),
                  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT

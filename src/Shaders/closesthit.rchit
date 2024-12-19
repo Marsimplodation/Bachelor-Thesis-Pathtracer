@@ -8,5 +8,10 @@ struct RayPayload {
 layout(location = 0) rayPayloadInEXT RayPayload rayPayload;
 
 void main() {
-    rayPayload.hitColor = vec3(1.0, 1.0, 0.0); // Example: set miss color to blue
+    vec3 origin = gl_WorldRayOriginEXT;      // Ray origin in world space
+    vec3 direction = gl_WorldRayDirectionEXT; // Ray direction in world space
+    float t = gl_HitTEXT;                      // Distance to the hit point
+    vec3 hitPosition = origin + t * direction; // Compute world-space hit position
+
+    rayPayload.hitColor = hitPosition; 
 }
