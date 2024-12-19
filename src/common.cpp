@@ -12,3 +12,9 @@ float fastRandom(u32 & seed) {
     seed = (word >> 22u) ^ word;
     return (float)seed / (float)UINT32_MAX;
 }
+
+bool Vertex::operator==(const Vertex& other) const {
+    return position == other.position 
+            && color == other.color 
+            && normal == other.normal;
+}

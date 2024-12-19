@@ -13,7 +13,9 @@ u32 hashCoords(int x, int y);
 #include <glm/vec4.hpp>
 struct Vertex {
      glm::vec4 position;
+     glm::vec4 normal;
      glm::vec4 color;
+     bool operator==(const Vertex& other) const;
 };
 
 #endif

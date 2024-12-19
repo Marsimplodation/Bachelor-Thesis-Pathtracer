@@ -6,19 +6,21 @@ layout(binding = 3, rgba8) uniform image2D storageImage;
 layout(set = 0, binding = 4) uniform accelerationStructureEXT topLevelAS;
 layout(location = 0) rayPayloadEXT RayPayload rayPayload;
 
+
 void main() {
     ivec2 pixelCoords = ivec2(gl_LaunchIDEXT.xy);
     ivec2 imageSize = imageSize(storageImage);
     vec2 coords = vec2(pixelCoords) / vec2(imageSize);
-    vec2 ndc = 2*coords - vec2(1.0f);
+    vec2 ndc = 2*coords - vec2(1.0);
+    ndc.y = -ndc.y;
    
     
-    vec3 cameraForward = {-0.577f, -0.577f, -0.577f};  // Normalized diagonal vector
-    vec3 cameraRight = {0.707f, 0.0f, -0.707f};        // Normalized along X-Z plane
-    vec3 cameraUp = {0.408f, -0.816f, 0.408f}; 
+    vec3 cameraForward = {0,0,-1};
+    vec3 cameraRight = {1,0,0};
+    vec3 cameraUp = {0,1,0};
 
-    vec3 origin = vec3(2,1.5,2);
-    vec3 direction = ndc.x*cameraRight + ndc.y*cameraUp + 0.7*cameraForward; // Ray direction pointing forward
+    vec3 origin = vec3(0,-0.3,0.8);
+    vec3 direction = ndc.x*cameraRight + ndc.y*cameraUp + .7*cameraForward; // Ray direction pointing forward
     direction = normalize(direction); 
     rayPayload.hitColor = vec3(0.0); // Default color in case the ray misses
     

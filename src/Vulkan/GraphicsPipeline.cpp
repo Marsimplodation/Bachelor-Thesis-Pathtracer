@@ -197,7 +197,7 @@ void VkRenderer::createRaytracingPipeline() {
     rayTracingPipelineCreateInfo.pStages = shaderStages;  // Shader stages array
     rayTracingPipelineCreateInfo.groupCount = 3;
     rayTracingPipelineCreateInfo.pGroups = shaderGroups.data();
-    rayTracingPipelineCreateInfo.maxPipelineRayRecursionDepth = 1;  // Maximum recursion depth
+    rayTracingPipelineCreateInfo.maxPipelineRayRecursionDepth = 2;  // Maximum recursion depth
     rayTracingPipelineCreateInfo.layout = pipelineLayout;
 
     result = vkCreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCreateInfo, nullptr, &rtPipeline);  

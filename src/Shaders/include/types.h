@@ -7,7 +7,8 @@ struct RayPayload {
 
 struct Vertex {
     vec4 position;
+    vec4 normal;
     vec4 color;
 };
-
+#define EPS 0.00001
 #endif

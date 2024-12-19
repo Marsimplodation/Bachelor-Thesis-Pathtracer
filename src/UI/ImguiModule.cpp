@@ -63,6 +63,31 @@ void ImguiModule::destroy(VkDevice device) {
     vkDestroyDescriptorPool(device, imguiPool, nullptr);
 }
 
+
+void ShowFPSOverlay(float deltaTime) {
+    // Calculate FPS
+    float f_fps = 1.0f / deltaTime;
+    int fps = static_cast<int>(std::floor(f_fps));
+
+    // Create overlay
+    ImGui::SetNextWindowPos(ImVec2(10, 10)); // Top-left corner
+    ImGui::SetNextWindowBgAlpha(0.0f);       // Transparent background
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |    // No title bar, resize, etc.
+                             ImGuiWindowFlags_AlwaysAutoResize | // Automatically fit to text size
+                             ImGuiWindowFlags_NoSavedSettings |  // Don't save settings to .ini file
+                             ImGuiWindowFlags_NoFocusOnAppearing |
+                             ImGuiWindowFlags_NoNav;             // Disable navigation controls
+
+    if (ImGui::Begin("FPS Overlay", nullptr, flags)) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // Orange text
+        ImGui::Text("FPS: %d", fps);
+        ImGui::PopStyleColor(); // Revert color change
+    }
+    ImGui::End();
+}
+
+
 void ImguiModule::update(VkCommandBuffer commandBuffer, float deltaTime) {
         if(!active) return;
         ImGui_ImplVulkan_NewFrame();
@@ -70,13 +95,7 @@ void ImguiModule::update(VkCommandBuffer commandBuffer, float deltaTime) {
         ImGui::NewFrame();
 
         // Build your GUI
-        ImGui::Begin("Hello, Vulkan!");
-        float f_fps = 1/deltaTime;
-        int fps = std::floor(f_fps);
-        ImGui::Text("FPS: %d", fps);
-        ImGui::End();
-
-        // Render the GUI
+        ShowFPSOverlay(deltaTime);
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
         ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
