@@ -13,7 +13,7 @@ void VkRenderer::buildBottomLevelAS() {
     geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     geometry.geometry.triangles.vertexData.deviceAddress = getBufferAdress(vertexBuffer);
     geometry.geometry.triangles.vertexStride = sizeof(Vertex);
-    geometry.geometry.triangles.maxVertex = vertices.size(),
+    geometry.geometry.triangles.maxVertex = vertices.size();
     geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 
     // Describe index data
@@ -75,6 +75,14 @@ void VkRenderer::buildBottomLevelAS() {
     const VkAccelerationStructureBuildRangeInfoKHR* pBuildRanges[] = { &buildRange };
     vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &buildInfo, pBuildRanges);
     endCommandBuffer();
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue);
+
     vkDestroyBuffer(device, scratchBuffer, nullptr);
     vkFreeMemory(device, scratchBufferMemory, nullptr);
 }
@@ -110,7 +118,7 @@ void VkRenderer::buildTopLevelAS() {
     CreateBuffer(
         sizeof(VkAccelerationStructureInstanceKHR),
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         &instanceASBuffer,
         &instanceASMemory,
         true
@@ -173,6 +181,7 @@ void VkRenderer::buildTopLevelAS() {
     checkIfVkResultIsCorrect(result, "Failed to create top level acceleration structure");
 
     buildInfo.dstAccelerationStructure = topLevelAS;
+    buildInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
     VkAccelerationStructureBuildRangeInfoKHR buildRange{};
     buildRange.primitiveCount = instanceCount; // Number of instances
     
@@ -180,6 +189,14 @@ void VkRenderer::buildTopLevelAS() {
     const VkAccelerationStructureBuildRangeInfoKHR* pBuildRanges[] = { &buildRange };
     vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &buildInfo, pBuildRanges);
     endCommandBuffer();
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue);
+
     vkDestroyBuffer(device, scratchBuffer, nullptr);
     vkFreeMemory(device, scratchBufferMemory, nullptr);
 }

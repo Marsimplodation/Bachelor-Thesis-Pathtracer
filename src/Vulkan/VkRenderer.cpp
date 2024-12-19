@@ -33,6 +33,7 @@ void VkRenderer::initVulkan() {
     createCommandBuffer();
     //loadGeometry();
     createGeometryBuffers();
+    buildAccelerationStructures();
     createRaytracingPipeline();
     createSyncObjects();
 }

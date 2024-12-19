@@ -163,12 +163,22 @@ void VkRenderer::updateDescriptorSet() {
     accelerationStructureWrite.accelerationStructureCount = 1;
     accelerationStructureWrite.pAccelerationStructures = &topLevelAS;
 
+    VkWriteDescriptorSet asSet{};
+    asSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    asSet.dstSet = descriptorSet;
+    asSet.dstBinding = 4;
+    asSet.dstArrayElement = 0;
+    asSet.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    asSet.pNext = &accelerationStructureWrite;
+    asSet.descriptorCount = 1;
+
     VkWriteDescriptorSet writeDescriptorSets[] = {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &raygenBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &missBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &hitBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSet, 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo, nullptr, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, &accelerationStructureWrite, descriptorSet, 4, 0, 1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, nullptr, nullptr, nullptr},
+        asSet,
+        
     };
 
     vkUpdateDescriptorSets(device, 5, writeDescriptorSets, 0, nullptr);

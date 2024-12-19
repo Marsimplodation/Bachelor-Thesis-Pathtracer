@@ -66,7 +66,7 @@ void VkRenderer::createDescriptorLayout() {
     asBinding.binding = 4;
     asBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
     asBinding.descriptorCount = 1;
-    asBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR; // Adjust depending on which shaders need the AS
+    asBinding.stageFlags = VK_SHADER_STAGE_ALL;
     asBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding};
@@ -210,7 +210,6 @@ void VkRenderer::createRaytracingPipeline() {
     vkDestroyShaderModule(device, rgenShaderModule, nullptr);
     vkDestroyShaderModule(device, closesthitShaderModule, nullptr);
     vkDestroyShaderModule(device, missShaderModule, nullptr);
-    buildAccelerationStructures();
 
 }
 
