@@ -1,10 +1,12 @@
 #ifndef VKRENDERER_H
+#define VKRENDERER_H
 #include "../common.h"
 #include "../UI/ImguiModule.h"
+#include "../Camera/Camera.h"
+#include "glm/ext/vector_float2.hpp"
 #include <optional>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "../common.h"
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -47,6 +49,7 @@ private:
     void endCommandBuffer();
     void updateDescriptorSet();
     void buildAccelerationStructures();
+    void handleInput(float deltaTime);
     void buildBottomLevelAS();
     void buildTopLevelAS();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime);
@@ -134,6 +137,13 @@ private:
     VkImage storageImage;
     VkImageView storageImageView;
     VkDeviceMemory imageMemory;
+    
+    //Camera
+    void updateCamera(glm::vec2 mouse, glm::vec2 control, float deltaTime);
+    void createCamera();
+    VkBuffer cameraBuffer;
+    VkDeviceMemory cameraBufferMemory;
+    Camera camera;
 
 
     VkAccelerationStructureKHR topLevelAS;

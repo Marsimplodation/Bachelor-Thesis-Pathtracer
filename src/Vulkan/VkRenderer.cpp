@@ -99,8 +99,40 @@ void VkRenderer::drawFrame(float deltaTime) {
     vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
+double lxpos, lypos=0.0;
+void VkRenderer::handleInput(float deltaTime) {
+    double xpos, ypos;
+    int windowWidth, windowHeight;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+    glm::vec2 mouse = {0,0};
+    glm::vec2 movement = {0,0};
+    if(xpos >= 0 && xpos <= windowWidth &&
+        ypos >= 0 && ypos <= windowHeight) {
+        if(glfwGetMouseButton(window, 1)) {
+            mouse.x = xpos - lxpos;
+            mouse.y = ypos - lypos;
+            xpos = lxpos;
+            ypos = lypos;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetCursorPos(window, xpos, ypos);
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+    lxpos = xpos;
+    lypos = ypos;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement[0] = 1;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement[0] = -1;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement[1] = -1;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement[1] = 1;
+    updateCamera(-mouse, movement, deltaTime);
+}
+
 void VkRenderer::mainLoop() {
     double lastTime = glfwGetTime();  // Initial time
+    createCamera();
     gui = ImguiModule();
     gui.init(device, physicalDevice, instance, graphicsQueue, renderPass, swapChainImages.size(), window);
 
@@ -112,6 +144,7 @@ void VkRenderer::mainLoop() {
         lastTime = currentTime;
         //printf("FPS: %f\n", 1/deltaTime);
         glfwPollEvents();
+        handleInput(deltaTime);
 
         // Keyboard input handling
         if (guiButtonAvailable &&  glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
@@ -150,6 +183,7 @@ void VkRenderer::cleanup() {
     vkFreeMemory(device, indexBufferMemory, nullptr);
     vkFreeMemory(device, raygenMemory, nullptr);
     vkFreeMemory(device, missMemory, nullptr);
+    vkFreeMemory(device, cameraBufferMemory, nullptr);
     vkFreeMemory(device, hitMemory, nullptr);
     vkFreeMemory(device, topLevelASMemory, nullptr);
     vkFreeMemory(device, instanceASMemory, nullptr);
@@ -159,6 +193,7 @@ void VkRenderer::cleanup() {
     vkDestroyBuffer(device, missBuffer, nullptr);
     vkDestroyBuffer(device, raygenBuffer, nullptr);
     vkDestroyBuffer(device, vertexBuffer, nullptr);
+    vkDestroyBuffer(device, cameraBuffer, nullptr);
     vkDestroyBuffer(device, indexBuffer, nullptr);
     vkDestroyBuffer(device, topLevelASBuffer, nullptr);
     vkDestroyBuffer(device, bottomLevelASBuffer, nullptr);

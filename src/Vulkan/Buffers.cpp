@@ -116,92 +116,12 @@ VkResult VkRenderer::CreateSBTBuffers(VkDeviceSize raygenSize, VkDeviceSize miss
 
     return VK_SUCCESS;
 }
-//--- Descriptor ----//
 
-
-void VkRenderer::createDescriptorPool() {
-    VkDescriptorPoolSize poolSizes[4] = {};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[0].descriptorCount = 3; // Change to 3 for the 3 descriptors (raygen, miss, hit)
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    poolSizes[1].descriptorCount = 1; 
-    poolSizes[2].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-    poolSizes[2].descriptorCount = 1; 
-
-    //set 1
-    poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[3].descriptorCount = 2; 
-
-    VkDescriptorPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 4;
-    poolInfo.pPoolSizes = poolSizes;
-    poolInfo.maxSets = 2;  // Only need 1 descriptor set (if you're allocating 1 per frame)
-
-    VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
-    checkIfVkResultIsCorrect(result, "Failed to create descriptor pool");
-}
-
-void VkRenderer::updateDescriptorSet() {
-    VkDescriptorBufferInfo raygenBufferInfo = {};
-    raygenBufferInfo.buffer = raygenBuffer;
-    raygenBufferInfo.offset = 0;
-    raygenBufferInfo.range = VK_WHOLE_SIZE;
-
-    VkDescriptorBufferInfo missBufferInfo = {};
-    missBufferInfo.buffer = missBuffer;
-    missBufferInfo.offset = 0;
-    missBufferInfo.range = VK_WHOLE_SIZE;
-
-    VkDescriptorBufferInfo hitBufferInfo = {};
-    hitBufferInfo.buffer = hitBuffer;
-    hitBufferInfo.offset = 0;
-    hitBufferInfo.range = VK_WHOLE_SIZE;
-    
-    VkDescriptorBufferInfo vertexBufferInfo = {};
-    vertexBufferInfo.buffer = vertexBuffer;
-    vertexBufferInfo.offset = 0;
-    vertexBufferInfo.range = VK_WHOLE_SIZE;
-    
-    VkDescriptorBufferInfo indexBufferInfo = {};
-    indexBufferInfo.buffer = indexBuffer;
-    indexBufferInfo.offset = 0;
-    indexBufferInfo.range = VK_WHOLE_SIZE;
-
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageView = storageImageView; // The image view for the storage image
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL; // Layout for storage images
-
-    VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWrite{};
-    accelerationStructureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-    accelerationStructureWrite.accelerationStructureCount = 1;
-    accelerationStructureWrite.pAccelerationStructures = &topLevelAS;
-
-    /*
-    typedef struct VkWriteDescriptorSet {
-        VkStructureType                  sType;
-        const void*                      pNext;
-        VkDescriptorSet                  dstSet;
-        uint32_t                         dstBinding;
-        uint32_t                         dstArrayElement;
-        uint32_t                         descriptorCount;
-        VkDescriptorType                 descriptorType;
-        const VkDescriptorImageInfo*     pImageInfo;
-        const VkDescriptorBufferInfo*    pBufferInfo;
-        const VkBufferView*              pTexelBufferView;
-    } VkWriteDescriptorSet;*/
-    VkWriteDescriptorSet writeDescriptorSets[] = {
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &raygenBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &missBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &hitBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo, nullptr, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, &accelerationStructureWrite, descriptorSets[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &imageInfo, nullptr, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
-        
-    };
-
-    vkUpdateDescriptorSets(device, 7, writeDescriptorSets, 0, nullptr);
+void VkRenderer::copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize) {
+    void* mappedMemory;
+    vkMapMemory(device, bufferMemory, 0, shaderSize, 0, &mappedMemory);
+    memcpy(mappedMemory, shaderCode, static_cast<size_t>(shaderSize));
+    vkUnmapMemory(device, bufferMemory);
 }
 
 
@@ -454,10 +374,10 @@ vertices =
     {{-1.0f, -1.0f, -1.0f, 1.0f}, { 0.0f, 1.0f,  0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 15
 
     // Back wall (White)
-    {{-1.0f,  1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 16
-    {{ 1.0f,  1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 17
-    {{ 1.0f, -1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 18
-    {{-1.0f, -1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 19
+    {{-1.0f,  1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, 0x01}, // Vertex 16
+    {{ 1.0f,  1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, 0x01}, // Vertex 17
+    {{ 1.0f, -1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, 0x01}, // Vertex 18
+    {{-1.0f, -1.0f, -1.0f, 1.0f}, { 0.0f,  0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, 0x01}, // Vertex 19
 
 
     {{-0.4f,  -0.4f, -0.1f, 1.0f}, { 0.0f,  1.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}}, // Vertex 20
