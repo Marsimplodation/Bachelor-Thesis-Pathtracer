@@ -27,6 +27,13 @@ void VkRenderer::createDescriptorLayout() {
     storageImageBinding.descriptorCount = 1; // Number of storage images (usually 1)
     storageImageBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR; // Which shader stages can access this image
     storageImageBinding.pImmutableSamplers = nullptr; // Not used for storage images
+    
+    VkDescriptorSetLayoutBinding waveFrontBinding{};
+    waveFrontBinding.binding = 6; // Binding number in the shader
+    waveFrontBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    waveFrontBinding.descriptorCount = 1; // Number of storage images (usually 1)
+    waveFrontBinding.stageFlags = VK_SHADER_STAGE_ALL; // Which shader stages can access this image
+    waveFrontBinding.pImmutableSamplers = nullptr; // Not used for storage images
     //
     VkDescriptorSetLayoutBinding asBinding{};
     asBinding.binding = 4;
@@ -40,11 +47,11 @@ void VkRenderer::createDescriptorLayout() {
     cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     cameraBinding.descriptorCount = 1;
     cameraBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;  // This buffer is used by the miss shader.
-    VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding, cameraBinding};
+    VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding, cameraBinding, waveFrontBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo.bindingCount = 6;  // Number of bindings
+    layoutCreateInfo.bindingCount = 7;  // Number of bindings
     layoutCreateInfo.pBindings = bindings;
     VkResult result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayouts[0]);
     if (result != VK_SUCCESS) {
@@ -84,7 +91,7 @@ void VkRenderer::createDescriptorLayout() {
 void VkRenderer::createDescriptorPool() {
     VkDescriptorPoolSize poolSizes[5] = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[0].descriptorCount = 3; // Change to 3 for the 3 descriptors (raygen, miss, hit)
+    poolSizes[0].descriptorCount = 4; // Change to 3 for the 3 descriptors (raygen, miss, hit)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     poolSizes[1].descriptorCount = 1; 
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
@@ -135,6 +142,11 @@ void VkRenderer::updateDescriptorSet() {
     indexBufferInfo.buffer = indexBuffer;
     indexBufferInfo.offset = 0;
     indexBufferInfo.range = VK_WHOLE_SIZE;
+    
+    VkDescriptorBufferInfo waveFrontBufferInfo = {};
+    waveFrontBufferInfo.buffer = waveFrontBuffer;
+    waveFrontBufferInfo.offset = 0;
+    waveFrontBufferInfo.range = VK_WHOLE_SIZE;
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageView = storageImageView; // The image view for the storage image
@@ -165,10 +177,11 @@ void VkRenderer::updateDescriptorSet() {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo, nullptr, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, &accelerationStructureWrite, descriptorSets[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &imageInfo, nullptr, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 5, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nullptr, &cameraBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &waveFrontBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
         
     };
 
-    vkUpdateDescriptorSets(device, 8, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 9, writeDescriptorSets, 0, nullptr);
 }

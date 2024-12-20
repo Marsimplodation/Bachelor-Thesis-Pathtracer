@@ -10,7 +10,7 @@ struct alignas(16) Camera {
     float fov;          // Field of view
     float yaw;
     float pitch;
-    float roll;
+    u32 reset = false;
     void rotate(glm::vec2 mouse, float deltaTime);
     void move(glm::vec2 control, float deltaTime);
     Camera();

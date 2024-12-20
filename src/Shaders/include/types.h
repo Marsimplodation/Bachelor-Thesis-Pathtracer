@@ -1,8 +1,20 @@
 #ifndef TYPES_H
 #define TYPES_H
+
+
+struct RayState {
+    vec4 origin;
+    vec4 direction;
+    vec4 throughPut;
+    vec4 light;
+    uint randomState;
+    bool terminated;
+    uint __padding[2];
+};
+
 struct RayPayload {
-    vec3 hitColor;
     float hitDistance;
+    int idx;
 };
 
 struct Vertex {
@@ -12,7 +24,6 @@ struct Vertex {
     uint shaderFlag;
     uint padding[3];
 };
-
 
 
 #define EPS 0.00001

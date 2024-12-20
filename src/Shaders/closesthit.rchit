@@ -1,6 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 #include "include/types.h"
+#include "include/random.h"
 layout(location = 0) rayPayloadInEXT RayPayload rayPayload;
 
 layout(set = 1, binding = 0, std430) restrict readonly buffer VertexBuffer {
@@ -10,7 +11,9 @@ layout(set = 1, binding = 0, std430) restrict readonly buffer VertexBuffer {
 layout(set = 1, binding = 1, std430) restrict readonly buffer IndexBuffer {
     uint indices[];
 };
-
+layout(set = 0, binding = 6, std430)buffer WaveFrontBuffer {
+    RayState waveFront[];
+};
 layout(set = 0, binding = 4) uniform accelerationStructureEXT topLevelAS;
 
 hitAttributeEXT vec2 attribs;  // Input: barycentric coordinates
@@ -19,21 +22,12 @@ void mirror(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t);
 void mirror(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
     vec3 dir = normalize(direction - 2*dot(direction, normal.xyz)*normal.xyz);
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
+    rayPayload.hitDistance = t;
 
-    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT;
-    traceRayEXT(topLevelAS,  // acceleration structure
-            flags,       // rayFlags
-            0xFF,        // cullMask
-            0,           // sbtRecordOffset
-            0,           // sbtRecordStride
-            0,           // missIndex
-            hitPosition,      // ray origin
-            0.0f,        // ray min range
-            dir,      // ray direction
-            100.0f,        // ray max range
-            0            // payload (location = 1)
-    );
-    rayPayload.hitColor = color.rgb * rayPayload.hitColor;
+    waveFront[rayPayload.idx].terminated = false;
+    waveFront[rayPayload.idx].origin.xyz = hitPosition;
+    waveFront[rayPayload.idx].direction.xyz = dir;
+    waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
 }
 
 void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t);
@@ -43,11 +37,7 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
     vec3 lightPos = vec3(0,0.6,0);
     vec3 lightDir = normalize(lightPos - hitPosition);
     float tMax = length(lightPos - hitPosition) - EPS;
-    float cos = dot(lightDir, normal.xyz);
-    if(cos < 0) {
-        rayPayload.hitColor = color.rgb * 0.1;
-        return;
-    }
+    float cos = max(0.0, dot(lightDir, normal.xyz));
     uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
     rayPayload.hitDistance = tMax;
     traceRayEXT(topLevelAS,  // acceleration structure
@@ -62,13 +52,31 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
             tMax,        // ray max range
             0            // payload (location = 1)
     );
-    float attenuation = 0.1;
+    float attenuation = 0.0;
     //rayMiss
     if(rayPayload.hitDistance == 0.0) {
       attenuation = 1*cos;
     }
-    rayPayload.hitColor = color.rgb * attenuation;
     rayPayload.hitDistance = t;
+    waveFront[rayPayload.idx].terminated = true;
+    waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
+    waveFront[rayPayload.idx].light.rgb += vec3(1) * attenuation
+                                            * waveFront[rayPayload.idx].throughPut.rgb;
+                                            
+
+    //next bounce
+    vec3 arbitrary = abs(normal.x) > abs(normal.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(arbitrary, normal.xyz));
+    vec3 bitangent = cross(normal.xyz, tangent);
+    vec3 randomDir = randomCosineWeightedDirection(waveFront[rayPayload.idx].randomState);
+    
+    waveFront[rayPayload.idx].direction.xyz = normalize(randomDir.x * tangent +
+                                            randomDir.y * bitangent +
+                                            randomDir.z * normal.xyz);
+    waveFront[rayPayload.idx].origin.xyz = hitPosition;
+
+    
+
 }
 
 void main() {

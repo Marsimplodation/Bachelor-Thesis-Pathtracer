@@ -25,6 +25,16 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct RayState {
+    glm::vec4 origin;
+    glm::vec4 direction;
+    glm::vec4 throughPut;
+    glm::vec4 light;
+    u32 randomState;
+    u32 terminated;
+    u32 __padding[2];
+};
+
 class VkRenderer {
 public:
     void run();
@@ -109,15 +119,18 @@ private:
     VkDescriptorSetLayout descriptorSetLayouts[2];
     VkRenderPass renderPass;
     ImguiModule gui;
+    std::vector<RayState> waveFront;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     //buffers
     VkBuffer raygenBuffer, missBuffer, hitBuffer;
     VkBuffer vertexBuffer;
     VkBuffer indexBuffer;
+    VkBuffer waveFrontBuffer;
     VkBuffer bottomLevelASBuffer, topLevelASBuffer, instanceASBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkDeviceMemory indexBufferMemory;
+    VkDeviceMemory waveFrontBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
     VkDeviceMemory bottomLevelASMemory, topLevelASMemory, instanceASMemory;
     std::vector<Vertex> vertices;

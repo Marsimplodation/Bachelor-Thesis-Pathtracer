@@ -101,6 +101,7 @@ void VkRenderer::drawFrame(float deltaTime) {
 
 double lxpos, lypos=0.0;
 void VkRenderer::handleInput(float deltaTime) {
+    camera.reset = false;
     double xpos, ypos;
     int windowWidth, windowHeight;
     glfwGetCursorPos(window, &xpos, &ypos);
@@ -116,6 +117,7 @@ void VkRenderer::handleInput(float deltaTime) {
             ypos = lypos;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             glfwSetCursorPos(window, xpos, ypos);
+            camera.reset = true;
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
@@ -127,6 +129,7 @@ void VkRenderer::handleInput(float deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement[0] = -1;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement[1] = -1;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement[1] = 1;
+    if(movement != glm::vec2{0,0}) camera.reset = true;
     updateCamera(-mouse, movement, deltaTime);
 }
 

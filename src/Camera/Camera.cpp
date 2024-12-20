@@ -7,7 +7,6 @@
 Camera::Camera() {
     yaw = 0.0f;
     pitch = 0.0f;
-    roll = 0.0f;
     forward = {0,0,-1,1};
     position = {0,0,5,1};
     up = {0,1,0,1};
@@ -57,7 +56,7 @@ void Camera::rotate(glm::vec2 mouse, float deltaTime) {
     if (pitch > 360.0f) pitch = 0.0f;
     if (pitch < -360.0f) pitch = 0.0f;
 
-    glm::mat3 rotation = create_rotation_matrix(yaw, pitch, roll);
+    glm::mat3 rotation = create_rotation_matrix(yaw, pitch, 0.0f);
     //right handed coordinate system
     glm::vec3 f = {0,0,-1};
     glm::vec3 u = {0,1,0};
