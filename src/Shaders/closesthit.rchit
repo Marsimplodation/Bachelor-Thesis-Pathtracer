@@ -31,7 +31,7 @@ void mirror(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
 
 void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t);
 void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
-    vec3 hitPosition = origin + t * direction; // Compute world-space hit position
+    vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
     hitPosition += EPS * normal.xyz;
     rayPayload.hitDistance = t;
     waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;

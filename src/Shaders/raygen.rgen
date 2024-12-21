@@ -48,13 +48,10 @@ void main() {
         waveFront[idx].light = vec4(0);
         waveFront[idx].pixelColor = vec4(0,0,0, 1.0);
     }
-    else if(waveFront[idx].samples == UINT_MAX) {
-        imageStore(storageImage, pixelCoords, vec4(0));
-        waveFront[idx].samples = 0;
-        return;
-    }
     vec3 origin=waveFront[idx].origin.xyz;
     vec3 direction=waveFront[idx].direction.xyz;
+    direction = normalize(direction);
+
     if(camera.reset || waveFront[idx].terminated) {
         waveFront[idx].light = vec4(0);
         waveFront[idx].throughPut = vec4(1.0);
@@ -91,7 +88,6 @@ void main() {
         if(miss > 0.0f) miss = 1.0f;
         imageStore(storageImage, pixelCoords, waveFront[idx].throughPut * miss);
         waveFront[idx].pixelColor = vec4(0);
-        waveFront[idx].samples = UINT_MAX;
         return;
     }
    
@@ -99,16 +95,16 @@ void main() {
     if(waveFront[idx].terminated) {
         vec4 newPixel = (waveFront[idx].pixelColor *  waveFront[idx].samples + waveFront[idx].light) / ( waveFront[idx].samples + 1);
         waveFront[idx].pixelColor = newPixel;
-        newPixel.rgb = newPixel.rgb / ( vec3(1) + newPixel.rgb); // simple tonemapping
-        // gamma correct
-        newPixel.r = pow(newPixel.r, INV_GAMMA);
-        newPixel.g = pow(newPixel.g, INV_GAMMA);
-        newPixel.b = pow(newPixel.b, INV_GAMMA);
-
-        imageStore(storageImage, pixelCoords, newPixel);
         waveFront[idx].samples += 1;
     }
+    vec4 newPixel = waveFront[idx].pixelColor;
+    newPixel.rgb = newPixel.rgb / ( vec3(1) + newPixel.rgb); // simple tonemapping
+    // gamma correct
+    newPixel.r = pow(newPixel.r, INV_GAMMA);
+    newPixel.g = pow(newPixel.g, INV_GAMMA);
+    newPixel.b = pow(newPixel.b, INV_GAMMA);
 
+    imageStore(storageImage, pixelCoords, newPixel);
     // Write the color to the storage image
 }
 
