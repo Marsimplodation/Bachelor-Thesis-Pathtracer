@@ -30,7 +30,7 @@ void VkRenderer::initVulkan() {
     createFramebuffers();
     createCommandPool();
     createCommandBuffer();
-    //loadGeometry();
+    loadGeometry();
     createGeometryBuffers();
     buildAccelerationStructures();
     createRaytracingPipeline();

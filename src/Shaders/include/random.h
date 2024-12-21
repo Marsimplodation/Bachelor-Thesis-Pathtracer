@@ -1,7 +1,6 @@
 #ifndef RANDOM_H
 #define RANDOM_H
-#define UINT_MAX 0xFFFFFFFFu
-
+#include "defines.h"
 float fastRandom(inout uint seed) {
     // Using PCG Hash
     uint state = seed * 747796405u + 2891336453u;

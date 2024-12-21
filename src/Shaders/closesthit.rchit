@@ -24,7 +24,6 @@ void mirror(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
     rayPayload.hitDistance = t;
 
-    waveFront[rayPayload.idx].terminated = false;
     waveFront[rayPayload.idx].origin.xyz = hitPosition;
     waveFront[rayPayload.idx].direction.xyz = dir;
     waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
@@ -34,35 +33,8 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t);
 void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
     vec3 hitPosition = origin + t * direction; // Compute world-space hit position
     hitPosition += EPS * normal.xyz;
-    vec3 lightPos = vec3(0,0.6,0);
-    vec3 lightDir = normalize(lightPos - hitPosition);
-    float tMax = length(lightPos - hitPosition) - EPS;
-    float cos = max(0.0, dot(lightDir, normal.xyz));
-    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-    rayPayload.hitDistance = tMax;
-    traceRayEXT(topLevelAS,  // acceleration structure
-            flags,       // rayFlags
-            0xFF,        // cullMask
-            0,           // sbtRecordOffset
-            0,           // sbtRecordStride
-            0,           // missIndex
-            hitPosition,      // ray origin
-            0.0f,        // ray min range
-            lightDir,      // ray direction
-            tMax,        // ray max range
-            0            // payload (location = 1)
-    );
-    float attenuation = 0.0;
-    //rayMiss
-    if(rayPayload.hitDistance == 0.0) {
-      attenuation = 1*cos;
-    }
     rayPayload.hitDistance = t;
-    waveFront[rayPayload.idx].terminated = false;
     waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
-    waveFront[rayPayload.idx].light.rgb += vec3(0.5) * attenuation
-                                            * waveFront[rayPayload.idx].throughPut.rgb;
-                                            
 
     //next bounce
     vec3 arbitrary = abs(normal.z) < 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
@@ -74,9 +46,6 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
                                             randomDir.y * bitangent +
                                             randomDir.z * normal.xyz);
     waveFront[rayPayload.idx].origin.xyz = hitPosition;
-
-    
-
 }
 
 void main() {
@@ -104,5 +73,7 @@ void main() {
     if(v0.shaderFlag == 0x01) {
         mirror(origin, direction, normal, color, t);
     }
+
+    waveFront[rayPayload.idx].light.rgb += v0.emmision * waveFront[rayPayload.idx].throughPut.rgb;
 
 }

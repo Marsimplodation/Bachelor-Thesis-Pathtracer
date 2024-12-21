@@ -38,6 +38,10 @@ void main() {
     vec2 coords = vec2(pixelCoords+vec2(xi1,xi2)) / vec2(imageSize);
     vec2 ndc = 2*(coords) - vec2(1.0);
     ndc.y = -ndc.y;
+    if (imageSize.x >= imageSize.y)
+        ndc.y = float(imageSize.y) / float(imageSize.x) * ndc.y;
+    else
+        ndc.x = float(imageSize.x) / float(imageSize.y) * ndc.x;
 
 
     vec3 origin=waveFront[idx].origin.xyz;
@@ -65,12 +69,14 @@ void main() {
         origin, 
         0.0, 
         direction, 
-        100.0, 
+        10000.0, 
         0 // location of the payload
     );
 
-    if(fastRandom(waveFront[idx].randomState) < 0.1) {
+    if(fastRandom(waveFront[idx].randomState) < 0.01) {
         waveFront[idx].terminated = true;
+    } else {
+        waveFront[idx].throughPut *= 1.0/(1.0 - 0.01);
     }
 
     if(camera.reset){
@@ -79,8 +85,14 @@ void main() {
     }
     
     if(waveFront[idx].terminated) {
-        vec4 currentPixel = imageLoad(storageImage, pixelCoords);
-        vec4 newPixel = (currentPixel *  waveFront[idx].samples + waveFront[idx].light) / ( waveFront[idx].samples + 1);
+        vec4 newPixel = (waveFront[idx].pixelColor *  waveFront[idx].samples + waveFront[idx].light) / ( waveFront[idx].samples + 1);
+        waveFront[idx].pixelColor = newPixel;
+        newPixel.rgb = newPixel.rgb / ( vec3(1) + newPixel.rgb); // simple tonemapping
+        // gamma correct
+        newPixel.r = pow(newPixel.r, INV_GAMMA);
+        newPixel.g = pow(newPixel.g, INV_GAMMA);
+        newPixel.b = pow(newPixel.b, INV_GAMMA);
+
         imageStore(storageImage, pixelCoords, newPixel);
         waveFront[idx].samples += 1;
     }

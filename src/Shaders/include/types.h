@@ -7,6 +7,7 @@ struct RayState {
     vec4 direction;
     vec4 throughPut;
     vec4 light;
+    vec4 pixelColor;
     uint randomState;
     bool terminated;
     uint samples; 
@@ -22,10 +23,10 @@ struct Vertex {
     vec4 position;
     vec4 normal;
     vec4 color;
+    float emmision;
     uint shaderFlag;
-    uint padding[3];
+    uint padding[2];
 };
 
 
-#define EPS 0.00001
 #endif

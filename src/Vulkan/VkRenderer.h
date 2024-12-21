@@ -30,6 +30,7 @@ struct RayState {
     glm::vec4 direction;
     glm::vec4 throughPut;
     glm::vec4 light;
+    glm::vec4 pixelColor;
     u32 randomState;
     u32 terminated;
     u32 __padding[2];
@@ -57,6 +58,7 @@ private:
     void createCommandBuffer();
     void beginCommandBuffer();
     void endCommandBuffer();
+    void loadGeometry();
     void updateDescriptorSet();
     void buildAccelerationStructures();
     void handleInput(float deltaTime);
