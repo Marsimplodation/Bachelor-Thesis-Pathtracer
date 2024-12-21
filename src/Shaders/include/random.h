@@ -10,6 +10,10 @@ float fastRandom(inout uint seed) {
     return float(seed) /float(UINT_MAX);
 }
 
+uint hashCoords(int x, int y) {
+    return (uint(x) << 16) | uint(y);
+}
+
 vec3 randomCosineWeightedDirection(inout uint seed) {
     vec3 direction;
     float theta = fastRandom(seed);

@@ -9,7 +9,8 @@ struct RayState {
     vec4 light;
     uint randomState;
     bool terminated;
-    uint __padding[2];
+    uint samples; 
+    uint __padding;
 };
 
 struct RayPayload {

@@ -13,6 +13,7 @@ Camera::Camera() {
     right = {1,0,0,1};
     fov = 0.7f;
     rotate({0, 0}, 1.0f/20.0f);
+    reset = true;
 }
 
 glm::mat3 create_rotation_matrix(float yaw, float pitch, float roll) {

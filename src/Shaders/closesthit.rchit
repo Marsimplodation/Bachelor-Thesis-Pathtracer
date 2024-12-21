@@ -58,15 +58,15 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
       attenuation = 1*cos;
     }
     rayPayload.hitDistance = t;
-    waveFront[rayPayload.idx].terminated = true;
+    waveFront[rayPayload.idx].terminated = false;
     waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
-    waveFront[rayPayload.idx].light.rgb += vec3(1) * attenuation
+    waveFront[rayPayload.idx].light.rgb += vec3(0.5) * attenuation
                                             * waveFront[rayPayload.idx].throughPut.rgb;
                                             
 
     //next bounce
-    vec3 arbitrary = abs(normal.x) > abs(normal.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent = normalize(cross(arbitrary, normal.xyz));
+    vec3 arbitrary = abs(normal.z) < 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(normal.xyz, arbitrary));
     vec3 bitangent = cross(normal.xyz, tangent);
     vec3 randomDir = randomCosineWeightedDirection(waveFront[rayPayload.idx].randomState);
     
