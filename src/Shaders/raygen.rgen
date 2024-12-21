@@ -84,8 +84,8 @@ void main() {
     }
 
     if(camera.reset){
-        float miss = min(rayPayload.hitDistance, 1.0f);
-        if(miss > 0.0f) miss = 1.0f;
+        float miss = rayPayload.hitDistance;
+        if(miss > 0.0f) miss = min(1.0, 1.0/sqrt(miss));
         imageStore(storageImage, pixelCoords, waveFront[idx].throughPut * miss);
         waveFront[idx].pixelColor = vec4(0);
         return;
