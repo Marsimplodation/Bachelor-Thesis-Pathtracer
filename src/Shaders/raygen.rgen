@@ -43,7 +43,16 @@ void main() {
     else
         ndc.x = float(imageSize.x) / float(imageSize.y) * ndc.x;
 
-
+    if(camera.reset) {
+        waveFront[idx].samples = 0;
+        waveFront[idx].light = vec4(0);
+        waveFront[idx].pixelColor = vec4(0,0,0, 1.0);
+    }
+    else if(waveFront[idx].samples == UINT_MAX) {
+        imageStore(storageImage, pixelCoords, vec4(0));
+        waveFront[idx].samples = 0;
+        return;
+    }
     vec3 origin=waveFront[idx].origin.xyz;
     vec3 direction=waveFront[idx].direction.xyz;
     if(camera.reset || waveFront[idx].terminated) {
@@ -54,9 +63,7 @@ void main() {
         direction = ndc.x*camera.right.xyz + ndc.y*camera.up.xyz + camera.fov*camera.forward.xyz; // Ray direction pointing forward
         direction = normalize(direction); 
     }
-    if(camera.reset) {
-        waveFront[idx].samples = 0;
-    }
+    
     
     rayPayload.idx = idx;
     traceRayEXT(
@@ -81,8 +88,13 @@ void main() {
 
     if(camera.reset){
         float miss = min(rayPayload.hitDistance, 1.0f);
+        if(miss > 0.0f) miss = 1.0f;
         imageStore(storageImage, pixelCoords, waveFront[idx].throughPut * miss);
+        waveFront[idx].pixelColor = vec4(0);
+        waveFront[idx].samples = UINT_MAX;
+        return;
     }
+   
     
     if(waveFront[idx].terminated) {
         vec4 newPixel = (waveFront[idx].pixelColor *  waveFront[idx].samples + waveFront[idx].light) / ( waveFront[idx].samples + 1);

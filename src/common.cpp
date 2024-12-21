@@ -16,5 +16,6 @@ float fastRandom(u32 & seed) {
 bool Vertex::operator==(const Vertex& other) const {
     return position == other.position 
             && color == other.color 
-            && normal == other.normal;
+            && normal == other.normal
+            && emission ==other.emission;
 }

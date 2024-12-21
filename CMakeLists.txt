@@ -22,6 +22,13 @@ FetchContent_Declare(
     GIT_REPOSITORY GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG v1.91.6
 )
+# Fetch TinyObjLoader
+FetchContent_Declare(
+  tinyobjloader
+  GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+  GIT_TAG v2.0.0rc13  # Replace with the version you want to use
+)
+FetchContent_MakeAvailable(tinyobjloader)
 FetchContent_MakeAvailable(imgui)
 
 # Make GLM available
@@ -70,3 +77,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui) 
+target_link_libraries(${PROJECT_NAME} PRIVATE tinyobjloader) 
