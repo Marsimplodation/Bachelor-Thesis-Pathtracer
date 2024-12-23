@@ -57,7 +57,8 @@ void main() {
         waveFront[idx].throughPut = vec4(1.0);
         waveFront[idx].terminated = false;
         origin = camera.position.xyz; 
-        direction = ndc.x*camera.right.xyz + ndc.y*camera.up.xyz + camera.fov*camera.forward.xyz; // Ray direction pointing forward
+        direction = ndc.x *camera.fov *camera.right.xyz + ndc.y * camera.fov *camera.up.xyz;
+        direction += camera.forward.xyz; // Ray direction pointing forward
         direction = normalize(direction); 
     }
     

@@ -4,7 +4,7 @@
 #include <string>
 #include <tiny_obj_loader.h>
 #include <unordered_map>
-const std::string MODEL_PATH = "scenes/test2.obj";
+const std::string MODEL_PATH = "scenes/test.obj";
 const std::string BASE_DIR = "scenes/";
 #define GAMMA 2.2f
 
