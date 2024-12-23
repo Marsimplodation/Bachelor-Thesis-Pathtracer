@@ -4,7 +4,9 @@
 #include "../UI/ImguiModule.h"
 #include "../Camera/Camera.h"
 #include "glm/ext/vector_float2.hpp"
+#include "glm/ext/vector_float4.hpp"
 #include <optional>
+#include <string>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <cstdint>
@@ -36,10 +38,26 @@ struct RayState {
     u32 __padding[2];
 };
 
+struct Material {
+    glm::vec4 color;
+    float emission;
+    float ior1;
+    float ior2;
+    u32 shaderFlag;
+};
+
+struct Vertex {
+     glm::vec4 position;
+     glm::vec4 normal;
+     u32 materialIdx;
+     u32 padding[3];
+     bool operator==(const Vertex& other) const;
+};
+
 class VkRenderer {
 public:
     void run();
-private:
+//private:
     //functions
     void initWindow();
     void initVulkan();
@@ -127,16 +145,20 @@ private:
     //buffers
     VkBuffer raygenBuffer, missBuffer, hitBuffer;
     VkBuffer vertexBuffer;
+    VkBuffer materialBuffer;
     VkBuffer indexBuffer;
     VkBuffer waveFrontBuffer;
     VkBuffer bottomLevelASBuffer, topLevelASBuffer, instanceASBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkDeviceMemory indexBufferMemory;
     VkDeviceMemory waveFrontBufferMemory;
+    VkDeviceMemory materialBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
     VkDeviceMemory bottomLevelASMemory, topLevelASMemory, instanceASMemory;
     std::vector<Vertex> vertices;
     std::vector<u32> indices;
+    std::vector<Material> materials;
+    std::vector<std::string> materialNames;
 
     //Shaders
     VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;

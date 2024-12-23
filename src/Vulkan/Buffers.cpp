@@ -331,7 +331,7 @@ void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     renderPassInfo.pClearValues = VK_NULL_HANDLE;
     renderPassInfo.renderArea.extent = swapChainExtent; 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        gui.update(commandBuffer, deltaTime);
+        gui.update(this, deltaTime);
     vkCmdEndRenderPass(commandBuffer);
 
 
@@ -363,7 +363,14 @@ void VkRenderer::createGeometryBuffers() {
                  &indexBuffer,
                  &indexBufferMemory, true);
 
+    CreateBuffer(sizeof(Material) * materials.size(),
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 &materialBuffer,
+                 &materialBufferMemory, true);
+
 
     copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
     copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
+    copyDataToBuffer(materialBufferMemory, materials.data(), sizeof(Material)*materials.size());
 }

@@ -101,7 +101,6 @@ void VkRenderer::drawFrame(float deltaTime) {
 
 double lxpos, lypos=0.0;
 void VkRenderer::handleInput(float deltaTime) {
-    camera.reset = false;
     double xpos, ypos;
     int windowWidth, windowHeight;
     glfwGetCursorPos(window, &xpos, &ypos);
@@ -142,6 +141,8 @@ void VkRenderer::mainLoop() {
     bool guiButtonAvailable = true;
 
     while (!glfwWindowShouldClose(window)) {
+        camera.reset = gui.updated;
+        gui.updated = false;
         double currentTime = glfwGetTime();
         float deltaTime = float(currentTime - lastTime);
         lastTime = currentTime;

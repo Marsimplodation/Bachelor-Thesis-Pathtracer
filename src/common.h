@@ -16,15 +16,6 @@ u32 hashCoords(int x, int y);
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-struct Vertex {
-     glm::vec4 position;
-     glm::vec4 normal;
-     glm::vec4 color;
-     float emission;
-     u32 shaderFlag;
-     u32 padding[2];
-     bool operator==(const Vertex& other) const;
-};
 
 
 #endif

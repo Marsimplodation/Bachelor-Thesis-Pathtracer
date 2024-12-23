@@ -86,7 +86,13 @@ void main() {
     if(camera.reset){
         float miss = rayPayload.hitDistance;
         if(miss > 0.0f) miss = min(1.0, 1.0/sqrt(miss));
-        imageStore(storageImage, pixelCoords, waveFront[idx].throughPut * miss);
+        vec4 newPixel = waveFront[idx].throughPut * miss;
+        newPixel.rgb = newPixel.rgb / ( vec3(1) + newPixel.rgb); // simple tonemapping
+        // gamma correct
+        newPixel.r = pow(newPixel.r, INV_GAMMA);
+        newPixel.g = pow(newPixel.g, INV_GAMMA);
+        newPixel.b = pow(newPixel.b, INV_GAMMA);
+        imageStore(storageImage, pixelCoords, newPixel);
         waveFront[idx].pixelColor = vec4(0);
         return;
     }

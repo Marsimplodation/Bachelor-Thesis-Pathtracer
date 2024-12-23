@@ -11,6 +11,11 @@ layout(set = 1, binding = 0, std430) restrict readonly buffer VertexBuffer {
 layout(set = 1, binding = 1, std430) restrict readonly buffer IndexBuffer {
     uint indices[];
 };
+
+layout(set = 1, binding = 2, std430) restrict readonly buffer MaterialBuffer {
+    Material materials[];
+};
+
 layout(set = 0, binding = 6, std430)buffer WaveFrontBuffer {
     RayState waveFront[];
 };
@@ -64,16 +69,17 @@ void main() {
     Vertex v0 = vertices[index0];
     Vertex v1 = vertices[index1];
     Vertex v2 = vertices[index2];
-    vec4 color = v0.color * barycentrics.x + v1.color * barycentrics.y + v2.color * barycentrics.z;
+    Material m = materials[v1.materialID];
+    vec4 color = m.color; 
     vec4 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
 
-    if(v0.shaderFlag == 0x00) {
+    if(m.shaderFlag == 0x00) {
         lambert(origin, direction,normal, color, t);
     }
-    if(v0.shaderFlag == 0x01) {
+    if(m.shaderFlag == 0x01) {
         mirror(origin, direction, normal, color, t);
     }
 
-    waveFront[rayPayload.idx].light.rgb += v0.emmision * waveFront[rayPayload.idx].throughPut.rgb;
+    waveFront[rayPayload.idx].light.rgb += m.emission * waveFront[rayPayload.idx].throughPut.rgb;
 
 }

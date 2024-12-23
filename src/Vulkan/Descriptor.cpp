@@ -72,13 +72,20 @@ void VkRenderer::createDescriptorLayout() {
     indexBufferBinding.descriptorCount = 1;
     indexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     indexBufferBinding.pImmutableSamplers = nullptr;
+    
+    VkDescriptorSetLayoutBinding materialBufferBinding{};
+    materialBufferBinding.binding = 2;
+    materialBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    materialBufferBinding.descriptorCount = 1;
+    materialBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    materialBufferBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding};
+    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding, materialBufferBinding};
 
     // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo_set1 = {};
     layoutCreateInfo_set1.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo_set1.bindingCount = 2;  // Number of bindings
+    layoutCreateInfo_set1.bindingCount = 3;  // Number of bindings
     layoutCreateInfo_set1.pBindings = bindings_set1;
     
     result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo_set1, nullptr, &descriptorSetLayouts[1]);
@@ -100,7 +107,7 @@ void VkRenderer::createDescriptorPool() {
     poolSizes[3].descriptorCount = 1;
     //set 1
     poolSizes[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[4].descriptorCount = 2; 
+    poolSizes[4].descriptorCount = 3; 
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -143,6 +150,11 @@ void VkRenderer::updateDescriptorSet() {
     indexBufferInfo.offset = 0;
     indexBufferInfo.range = VK_WHOLE_SIZE;
     
+    VkDescriptorBufferInfo materialBufferInfo = {};
+    materialBufferInfo.buffer = materialBuffer;
+    materialBufferInfo.offset = 0;
+    materialBufferInfo.range = VK_WHOLE_SIZE;
+    
     VkDescriptorBufferInfo waveFrontBufferInfo = {};
     waveFrontBufferInfo.buffer = waveFrontBuffer;
     waveFrontBufferInfo.offset = 0;
@@ -180,8 +192,9 @@ void VkRenderer::updateDescriptorSet() {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &waveFrontBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &materialBufferInfo, nullptr },
         
     };
 
-    vkUpdateDescriptorSets(device, 9, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 10, writeDescriptorSets, 0, nullptr);
 }

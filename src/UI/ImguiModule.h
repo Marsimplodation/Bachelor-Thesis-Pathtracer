@@ -1,4 +1,5 @@
 #ifndef IMGUI_MODULE_H
+#define IMGUI_MODULE_H 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -13,9 +14,10 @@ class ImguiModule {
                         int imageCount,
                         GLFWwindow * window
                        );
-        void update(VkCommandBuffer commandBuffer, float deltaTime);
+        void update(void* render, float deltaTime);
         void destroy(VkDevice device);
         bool active = false;
+        bool updated = false;
     private:
         VkDescriptorPool imguiPool;
 };
