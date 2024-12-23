@@ -20,7 +20,7 @@ FetchContent_Declare(
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.91.6
+    GIT_TAG v1.91.6-docking
 )
 # Fetch TinyObjLoader
 FetchContent_Declare(
