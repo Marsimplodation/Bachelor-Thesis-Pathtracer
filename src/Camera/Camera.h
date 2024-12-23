@@ -13,6 +13,7 @@ struct alignas(16) Camera {
     u32 reset;
     void rotate(glm::vec2 mouse, float deltaTime);
     void move(glm::vec2 control, float deltaTime);
+    void setNewFOV(float deg);
     Camera();
 };
 #endif // !CAMERA_H

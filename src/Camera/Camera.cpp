@@ -11,9 +11,13 @@ Camera::Camera() {
     position = {0,0,5,1};
     up = {0,1,0,1};
     right = {1,0,0,1};
-    fov = 0.7f;
     rotate({0, 0}, 1.0f/20.0f);
+    setNewFOV(70);
     reset = true;
+}
+
+void Camera::setNewFOV(float deg) {
+    fov = (tanf((deg * 3.14f / 180.0f) / 2.0f));
 }
 
 glm::mat3 create_rotation_matrix(float yaw, float pitch, float roll) {

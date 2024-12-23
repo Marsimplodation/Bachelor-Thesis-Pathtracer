@@ -89,11 +89,15 @@ void ShowFPSOverlay(float deltaTime) {
     ImGui::End();
 }
 
+float defaultCameraFov = 70;
 bool showCamera(VkRenderer& renderer) {
     bool changed = false;
     ImGui::Begin("Camera");
 
-    changed |= ImGui::DragFloat("FOV", (float*)&renderer.camera.fov);
+    if(ImGui::DragFloat("FOV", &defaultCameraFov)) {
+        changed = true;
+        renderer.camera.setNewFOV(defaultCameraFov);;
+    }
     ImGui::End();
     return changed;
 }
@@ -104,11 +108,13 @@ bool showMaterials(VkRenderer& renderer) {
     enum ShaderFlags {
         Diffuse = 0x00,
         Mirror = 0x01,
+        Refraction = 0x02,
     };
     // For displaying flag names in the dropdown
     std::vector<std::string> shaderFlagNames = {
     "Diffuse",       // 0x00
     "Mirror",        // 0x01
+    "Refraction",        // 0x01
     };
     ImGui::Begin("Materials");
     
@@ -128,6 +134,8 @@ bool showMaterials(VkRenderer& renderer) {
     }
 
     changed |= ImGui::DragFloat("Emission", &material.emission);
+    changed |= ImGui::DragFloat("ior 1", &material.ior1);
+    changed |= ImGui::DragFloat("ior 2", &material.ior2);
    // Use the flag's current value to index the name
     ShaderFlags currentFlag = (ShaderFlags)material.shaderFlag;
     std::string currentFlagName = shaderFlagNames[currentFlag];
