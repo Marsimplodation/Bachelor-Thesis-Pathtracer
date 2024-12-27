@@ -2,7 +2,6 @@
 #define VKRENDERER_H
 #include "../common.h"
 #include "../UI/ImguiModule.h"
-#include "../Camera/Camera.h"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include <optional>
@@ -38,6 +37,24 @@ struct RayState {
     u32 __padding[2];
 };
 
+struct alignas(16) Camera {
+    glm::vec4 position;  // Camera position
+    glm::vec4 forward; // Camera direction (where it's looking)
+    glm::vec4 right; // Camera direction (where it's looking)
+    glm::vec4 up;        // Up vector
+    float fov;          // Field of view
+    float yaw;
+    float pitch;
+    u32 reset;
+    //shading helper - volumetric and MIS
+    u32 lightCount;
+    u32 padding[3];
+    void rotate(glm::vec2 mouse, float deltaTime);
+    void move(glm::vec2 control, float deltaTime);
+    void setNewFOV(float deg);
+    Camera();
+};
+
 struct Material {
     glm::vec4 color;
     glm::vec4 textureData; //offset, width, height, 
@@ -55,7 +72,9 @@ struct Vertex {
     u32 padding;
     bool operator==(const Vertex& other) const;
 };
-
+template<> struct std::hash<Vertex> {
+    size_t operator()(Vertex const& vertex) const;
+};
 class VkRenderer {
 public:
     void run();
@@ -137,8 +156,8 @@ public:
     VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
     VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSets[2];
-    VkDescriptorSetLayout descriptorSetLayouts[2];
+    VkDescriptorSet descriptorSets[3];
+    VkDescriptorSetLayout descriptorSetLayouts[3];
     VkRenderPass renderPass;
     ImguiModule gui;
     std::vector<RayState> waveFront;
@@ -150,6 +169,7 @@ public:
     VkBuffer textureBuffer;
     VkBuffer materialBuffer;
     VkBuffer indexBuffer;
+    VkBuffer emissiveBuffer;
     VkBuffer waveFrontBuffer;
     VkBuffer bottomLevelASBuffer, topLevelASBuffer, instanceASBuffer;
     VkDeviceMemory vertexBufferMemory;
@@ -157,12 +177,14 @@ public:
     VkDeviceMemory waveFrontBufferMemory;
     VkDeviceMemory materialBufferMemory;
     VkDeviceMemory textureBufferMemory;
+    VkDeviceMemory emissiveBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
     VkDeviceMemory bottomLevelASMemory, topLevelASMemory, instanceASMemory;
     std::vector<Vertex> vertices;
     std::vector<u32> indices;
     std::vector<Material> materials;
     std::vector<std::string> materialNames;
+    std::vector<u32> emissiveTriangles;
 
     //one giant textureAtlas with offsets and so on in the material
     std::vector<glm::vec4> textureAtlas;

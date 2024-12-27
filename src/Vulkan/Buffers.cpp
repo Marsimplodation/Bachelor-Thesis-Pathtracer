@@ -236,7 +236,7 @@ void VkRenderer::traceImage() {
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, 
         pipelineLayout, 
         0,  // Descriptor set binding point
-        2,  // Number of descriptor sets
+        3,  // Number of descriptor sets
         descriptorSets,  // The descriptor set to bind
         0,  // Dynamic offsets count (if using dynamic descriptors)
         nullptr  // Dynamic offsets (if applicable)
@@ -375,10 +375,18 @@ void VkRenderer::createGeometryBuffers() {
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &textureBuffer,
                  &textureBufferMemory, true);
-
+    
+    //allocate for each triangle to be emissive in the worst case
+    CreateBuffer(sizeof(u32) * indices.size() / 3,
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 &emissiveBuffer,
+                 &emissiveBufferMemory, true);
 
     copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
     copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
     copyDataToBuffer(materialBufferMemory, materials.data(), sizeof(Material)*materials.size());
     copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
+    copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
+    copyDataToBuffer(emissiveBufferMemory, emissiveTriangles.data(), sizeof(u32)*emissiveTriangles.size());
 }

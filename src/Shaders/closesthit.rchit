@@ -2,29 +2,8 @@
 #extension GL_EXT_ray_tracing : require
 #include "include/types.h"
 #include "include/random.h"
-layout(location = 0) rayPayloadInEXT RayPayload rayPayload;
+#include "include/layout_chit.h"
 
-layout(set = 1, binding = 0, std430) restrict readonly buffer VertexBuffer {
-    Vertex vertices[];
-};
-
-layout(set = 1, binding = 1, std430) restrict readonly buffer IndexBuffer {
-    uint indices[];
-};
-
-layout(set = 1, binding = 2, std430) restrict readonly buffer MaterialBuffer {
-    Material materials[];
-};
-layout(set = 1, binding = 3) buffer TextureBuffer {
-    vec4 pixels[];
-};
-
-layout(set = 0, binding = 6, std430)buffer WaveFrontBuffer {
-    RayState waveFront[];
-};
-layout(set = 0, binding = 4) uniform accelerationStructureEXT topLevelAS;
-
-hitAttributeEXT vec2 attribs;  // Input: barycentric coordinates
 
 //------- Helpers -------//
 

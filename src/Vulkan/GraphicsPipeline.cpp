@@ -95,7 +95,7 @@ void VkRenderer::createRaytracingPipeline() {
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 2;
+    allocInfo.descriptorSetCount = 3;
     allocInfo.pSetLayouts = descriptorSetLayouts;
 
     VkResult result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets);
@@ -106,7 +106,7 @@ void VkRenderer::createRaytracingPipeline() {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     // You will add descriptor set layouts for ray tracing resources (acceleration structures, buffers, etc.)
-    pipelineLayoutCreateInfo.setLayoutCount = 2; // Add descriptor set layouts here if needed
+    pipelineLayoutCreateInfo.setLayoutCount = 3; // Add descriptor set layouts here if needed
     pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
 
     result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);

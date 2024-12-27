@@ -2,6 +2,7 @@
 #include <vulkan/vulkan_core.h>
 
 void VkRenderer::createDescriptorLayout() {
+    //----- General Set -----//
     VkDescriptorSetLayoutBinding raygenBinding = {};
     raygenBinding.binding = 0;
     raygenBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -58,7 +59,7 @@ void VkRenderer::createDescriptorLayout() {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
     
-    //SET 1
+    //----- Geometry Set -----//
     VkDescriptorSetLayoutBinding vertexBufferBinding{};
     vertexBufferBinding.binding = 0;
     vertexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -72,38 +73,53 @@ void VkRenderer::createDescriptorLayout() {
     indexBufferBinding.descriptorCount = 1;
     indexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     indexBufferBinding.pImmutableSamplers = nullptr;
-    
-    VkDescriptorSetLayoutBinding materialBufferBinding{};
-    materialBufferBinding.binding = 2;
-    materialBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    materialBufferBinding.descriptorCount = 1;
-    materialBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
-    materialBufferBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding textureBufferBinding{};
-    textureBufferBinding.binding = 3;
-    textureBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    textureBufferBinding.descriptorCount = 1;
-    textureBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
-    textureBufferBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding, materialBufferBinding, textureBufferBinding};
+    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding};
 
     // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo_set1 = {};
     layoutCreateInfo_set1.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo_set1.bindingCount = 4;  // Number of bindings
+    layoutCreateInfo_set1.bindingCount = 2;  // Number of bindings
     layoutCreateInfo_set1.pBindings = bindings_set1;
     
     result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo_set1, nullptr, &descriptorSetLayouts[1]);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
+
+    //----- Material Set -----//
+        
+    VkDescriptorSetLayoutBinding materialBufferBinding{};
+    materialBufferBinding.binding = 0;
+    materialBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    materialBufferBinding.descriptorCount = 1;
+    materialBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    materialBufferBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding textureBufferBinding{};
+    textureBufferBinding.binding = 1;
+    textureBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    textureBufferBinding.descriptorCount = 1;
+    textureBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    textureBufferBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding bindings_set2[] = {materialBufferBinding, textureBufferBinding};
+    // Create the descriptor set layout
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo_set2 = {};
+    layoutCreateInfo_set2.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutCreateInfo_set2.bindingCount = 2;  // Number of bindings
+    layoutCreateInfo_set2.pBindings = bindings_set2;
+    
+    result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo_set2, nullptr, &descriptorSetLayouts[2]);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+
 }
 
 
 void VkRenderer::createDescriptorPool() {
-    VkDescriptorPoolSize poolSizes[5] = {};
+    VkDescriptorPoolSize poolSizes[6] = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = 4; // Change to 3 for the 3 descriptors (raygen, miss, hit)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -112,15 +128,18 @@ void VkRenderer::createDescriptorPool() {
     poolSizes[2].descriptorCount = 1; 
     poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[3].descriptorCount = 1;
-    //set 1 -- materials
+    //set 1 -- geometry
     poolSizes[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[4].descriptorCount = 4; 
+    poolSizes[4].descriptorCount = 2; 
+    //set 2 -- materials
+    poolSizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[5].descriptorCount = 2; 
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 5;
+    poolInfo.poolSizeCount = 6;
     poolInfo.pPoolSizes = poolSizes;
-    poolInfo.maxSets = 2;  // Only need 1 descriptor set (if you're allocating 1 per frame)
+    poolInfo.maxSets = 3;  // Only need 1 descriptor set (if you're allocating 1 per frame)
 
     VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
     checkIfVkResultIsCorrect(result, "Failed to create descriptor pool");
@@ -203,8 +222,8 @@ void VkRenderer::updateDescriptorSet() {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &waveFrontBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &materialBufferInfo, nullptr },
-        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &textureBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[2], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &materialBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[2], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &textureBufferInfo, nullptr },
         
     };
 

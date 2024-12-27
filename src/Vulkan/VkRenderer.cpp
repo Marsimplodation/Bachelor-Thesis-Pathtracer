@@ -195,6 +195,7 @@ void VkRenderer::cleanup() {
     vkFreeMemory(device, topLevelASMemory, nullptr);
     vkFreeMemory(device, instanceASMemory, nullptr);
     vkFreeMemory(device, bottomLevelASMemory, nullptr);
+    vkFreeMemory(device, emissiveBufferMemory, nullptr);
 
     vkDestroyBuffer(device, hitBuffer, nullptr);
     vkDestroyBuffer(device, missBuffer, nullptr);
@@ -202,6 +203,7 @@ void VkRenderer::cleanup() {
     vkDestroyBuffer(device, vertexBuffer, nullptr);
     vkDestroyBuffer(device, cameraBuffer, nullptr);
     vkDestroyBuffer(device, indexBuffer, nullptr);
+    vkDestroyBuffer(device, emissiveBuffer, nullptr);
     vkDestroyBuffer(device, topLevelASBuffer, nullptr);
     vkDestroyBuffer(device, bottomLevelASBuffer, nullptr);
     vkDestroyBuffer(device, instanceASBuffer, nullptr);
@@ -214,6 +216,7 @@ void VkRenderer::cleanup() {
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[0], nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[1], nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[2], nullptr);
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 
