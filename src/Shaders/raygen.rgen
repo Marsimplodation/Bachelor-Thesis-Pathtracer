@@ -48,6 +48,7 @@ void main() {
     
     
     rayPayload.idx = idx;
+    rayPayload.isShadowRay = false;
     traceRayEXT(
         topLevelAS, 
         gl_RayFlagsOpaqueEXT, 
@@ -58,7 +59,7 @@ void main() {
         origin, 
         0.0, 
         direction, 
-        10000.0, 
+        INFINITY, 
         0 // location of the payload
     );
 

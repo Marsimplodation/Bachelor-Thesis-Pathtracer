@@ -40,14 +40,14 @@ void VkRenderer::createDescriptorLayout() {
     asBinding.binding = 4;
     asBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
     asBinding.descriptorCount = 1;
-    asBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    asBinding.stageFlags = VK_SHADER_STAGE_ALL;
     asBinding.pImmutableSamplers = nullptr;
     
     VkDescriptorSetLayoutBinding cameraBinding = {};
     cameraBinding.binding = 5;
     cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     cameraBinding.descriptorCount = 1;
-    cameraBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;  // This buffer is used by the miss shader.
+    cameraBinding.stageFlags = VK_SHADER_STAGE_ALL;  // This buffer is used by the miss shader.
     VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding, cameraBinding, waveFrontBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
@@ -64,21 +64,21 @@ void VkRenderer::createDescriptorLayout() {
     vertexBufferBinding.binding = 0;
     vertexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     vertexBufferBinding.descriptorCount = 1;
-    vertexBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    vertexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     vertexBufferBinding.pImmutableSamplers = nullptr;
     
     VkDescriptorSetLayoutBinding indexBufferBinding{};
     indexBufferBinding.binding = 1;
     indexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     indexBufferBinding.descriptorCount = 1;
-    indexBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    indexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     indexBufferBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding emissiveBufferBinding{};
     emissiveBufferBinding.binding = 2;
     emissiveBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     emissiveBufferBinding.descriptorCount = 1;
-    emissiveBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    emissiveBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     emissiveBufferBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding, emissiveBufferBinding};
@@ -100,14 +100,14 @@ void VkRenderer::createDescriptorLayout() {
     materialBufferBinding.binding = 0;
     materialBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     materialBufferBinding.descriptorCount = 1;
-    materialBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    materialBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     materialBufferBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding textureBufferBinding{};
     textureBufferBinding.binding = 1;
     textureBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     textureBufferBinding.descriptorCount = 1;
-    textureBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    textureBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     textureBufferBinding.pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutBinding bindings_set2[] = {materialBufferBinding, textureBufferBinding};
     // Create the descriptor set layout

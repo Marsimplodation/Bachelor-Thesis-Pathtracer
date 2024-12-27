@@ -17,6 +17,7 @@ struct RayState {
 struct RayPayload {
     float hitDistance;
     int idx;
+    bool isShadowRay;
 };
 
 struct Vertex {
