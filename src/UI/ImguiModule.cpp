@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iterator>
 #include "../Vulkan/VkRenderer.h"
+#include "glm/detail/qualifier.hpp"
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -98,6 +99,8 @@ bool showCamera(VkRenderer& renderer) {
         changed = true;
         renderer.camera.setNewFOV(defaultCameraFov);;
     }
+    changed |= ImGui::Checkbox("NEE", (bool*)&renderer.camera.nee);
+    changed |= ImGui::DragInt("ET", (int*)&renderer.camera.lightCount);
     ImGui::End();
     return changed;
 }
@@ -133,6 +136,7 @@ bool showMaterials(VkRenderer& renderer) {
         changed = true;
     }
 
+    float oldEmission = material.emission;
     changed |= ImGui::DragFloat("Emission", &material.emission);
     changed |= ImGui::DragFloat("ior 1", &material.ior1);
     changed |= ImGui::DragFloat("ior 2", &material.ior2);
@@ -163,6 +167,30 @@ bool showMaterials(VkRenderer& renderer) {
         i++;
     }
     ImGui::End();
+
+    //push new emissive triangles
+    if(oldEmission == 0.0f && oldEmission != material.emission) {
+        for (int i = 0; i < renderer.indices.size(); i+=3) {
+            Vertex & v0 = renderer.vertices[renderer.indices[i]];
+            if(v0.materialIdx != selectedMaterial) continue;
+            renderer.emissiveTriangles.push_back(i);
+        }
+        if(renderer.emissiveTriangles.size() > 0)
+        renderer.copyDataToBuffer(renderer.emissiveBufferMemory, renderer.emissiveTriangles.data(), sizeof(u32)*renderer.emissiveTriangles.size());
+    }
+    //remove emissive triangles
+    if(material.emission == 0.0f && oldEmission != material.emission) {
+        renderer.emissiveTriangles.clear();
+        for (int i = 0; i < renderer.indices.size(); i+=3) {
+            Vertex & v0 = renderer.vertices[renderer.indices[i]];
+            if(renderer.materials[v0.materialIdx].emission == 0.0f) continue;
+            renderer.emissiveTriangles.push_back(i);
+        }
+        
+        if(renderer.emissiveTriangles.size() > 0)
+        renderer.copyDataToBuffer(renderer.emissiveBufferMemory, renderer.emissiveTriangles.data(), sizeof(u32)*renderer.emissiveTriangles.size());
+
+    }
 
     if(changed){
         //repush materials + rerender

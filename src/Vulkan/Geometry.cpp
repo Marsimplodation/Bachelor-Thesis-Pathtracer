@@ -146,7 +146,7 @@ void VkRenderer::loadGeometry() {
     for (int i = 0; i < indices.size(); i+=3) {
         Vertex & v0 = vertices[indices[i]];
         if(materials[v0.materialIdx].emission > 0.0f) {
-            emissiveTriangles.push_back(i/3);
+            emissiveTriangles.push_back(i);
         }
     }
     printf("vertices: %d deduplicated: %zu\n", count, vertices.size());

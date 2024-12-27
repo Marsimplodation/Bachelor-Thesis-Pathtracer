@@ -33,6 +33,7 @@ Camera::Camera() {
     setNewFOV(70);
     reset = true;
     lightCount = 0;
+    nee = true;
 }
 
 void Camera::setNewFOV(float deg) {

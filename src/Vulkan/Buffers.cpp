@@ -370,7 +370,8 @@ void VkRenderer::createGeometryBuffers() {
                  &materialBuffer,
                  &materialBufferMemory, true);
 
-     CreateBuffer(sizeof(glm::vec4) * textureAtlas.size(),
+    u32 texSize = textureAtlas.size() == 0? 1 : textureAtlas.size();
+     CreateBuffer(sizeof(glm::vec4) * texSize,
                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &textureBuffer,
@@ -386,7 +387,10 @@ void VkRenderer::createGeometryBuffers() {
     copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
     copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
     copyDataToBuffer(materialBufferMemory, materials.data(), sizeof(Material)*materials.size());
+
+    if(textureAtlas.size() > 0)
     copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
-    copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
+    
+    if(emissiveTriangles.size() > 0)
     copyDataToBuffer(emissiveBufferMemory, emissiveTriangles.data(), sizeof(u32)*emissiveTriangles.size());
 }

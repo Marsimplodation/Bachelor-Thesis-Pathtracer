@@ -38,6 +38,94 @@ vec4 getMaterialColor(uint materialIdx, vec2 uv) {
 
 }
 
+uint sampleEmissiveIndex() {
+    float xi = fastRandom(waveFront[rayPayload.idx].randomState);
+    float size = float(camera.emissiveTriangleCount);
+    uint index = uint(floor(xi * size));
+    return emissive_trianles[index];
+}
+
+float surfaceAreTriangle(uint index){
+    uint index0 = indices[index + 0];
+    uint index1 = indices[index + 1];
+    uint index2 = indices[index + 2];
+
+    // Fetch vertices from your vertex buffer (similarly as discussed earlier)
+    Vertex v0 = vertices[index0];
+    Vertex v1 = vertices[index1];
+    Vertex v2 = vertices[index2];
+    // Calculate edge vectors
+    vec3 edge1 = v1.position.xyz - v0.position.xyz;
+    vec3 edge2 = v2.position.xyz - v0.position.xyz;
+
+    // Cross product of the two edge vectors
+    vec3 crossProduct = cross(edge1, edge2);
+
+    // Surface area of the triangle
+    float area = length(crossProduct) * 0.5;
+
+    return area;
+}
+
+void NEE(vec3 origin, vec3 normal) {
+    uint index = sampleEmissiveIndex();
+    // Fetch indices for the triangle
+    uint index0 = indices[index + 0];
+    uint index1 = indices[index + 1];
+    uint index2 = indices[index + 2];
+
+    // Fetch vertices from your vertex buffer (similarly as discussed earlier)
+    Vertex v0 = vertices[index0];
+    Vertex v1 = vertices[index1];
+    Vertex v2 = vertices[index2];
+    float xi1 = fastRandom(waveFront[rayPayload.idx].randomState);
+    float xi2 = fastRandom(waveFront[rayPayload.idx].randomState);
+    // Ensure xi1 + xi2 <= 1 by sorting and scaling
+    if (xi1 + xi2 > 1.0f) {
+        xi1 = 1.0f - xi1;
+        xi2 = 1.0f - xi2;
+    }
+    float xi3 = 1 - xi1 - xi2;
+    vec3 point = (xi3 * v0.position + xi1 * v1.position + xi2 * v2.position).xyz;
+    vec3 lightNormal = (v1.normal * xi3 + v1.normal * xi1 + v2.normal * xi2).xyz;
+    lightNormal = normalize(lightNormal);
+
+    vec2 uv = v0.uv * xi3 + v1.uv * xi1 + v2.uv * xi2;
+    vec3 direction = point - origin;
+    float length = length(direction) - EPS;
+    direction = normalize(direction);
+    
+    rayPayload.hitDistance = gl_HitTEXT;
+    traceRayEXT(
+        topLevelAS, 
+        gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 
+        0xFF, 
+        0,    // SBT record offset
+        1,    // SBT record stride
+        0,    // Miss shader index
+        origin, 
+        0.0, 
+        direction, 
+        length, 
+        0 // location of the payload
+    );
+    float distance = rayPayload.hitDistance;
+    waveFront[rayPayload.idx].terminated = false;
+    if(distance != 0.0) {
+        return;
+    }
+    rayPayload.hitDistance = gl_HitTEXT;
+    float inv_square_distance = min(1.0, (1.0/(length * length)));
+    float cosSurface = dot(normal, direction);
+    float cosLight = -dot(lightNormal, direction); 
+    if(cosSurface < 0.0) return;
+    if(cosLight < 0.0) return;
+    Material light = materials[v0.materialID];
+    vec4 color = getMaterialColor(v0.materialID, uv); 
+    float attenuation = 0.5 * cosSurface  * cosLight * inv_square_distance *  surfaceAreTriangle(index) * camera.emissiveTriangleCount;
+    waveFront[rayPayload.idx].light += light.emission * color * attenuation * waveFront[rayPayload.idx].throughPut;
+}
+
 //------- Shaders -------//
 
 void mirror(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv, float t) {
@@ -94,6 +182,10 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
     hitPosition += EPS * normal.xyz;
     waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
+    
+    if(camera.nee && camera.emissiveTriangleCount != 0) {
+        NEE(hitPosition, normal.xyz);
+    }
 
     //next bounce
     vec3 arbitrary = abs(normal.z) < 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
@@ -132,8 +224,10 @@ void main() {
     vec4 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
     vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 
+    float weight = 1.0; 
     if(m.shaderFlag == 0x00) {
         lambert(origin, direction,normal, v0.materialID, uv, t);
+        if(camera.nee)weight = 0.5;
     }
     if(m.shaderFlag == 0x01) {
         mirror(origin, direction,normal, v0.materialID, uv, t);
@@ -142,6 +236,6 @@ void main() {
         refraction(origin, direction,normal, v0.materialID, uv, t);
     }
 
-    waveFront[rayPayload.idx].light.rgb += m.emission * waveFront[rayPayload.idx].throughPut.rgb;
+    waveFront[rayPayload.idx].light.rgb += m.emission * waveFront[rayPayload.idx].throughPut.rgb * weight;
     
 }

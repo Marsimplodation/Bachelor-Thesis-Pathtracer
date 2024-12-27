@@ -48,7 +48,8 @@ struct alignas(16) Camera {
     u32 reset;
     //shading helper - volumetric and MIS
     u32 lightCount;
-    u32 padding[3];
+    u32 nee;
+    u32 padding[2];
     void rotate(glm::vec2 mouse, float deltaTime);
     void move(glm::vec2 control, float deltaTime);
     void setNewFOV(float deg);

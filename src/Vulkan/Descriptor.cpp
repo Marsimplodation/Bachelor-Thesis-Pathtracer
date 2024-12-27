@@ -40,14 +40,14 @@ void VkRenderer::createDescriptorLayout() {
     asBinding.binding = 4;
     asBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
     asBinding.descriptorCount = 1;
-    asBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    asBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     asBinding.pImmutableSamplers = nullptr;
     
     VkDescriptorSetLayoutBinding cameraBinding = {};
     cameraBinding.binding = 5;
     cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     cameraBinding.descriptorCount = 1;
-    cameraBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;  // This buffer is used by the miss shader.
+    cameraBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;  // This buffer is used by the miss shader.
     VkDescriptorSetLayoutBinding bindings[] = {raygenBinding, missBinding, hitBinding, storageImageBinding, asBinding, cameraBinding, waveFrontBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
@@ -64,23 +64,29 @@ void VkRenderer::createDescriptorLayout() {
     vertexBufferBinding.binding = 0;
     vertexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     vertexBufferBinding.descriptorCount = 1;
-    vertexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    vertexBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     vertexBufferBinding.pImmutableSamplers = nullptr;
     
     VkDescriptorSetLayoutBinding indexBufferBinding{};
     indexBufferBinding.binding = 1;
     indexBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     indexBufferBinding.descriptorCount = 1;
-    indexBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    indexBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     indexBufferBinding.pImmutableSamplers = nullptr;
 
+    VkDescriptorSetLayoutBinding emissiveBufferBinding{};
+    emissiveBufferBinding.binding = 2;
+    emissiveBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    emissiveBufferBinding.descriptorCount = 1;
+    emissiveBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    emissiveBufferBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding};
+    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding, emissiveBufferBinding};
 
     // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo_set1 = {};
     layoutCreateInfo_set1.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo_set1.bindingCount = 2;  // Number of bindings
+    layoutCreateInfo_set1.bindingCount = 3;  // Number of bindings
     layoutCreateInfo_set1.pBindings = bindings_set1;
     
     result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo_set1, nullptr, &descriptorSetLayouts[1]);
@@ -94,14 +100,14 @@ void VkRenderer::createDescriptorLayout() {
     materialBufferBinding.binding = 0;
     materialBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     materialBufferBinding.descriptorCount = 1;
-    materialBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    materialBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     materialBufferBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding textureBufferBinding{};
     textureBufferBinding.binding = 1;
     textureBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     textureBufferBinding.descriptorCount = 1;
-    textureBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    textureBufferBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     textureBufferBinding.pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutBinding bindings_set2[] = {materialBufferBinding, textureBufferBinding};
     // Create the descriptor set layout
@@ -130,7 +136,7 @@ void VkRenderer::createDescriptorPool() {
     poolSizes[3].descriptorCount = 1;
     //set 1 -- geometry
     poolSizes[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[4].descriptorCount = 2; 
+    poolSizes[4].descriptorCount = 3; 
     //set 2 -- materials
     poolSizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[5].descriptorCount = 2; 
@@ -175,7 +181,10 @@ void VkRenderer::updateDescriptorSet() {
     indexBufferInfo.buffer = indexBuffer;
     indexBufferInfo.offset = 0;
     indexBufferInfo.range = VK_WHOLE_SIZE;
-    
+    VkDescriptorBufferInfo emissiveBufferInfo = {};
+    emissiveBufferInfo.buffer = emissiveBuffer;
+    emissiveBufferInfo.offset = 0;
+    emissiveBufferInfo.range = VK_WHOLE_SIZE;
     VkDescriptorBufferInfo materialBufferInfo = {};
     materialBufferInfo.buffer = materialBuffer;
     materialBufferInfo.offset = 0;
@@ -222,10 +231,11 @@ void VkRenderer::updateDescriptorSet() {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &waveFrontBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &emissiveBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[2], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &materialBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[2], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &textureBufferInfo, nullptr },
         
     };
 
-    vkUpdateDescriptorSets(device, 11, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 12, writeDescriptorSets, 0, nullptr);
 }

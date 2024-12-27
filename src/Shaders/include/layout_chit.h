@@ -11,6 +11,10 @@ layout(set = 1, binding = 1, std430) restrict readonly buffer IndexBuffer {
     uint indices[];
 };
 
+layout(set = 1, binding = 2, std430) restrict readonly buffer EmissiveBuffer {
+    uint emissive_trianles[];
+};
+
 layout(set = 0, binding = 6, std430)buffer WaveFrontBuffer {
     RayState waveFront[];
 };
@@ -35,6 +39,7 @@ layout(set = 0, binding = 5) uniform CameraBlock {
     float pitch;
     bool reset;
     uint emissiveTriangleCount;
-    uint padding[3];
+    bool nee; 
+    uint padding[2];
 } camera;
 
