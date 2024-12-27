@@ -15,6 +15,8 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
 
 
 vec4 sampleTexture(uint materialIdx, vec2 uv) {
+
+    uv = uv - floor(uv);
     Material mat = materials[materialIdx];
     
     // Compute the texel coordinate within the texture
@@ -45,7 +47,7 @@ uint sampleEmissiveIndex() {
     return emissive_trianles[index];
 }
 
-float surfaceAreTriangle(uint index){
+float surfaceAreaTriangle(uint index){
     uint index0 = indices[index + 0];
     uint index1 = indices[index + 1];
     uint index2 = indices[index + 2];
@@ -122,7 +124,7 @@ void NEE(vec3 origin, vec3 normal) {
     if(cosLight < 0.0) return;
     Material light = materials[v0.materialID];
     vec4 color = getMaterialColor(v0.materialID, uv); 
-    float attenuation = 0.5 * cosSurface  * cosLight * inv_square_distance *  surfaceAreTriangle(index) * camera.emissiveTriangleCount;
+    float attenuation = 0.5 * cosSurface  * cosLight * inv_square_distance *  surfaceAreaTriangle(index) * camera.emissiveTriangleCount;
     waveFront[rayPayload.idx].light += light.emission * color * attenuation * waveFront[rayPayload.idx].throughPut;
 }
 
