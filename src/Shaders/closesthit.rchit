@@ -15,6 +15,9 @@ layout(set = 1, binding = 1, std430) restrict readonly buffer IndexBuffer {
 layout(set = 1, binding = 2, std430) restrict readonly buffer MaterialBuffer {
     Material materials[];
 };
+layout(set = 1, binding = 3) buffer TextureBuffer {
+    vec4 pixels[];
+};
 
 layout(set = 0, binding = 6, std430)buffer WaveFrontBuffer {
     RayState waveFront[];
@@ -31,18 +34,45 @@ float calculateFresnelTerm(float dot, float n1, float n2) {
     return r0 + (1 - r0) * pow(1 - dot, 5);
 }
 
+
+vec4 sampleTexture(uint materialIdx, vec2 uv) {
+    Material mat = materials[materialIdx];
+    
+    // Compute the texel coordinate within the texture
+    uint offset = uint(mat.textureData[0]);
+    uint width = uint(mat.textureData[1]);
+    uint height = uint(mat.textureData[2]);
+    vec2 texCoord = uv * vec2(width, height);
+    uint x = uint(texCoord.x);
+    uint y = uint(texCoord.y);
+
+    // Compute the 1D index into the pixels array
+    uint texelIndex = offset + y * width + x;
+
+    return pixels[texelIndex];
+}
+
+vec4 getMaterialColor(uint materialIdx, vec2 uv) {
+    Material mat = materials[materialIdx];
+    if(mat.textureData[0] == -1) return mat.color;
+    return sampleTexture(materialIdx, uv);
+
+}
+
 //------- Shaders -------//
 
-void mirror(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
+void mirror(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv, float t) {
+    Material mat = materials[materialIdx];
     vec3 dir = normalize(direction - 2*dot(direction, normal.xyz)*normal.xyz);
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
 
     waveFront[rayPayload.idx].origin.xyz = hitPosition;
     waveFront[rayPayload.idx].direction.xyz = dir;
-    waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
+    waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
 }
 
-void refraction(vec3 origin, vec3 direction, vec4 normal, Material material, float t) {
+void refraction(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv, float t) {
+    Material material = materials[materialIdx];
     vec3 hitPosition = origin + (t) * direction; // Compute world-space hit position
     float n1 = material.ior1;
     float n2 = material.ior2;
@@ -78,13 +108,13 @@ void refraction(vec3 origin, vec3 direction, vec4 normal, Material material, flo
 
     waveFront[rayPayload.idx].origin.xyz = hitPosition + refractDirection * EPS;
     waveFront[rayPayload.idx].direction.xyz = refractDirection;
-    waveFront[rayPayload.idx].throughPut.rgb *= material.color.rgb;
+    waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
 }
 
-void lambert(vec3 origin, vec3 direction, vec4 normal, vec4 color, float t) {
+void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv, float t) {
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
     hitPosition += EPS * normal.xyz;
-    waveFront[rayPayload.idx].throughPut.rgb *= color.rgb;
+    waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
 
     //next bounce
     vec3 arbitrary = abs(normal.z) < 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
@@ -121,17 +151,18 @@ void main() {
     Material m = materials[v1.materialID];
     vec4 color = m.color; 
     vec4 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
+    vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 
     if(m.shaderFlag == 0x00) {
-        lambert(origin, direction,normal, color, t);
+        lambert(origin, direction,normal, v0.materialID, uv, t);
     }
     if(m.shaderFlag == 0x01) {
-        mirror(origin, direction, normal, color, t);
+        mirror(origin, direction,normal, v0.materialID, uv, t);
     }
     if(m.shaderFlag == 0x02) {
-        refraction(origin, direction, normal, m, t);
+        refraction(origin, direction,normal, v0.materialID, uv, t);
     }
 
     waveFront[rayPayload.idx].light.rgb += m.emission * waveFront[rayPayload.idx].throughPut.rgb;
-
+    
 }

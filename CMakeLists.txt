@@ -69,6 +69,7 @@ file(GLOB_RECURSE SOURCES
 include_directories(
     ${GLFW_INCLUDE_DIRS}
     ${imgui_SOURCE_DIR}
+    "includes/"
 )
 
 # Add executable

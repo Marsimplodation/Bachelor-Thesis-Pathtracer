@@ -15,7 +15,7 @@ void VkRenderer::initWindow() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    window = glfwCreateWindow(2560, 1440, "Vulkan window", nullptr, nullptr);
+    window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
 }
 
 void VkRenderer::initVulkan() {
@@ -188,6 +188,9 @@ void VkRenderer::cleanup() {
     vkFreeMemory(device, raygenMemory, nullptr);
     vkFreeMemory(device, missMemory, nullptr);
     vkFreeMemory(device, cameraBufferMemory, nullptr);
+    vkFreeMemory(device, materialBufferMemory, nullptr);
+    vkFreeMemory(device, textureBufferMemory, nullptr);
+    vkFreeMemory(device, waveFrontBufferMemory, nullptr);
     vkFreeMemory(device, hitMemory, nullptr);
     vkFreeMemory(device, topLevelASMemory, nullptr);
     vkFreeMemory(device, instanceASMemory, nullptr);
@@ -202,6 +205,9 @@ void VkRenderer::cleanup() {
     vkDestroyBuffer(device, topLevelASBuffer, nullptr);
     vkDestroyBuffer(device, bottomLevelASBuffer, nullptr);
     vkDestroyBuffer(device, instanceASBuffer, nullptr);
+    vkDestroyBuffer(device, materialBuffer, nullptr);
+    vkDestroyBuffer(device, textureBuffer, nullptr);
+    vkDestroyBuffer(device, waveFrontBuffer, nullptr);
 
     vkDestroyRenderPass(device, renderPass, nullptr);
 

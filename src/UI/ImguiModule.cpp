@@ -136,6 +136,7 @@ bool showMaterials(VkRenderer& renderer) {
     changed |= ImGui::DragFloat("Emission", &material.emission);
     changed |= ImGui::DragFloat("ior 1", &material.ior1);
     changed |= ImGui::DragFloat("ior 2", &material.ior2);
+    changed |= ImGui::DragFloat4("tex data", (float*)&material.textureData);
    // Use the flag's current value to index the name
     ShaderFlags currentFlag = (ShaderFlags)material.shaderFlag;
     std::string currentFlagName = shaderFlagNames[currentFlag];

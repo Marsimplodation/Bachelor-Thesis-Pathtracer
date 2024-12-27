@@ -1,4 +1,5 @@
 #include "VkRenderer.h"
+#include "glm/ext/vector_float4.hpp"
 #include <cstdio>
 #include <vulkan/vulkan_core.h>
 
@@ -369,8 +370,15 @@ void VkRenderer::createGeometryBuffers() {
                  &materialBuffer,
                  &materialBufferMemory, true);
 
+     CreateBuffer(sizeof(glm::vec4) * textureAtlas.size(),
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 &textureBuffer,
+                 &textureBufferMemory, true);
+
 
     copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
     copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
     copyDataToBuffer(materialBufferMemory, materials.data(), sizeof(Material)*materials.size());
+    copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
 }

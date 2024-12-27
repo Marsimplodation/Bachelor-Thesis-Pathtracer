@@ -22,12 +22,14 @@ struct RayPayload {
 struct Vertex {
     vec4 position;
     vec4 normal;
+    vec2 uv;
     uint materialID;
-    uint padding[3];
+    uint padding[1];
 };
 
 struct Material {
     vec4 color;
+    vec4 textureData;
     float emission;
     float ior1;
     float ior2;

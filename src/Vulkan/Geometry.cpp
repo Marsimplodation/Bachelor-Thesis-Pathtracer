@@ -1,10 +1,16 @@
 #include "VkRenderer.h"
+#include "glm/detail/qualifier.hpp"
 #include "glm/ext/vector_float3.hpp"
+#include "glm/ext/vector_float4.hpp"
 #include <functional>
 #include <string>
 #include <tiny_obj_loader.h>
 #include <unordered_map>
-const std::string MODEL_PATH = "scenes/test.obj";
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+const std::string MODEL_PATH = "scenes/test3.obj";
 const std::string BASE_DIR = "scenes/";
 #define GAMMA 2.2f
 
@@ -53,6 +59,41 @@ namespace std {
     }};
 }
 
+//returns texture data as
+//0 : offset
+//1 : width
+//2 : height
+//3 : 
+glm::vec4 loadTexture(std::vector<glm::vec4> & textureAtlas, std::string path) {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    u32 offset = textureAtlas.size();
+    if(!pixels) {
+        printf("could not load: %s\n", path.c_str());
+        return glm::vec4(-1,0,0,0);
+    }
+    // Clear any existing data in the texture
+
+    // Copy pixel data to the texture
+    for (int y = 0; y < texHeight; ++y) {
+        for (int x = 0; x < texWidth; ++x) {
+            int pixelIndex = (y * texWidth + x) * 4; // RGBA channels
+            float r = pixels[pixelIndex] / 255.0f;
+            float g = pixels[pixelIndex + 1] / 255.0f;
+            float b = pixels[pixelIndex + 2] / 255.0f;
+            float a = pixels[pixelIndex + 3] / 255.0f;
+            r = std::powf(r, GAMMA);
+            g  = std::powf(g, GAMMA);
+            b = std::powf(b, GAMMA);
+            textureAtlas.push_back({ r, g, b, a});
+        }
+    }
+    
+    // Free stb_image allocated memory
+    stbi_image_free(pixels);
+    printf("loaded texture %s\n", path.c_str());
+    return glm::vec4(offset, texWidth, texHeight, 0.0);
+}
 
 void VkRenderer::loadGeometry() {    
     tinyobj::attrib_t attrib;
@@ -62,9 +103,11 @@ void VkRenderer::loadGeometry() {
     
     vertices = std::vector<Vertex>();
     indices = std::vector<u32>();
+    textureAtlas = std::vector<glm::vec4>();
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    std::string base_dir = MODEL_PATH.substr(0, MODEL_PATH.find_last_of('/'));
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &obj_materials, &warn, &err, MODEL_PATH.c_str(), BASE_DIR.c_str())) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &obj_materials, &warn, &err, MODEL_PATH.c_str(), base_dir.c_str())) {
         throw std::runtime_error(warn + err);
     }
 
@@ -92,6 +135,15 @@ void VkRenderer::loadGeometry() {
             }
             m.emission = i;
         }
+
+        //load texture
+        //
+        bool isAbsolute = material.diffuse_texname.front() == '/';
+        std::string texture = isAbsolute? material.diffuse_texname : base_dir + "/" + material.diffuse_texname;
+    
+        if(!material.diffuse_texname.empty()) {
+            m.textureData = loadTexture(textureAtlas, texture.c_str());
+        } else m.textureData[0] = -1;
         materials.push_back(m);
         materialNames.push_back(material.name);
     }
@@ -117,6 +169,11 @@ void VkRenderer::loadGeometry() {
                 attrib.normals[3 * index.normal_index + 1],
                 attrib.normals[3 * index.normal_index + 2],
                 1.0f
+            };
+
+            vertex.uv = glm::vec2{
+                attrib.texcoords[2 * index.texcoord_index + 0],
+                attrib.texcoords[2 * index.texcoord_index + 1],
             };
 
             if (uniqueVertices.count(vertex) == 0) {

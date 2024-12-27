@@ -40,18 +40,20 @@ struct RayState {
 
 struct Material {
     glm::vec4 color;
+    glm::vec4 textureData; //offset, width, height, 
     float emission;
-    float ior1;
-    float ior2;
+    float ior1 = 1.0f;
+    float ior2 = 1.5f;
     u32 shaderFlag;
 };
 
 struct Vertex {
-     glm::vec4 position;
-     glm::vec4 normal;
-     u32 materialIdx;
-     u32 padding[3];
-     bool operator==(const Vertex& other) const;
+    glm::vec4 position;
+    glm::vec4 normal;
+    glm::vec2 uv;
+    u32 materialIdx;
+    u32 padding;
+    bool operator==(const Vertex& other) const;
 };
 
 class VkRenderer {
@@ -145,6 +147,7 @@ public:
     //buffers
     VkBuffer raygenBuffer, missBuffer, hitBuffer;
     VkBuffer vertexBuffer;
+    VkBuffer textureBuffer;
     VkBuffer materialBuffer;
     VkBuffer indexBuffer;
     VkBuffer waveFrontBuffer;
@@ -153,12 +156,16 @@ public:
     VkDeviceMemory indexBufferMemory;
     VkDeviceMemory waveFrontBufferMemory;
     VkDeviceMemory materialBufferMemory;
+    VkDeviceMemory textureBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
     VkDeviceMemory bottomLevelASMemory, topLevelASMemory, instanceASMemory;
     std::vector<Vertex> vertices;
     std::vector<u32> indices;
     std::vector<Material> materials;
     std::vector<std::string> materialNames;
+
+    //one giant textureAtlas with offsets and so on in the material
+    std::vector<glm::vec4> textureAtlas;
 
     //Shaders
     VkShaderModule rgenShaderModule, closesthitShaderModule, missShaderModule;
