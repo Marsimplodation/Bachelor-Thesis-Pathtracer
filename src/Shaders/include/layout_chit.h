@@ -40,6 +40,7 @@ layout(set = 0, binding = 5) uniform CameraBlock {
     bool reset;
     uint emissiveTriangleCount;
     bool nee; 
-    uint padding[2];
+    float fogDensity;
+    uint padding[1];
 } camera;
 

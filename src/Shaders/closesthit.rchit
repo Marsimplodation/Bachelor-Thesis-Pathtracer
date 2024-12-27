@@ -69,7 +69,7 @@ float surfaceAreaTriangle(uint index){
     return area;
 }
 
-void NEE(vec3 origin, vec3 normal) {
+void NEE(vec3 origin, vec3 normal, bool isVolume) {
     uint index = sampleEmissiveIndex();
     // Fetch indices for the triangle
     uint index0 = indices[index + 0];
@@ -89,7 +89,7 @@ void NEE(vec3 origin, vec3 normal) {
     }
     float xi3 = 1 - xi1 - xi2;
     vec3 point = (xi3 * v0.position + xi1 * v1.position + xi2 * v2.position).xyz;
-    vec3 lightNormal = (v1.normal * xi3 + v1.normal * xi1 + v2.normal * xi2).xyz;
+    vec3 lightNormal = (v0.normal * xi3 + v1.normal * xi1 + v2.normal * xi2).xyz;
     lightNormal = normalize(lightNormal);
 
     vec2 uv = v0.uv * xi3 + v1.uv * xi1 + v2.uv * xi2;
@@ -119,12 +119,17 @@ void NEE(vec3 origin, vec3 normal) {
     rayPayload.hitDistance = gl_HitTEXT;
     float inv_square_distance = min(1.0, (1.0/(length * length)));
     float cosSurface = dot(normal, direction);
+    if(isVolume) cosSurface = 1.0;
     float cosLight = -dot(lightNormal, direction); 
     if(cosSurface < 0.0) return;
     if(cosLight < 0.0) return;
     Material light = materials[v0.materialID];
     vec4 color = getMaterialColor(v0.materialID, uv); 
-    float attenuation = 0.5 * cosSurface  * cosLight * inv_square_distance *  surfaceAreaTriangle(index) * camera.emissiveTriangleCount;
+    vec4 attenuation = vec4(0.5) * cosSurface  * cosLight * inv_square_distance *  surfaceAreaTriangle(index) * camera.emissiveTriangleCount;
+    if(isVolume) {
+        float density = camera.fogDensity; 
+        attenuation.rgb *= exp(-length * density);
+    }
     waveFront[rayPayload.idx].light += light.emission * color * attenuation * waveFront[rayPayload.idx].throughPut;
 }
 
@@ -186,7 +191,7 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv
     waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
     
     if(camera.nee && camera.emissiveTriangleCount != 0) {
-        NEE(hitPosition, normal.xyz);
+        NEE(hitPosition, normal.xyz, false);
     }
 
     //next bounce
@@ -203,6 +208,26 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv
 
 
 //---- entry point -----//
+
+bool hitVolume(vec3 origin, vec3 direction, vec4 normal) {
+    float density = camera.fogDensity; 
+    float xi1 = fastRandom(waveFront[rayPayload.idx].randomState);
+    float xi2 = fastRandom(waveFront[rayPayload.idx].randomState);
+    
+    float t = -log(1-xi1)/density;
+    if(t > gl_HitTEXT) return false;
+    
+    vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
+    //do the volume Shading
+    waveFront[rayPayload.idx].throughPut.rgb *= exp(-t * density);
+    
+    if(camera.emissiveTriangleCount != 0) {
+        NEE(hitPosition, normal.xyz, true);
+    }
+    waveFront[rayPayload.idx].terminated = true;
+    return true;
+}
+
 
 void main() {
     const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
@@ -226,6 +251,7 @@ void main() {
     vec4 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
     vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 
+    if(hitVolume(origin, direction, normal)) return;
     float weight = 1.0; 
     if(m.shaderFlag == 0x00) {
         lambert(origin, direction,normal, v0.materialID, uv, t);

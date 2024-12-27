@@ -100,7 +100,7 @@ bool showCamera(VkRenderer& renderer) {
         renderer.camera.setNewFOV(defaultCameraFov);;
     }
     changed |= ImGui::Checkbox("NEE", (bool*)&renderer.camera.nee);
-    changed |= ImGui::DragInt("ET", (int*)&renderer.camera.lightCount);
+    changed |= ImGui::DragFloat("Fog Density", &renderer.camera.fogDensity);
     ImGui::End();
     return changed;
 }
