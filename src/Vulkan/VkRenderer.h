@@ -50,7 +50,7 @@ struct alignas(16) Camera {
     u32 lightCount;
     u32 nee;
     float fogDensity;
-    u32 padding[1];
+    float fogScale;
     void rotate(glm::vec2 mouse, float deltaTime);
     void move(glm::vec2 control, float deltaTime);
     void setNewFOV(float deg);

@@ -99,8 +99,9 @@ bool showCamera(VkRenderer& renderer) {
         changed = true;
         renderer.camera.setNewFOV(defaultCameraFov);;
     }
-    changed |= ImGui::Checkbox("NEE", (bool*)&renderer.camera.nee);
+    changed |= ImGui::Checkbox("Volumetric Fog", (bool*)&renderer.camera.nee);
     changed |= ImGui::DragFloat("Fog Density", &renderer.camera.fogDensity);
+    changed |= ImGui::DragFloat("Fog Scale", &renderer.camera.fogScale);
     ImGui::End();
     return changed;
 }

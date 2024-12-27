@@ -11,7 +11,9 @@ layout(set = 0, binding = 5) uniform CameraBlock {
     float pitch;
     bool reset;
     uint emissiveTriangleCount;
-    uint padding[3];
+    bool volumetricFog; 
+    float fogDensity;
+    float fogScale;
 } camera;
 layout(set = 0, binding = 6, std430)buffer WaveFrontBuffer {
     RayState waveFront[];

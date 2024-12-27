@@ -11,6 +11,7 @@ bool hitVolume(vec3 origin, vec3 direction, vec4 normal) {
     float xi2 = fastRandom(waveFront[rayPayload.idx].randomState);
     
     float t = -log(1-xi1)/density;
+    t/=camera.fogScale;
     //if(t > gl_HitTEXT) return false;
     
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
@@ -27,7 +28,7 @@ void main() {
     if(rayPayload.isShadowRay == false) {
         vec3 origin = gl_WorldRayOriginEXT;      // Ray origin in world space
         vec3 direction = gl_WorldRayDirectionEXT; // Ray direction in world space
-        hitVolume(origin, direction, vec4(0.0));
+        if(camera.volumetricFog) hitVolume(origin, direction, vec4(0.0));
     }
     rayPayload.hitDistance = INFINITY; 
     waveFront[rayPayload.idx].terminated = true;

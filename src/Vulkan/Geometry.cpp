@@ -10,7 +10,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-const std::string MODEL_PATH = "scenes/test2.obj";
+const std::string MODEL_PATH = "scenes/test3.obj";
 #define GAMMA 2.2f
 
 

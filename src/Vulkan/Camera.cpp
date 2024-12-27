@@ -34,7 +34,8 @@ Camera::Camera() {
     reset = true;
     lightCount = 0;
     nee = true;
-    fogDensity = 0.001f;
+    fogDensity = 0.01f;
+    fogScale = 100.0f;
 }
 
 void Camera::setNewFOV(float deg) {

@@ -73,7 +73,7 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv
     hitPosition += EPS * normal.xyz;
     waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
     
-    if(camera.nee && camera.emissiveTriangleCount != 0) {
+    if(camera.emissiveTriangleCount != 0) {
         NEE(hitPosition, normal.xyz, false);
     }
 
@@ -93,11 +93,13 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv
 //---- entry point -----//
 
 bool hitVolume(vec3 origin, vec3 direction, vec4 normal) {
+    if(!camera.volumetricFog) return false;
     float density = camera.fogDensity; 
     float xi1 = fastRandom(waveFront[rayPayload.idx].randomState);
     float xi2 = fastRandom(waveFront[rayPayload.idx].randomState);
     
     float t = -log(1-xi1)/density;
+    t/=camera.fogScale;
     if(t > gl_HitTEXT) return false;
     if(xi2 < density) return false;
     
@@ -142,7 +144,7 @@ void main() {
     float weight = 1.0; 
     if(m.shaderFlag == 0x00) {
         lambert(origin, direction,normal, v0.materialID, uv, t);
-        if(camera.nee)weight = 0.5;
+        weight = 0.5;
     }
     if(m.shaderFlag == 0x01) {
         mirror(origin, direction,normal, v0.materialID, uv, t);
