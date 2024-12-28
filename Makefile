@@ -1,21 +1,13 @@
-.PHONY: build profile
+.PHONY: build
 
 build:
-	cd build && cmake .. -DCMAKE_BUILD_TYPE=Release
+	cd build && cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
 	cd build && make -j16
-	cd showcase && ../build/pathtracer scenes/cornel.scene
+	
+	cd build && mkdir -p Shaders
+	
+	glslc src/Shaders/raygen.rgen -o build/Shaders/raygen.spv  --target-spv=spv1.4
+	glslc src/Shaders/miss.rmiss -o build/Shaders/miss.spv --target-spv=spv1.4
+	glslc src/Shaders/closesthit.rchit -o build/Shaders/closesthit.spv --target-spv=spv1.4
 
-debug:
-	cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug
-	cd build && make -j16
-	cd showcase && gdb --args ../build/pathtracer scenes/lucy.scene
-
-
-
-profile:
-	cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DPROFILE=ON
-	cd build && make -j16
-	cd showcase && ../build/pathtracer
-	cd showcase && gprof ../build/pathtracer > main.gprof
-	cd showcase && gprof2dot < main.gprof | dot -Tsvg -o output.svg
-	firefox-developer-edition showcase/output.svg
+	cd build && ./vkrenderer

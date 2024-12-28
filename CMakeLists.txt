@@ -1,26 +1,43 @@
-cmake_minimum_required(VERSION 3.7)
-set(CMAKE_C_COMPILER clang)
-set(CMAKE_CXX_COMPILER clang++)
+cmake_minimum_required(VERSION 3.24)
+project(vkrenderer)
 
-# Project name
-project(pathtracer)
+# Enable FetchContent module
+include(FetchContent)
 
-# Set C++ standard 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-msse -msse2 -mavx -mavx2 -O3")
-option(PROFILE "Enable profiler" OFF)
-if (PROFILE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mavx -mavx2 -O3 -g -pg")
-endif()
+# Fetch GLFW
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.3.8 # Replace with the desired version or branch
+)
 
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG 1.0.1 # Replace with the desired version tag or branch
+)
 
-# add_subdirectory(includes/sdl)
-find_package(SDL2 REQUIRED)
-find_package(TBB REQUIRED)
-find_package(SDL2_image REQUIRED)
-set(imgui_SOURCE_DIR includes/imgui/)
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.6-docking
+)
+# Fetch TinyObjLoader
+FetchContent_Declare(
+  tinyobjloader
+  GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+  GIT_TAG v2.0.0rc13  # Replace with the version you want to use
+)
+FetchContent_MakeAvailable(tinyobjloader)
+FetchContent_MakeAvailable(imgui)
+
+# Make GLM available
+FetchContent_MakeAvailable(glm)
+
+# Make sure the content is downloaded
+FetchContent_MakeAvailable(glfw)
+# Find Vulkan
+find_package(Vulkan REQUIRED)
 
 add_library(imgui
   ${imgui_SOURCE_DIR}/imgui.cpp
@@ -34,22 +51,31 @@ add_library(imgui
   ${imgui_SOURCE_DIR}/imstb_rectpack.h
   ${imgui_SOURCE_DIR}/imstb_textedit.h
   ${imgui_SOURCE_DIR}/imstb_truetype.h
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.h
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.h
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp)
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp)
 
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
-target_link_libraries(imgui PUBLIC SDL2::SDL2)
+target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE SOURCES
 		"src/*.cpp"
 		"src/*.h"
 )
+
+# Add Vulkan, GLFW, and ImGui include directories
+include_directories(
+    ${GLFW_INCLUDE_DIRS}
+    ${imgui_SOURCE_DIR}
+    "includes/"
+)
+
 # Add executable
-include_directories(src/ includes/singleHeaderLibs includes/eigen/Eigen)
-add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} SDL2)
-target_link_libraries(${PROJECT_NAME} SDL2_image)
-target_link_libraries(${PROJECT_NAME} imgui)
-target_link_libraries(${PROJECT_NAME} TBB::tbb)
+add_executable(${PROJECT_NAME}  ${SOURCES})
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} PRIVATE imgui) 
+target_link_libraries(${PROJECT_NAME} PRIVATE tinyobjloader) 

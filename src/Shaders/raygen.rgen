@@ -1,0 +1,102 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+#include "include/types.h"
+#include "include/random.h"
+#include "include/layout_rgen.h"
+
+int get1DIndex(int x, int y, int width) {
+    return y * width + x;
+}
+
+void main() {
+
+    ivec2 pixelCoords = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 imageSize = imageSize(storageImage);
+    int idx = get1DIndex(pixelCoords.x, pixelCoords.y, imageSize.y);
+    if (waveFront[idx].randomState == 0){
+        waveFront[idx].randomState = hashCoords(pixelCoords.x, pixelCoords.y);
+    }
+    
+    float xi1 = 2*fastRandom(waveFront[idx].randomState)-1;
+    float xi2 = 2*fastRandom(waveFront[idx].randomState)-1;
+    vec2 coords = vec2(pixelCoords+vec2(xi1,xi2)) / vec2(imageSize);
+    vec2 ndc = 2*(coords) - vec2(1.0);
+    ndc.y = -ndc.y;
+    if (imageSize.x >= imageSize.y)
+        ndc.y = float(imageSize.y) / float(imageSize.x) * ndc.y;
+    else
+        ndc.x = float(imageSize.x) / float(imageSize.y) * ndc.x;
+
+    if(camera.reset) {
+        waveFront[idx].samples = 0;
+        waveFront[idx].light = vec4(0);
+        waveFront[idx].pixelColor = vec4(0,0,0, 1.0);
+    }
+    vec3 origin=waveFront[idx].origin.xyz;
+    vec3 direction=waveFront[idx].direction.xyz;
+    direction = normalize(direction);
+
+    if(camera.reset || waveFront[idx].terminated) {
+        waveFront[idx].light = vec4(0);
+        waveFront[idx].throughPut = vec4(1.0);
+        waveFront[idx].terminated = false;
+        origin = camera.position.xyz; 
+        direction = ndc.x *camera.fov *camera.right.xyz + ndc.y * camera.fov *camera.up.xyz;
+        direction += camera.forward.xyz; // Ray direction pointing forward
+        direction = normalize(direction); 
+    }
+    
+    
+    rayPayload.idx = idx;
+    rayPayload.isShadowRay = false;
+    traceRayEXT(
+        topLevelAS, 
+        gl_RayFlagsOpaqueEXT, 
+        0xFF, 
+        0,    // SBT record offset
+        1,    // SBT record stride
+        0,    // Miss shader index
+        origin, 
+        0.0, 
+        direction, 
+        INFINITY, 
+        0 // location of the payload
+    );
+
+    if(fastRandom(waveFront[idx].randomState) < 0.01) {
+        waveFront[idx].terminated = true;
+    } else {
+        waveFront[idx].throughPut *= 1.0/(1.0 - 0.01);
+    }
+
+    if(camera.reset){
+        float miss = rayPayload.hitDistance;
+        if(miss > 0.0f) miss = min(1.0, 1.0/sqrt(miss));
+        vec4 newPixel = waveFront[idx].throughPut * miss;
+        newPixel.rgb = newPixel.rgb / ( vec3(1) + newPixel.rgb); // simple tonemapping
+        // gamma correct
+        newPixel.r = pow(newPixel.r, INV_GAMMA);
+        newPixel.g = pow(newPixel.g, INV_GAMMA);
+        newPixel.b = pow(newPixel.b, INV_GAMMA);
+        imageStore(storageImage, pixelCoords, newPixel);
+        waveFront[idx].pixelColor = vec4(0);
+        return;
+    }
+   
+    
+    if(waveFront[idx].terminated) {
+        vec4 newPixel = (waveFront[idx].pixelColor *  waveFront[idx].samples + waveFront[idx].light) / ( waveFront[idx].samples + 1);
+        waveFront[idx].pixelColor = newPixel;
+        waveFront[idx].samples += 1;
+    }
+    vec4 newPixel = waveFront[idx].pixelColor;
+    newPixel.rgb = newPixel.rgb / ( vec3(1) + newPixel.rgb); // simple tonemapping
+    // gamma correct
+    newPixel.r = pow(newPixel.r, INV_GAMMA);
+    newPixel.g = pow(newPixel.g, INV_GAMMA);
+    newPixel.b = pow(newPixel.b, INV_GAMMA);
+
+    imageStore(storageImage, pixelCoords, newPixel);
+    // Write the color to the storage image
+}
+
