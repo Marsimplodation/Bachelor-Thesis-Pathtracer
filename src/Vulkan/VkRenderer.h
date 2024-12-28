@@ -60,6 +60,7 @@ struct alignas(16) Camera {
 struct Material {
     glm::vec4 color;
     glm::vec4 textureData; //offset, width, height, 
+    glm::vec4 normalMapData; //offset, width, height, 
     float emission;
     float ior1 = 1.0f;
     float ior2 = 1.5f;

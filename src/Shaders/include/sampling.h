@@ -1,14 +1,11 @@
 
 #include "types.h"
-vec4 sampleTexture(uint materialIdx, vec2 uv) {
-
+vec4 sampleTexture(vec4 textureData, vec2 uv) {
     uv = uv - floor(uv);
-    Material mat = materials[materialIdx];
-    
     // Compute the texel coordinate within the texture
-    uint offset = uint(mat.textureData[0]);
-    uint width = uint(mat.textureData[1]);
-    uint height = uint(mat.textureData[2]);
+    uint offset = uint(textureData[0]);
+    uint width = uint(textureData[1]);
+    uint height = uint(textureData[2]);
     vec2 texCoord = uv * vec2(width, height);
     uint x = uint(texCoord.x);
     uint y = uint(texCoord.y);
@@ -22,7 +19,7 @@ vec4 sampleTexture(uint materialIdx, vec2 uv) {
 vec4 getMaterialColor(uint materialIdx, vec2 uv) {
     Material mat = materials[materialIdx];
     if(mat.textureData[0] == -1) return mat.color;
-    return sampleTexture(materialIdx, uv);
+    return sampleTexture(mat.textureData, uv);
 
 }
 

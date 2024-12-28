@@ -31,6 +31,7 @@ struct Vertex {
 struct Material {
     vec4 color;
     vec4 textureData;
+    vec4 normalMapData; //offset, width, height, 
     float emission;
     float ior1;
     float ior2;

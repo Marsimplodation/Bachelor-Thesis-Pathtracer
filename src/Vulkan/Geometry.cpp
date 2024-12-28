@@ -10,7 +10,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-const std::string MODEL_PATH = "scenes/test3.obj";
+const std::string MODEL_PATH = "scenes/sponza/test.obj";
 #define GAMMA 2.2f
 
 
@@ -95,11 +95,17 @@ void VkRenderer::loadGeometry() {
         //load texture
         //
         bool isAbsolute = material.diffuse_texname.front() == '/';
+        bool isAbsoluteNormal = material.bump_texname.front() == '/';
         std::string texture = isAbsolute? material.diffuse_texname : base_dir + "/" + material.diffuse_texname;
-    
+        std::string textureNormal = isAbsoluteNormal? material.bump_texname : base_dir + "/" + material.bump_texname;
+
         if(!material.diffuse_texname.empty()) {
             m.textureData = loadTexture(textureAtlas, texture.c_str());
         } else m.textureData[0] = -1;
+        
+        if(!material.bump_texname.empty()) {
+            m.normalMapData = loadTexture(textureAtlas, textureNormal.c_str());
+        } else m.normalMapData[0] = -1;
         materials.push_back(m);
         materialNames.push_back(material.name);
     }
@@ -107,6 +113,7 @@ void VkRenderer::loadGeometry() {
     u32 count = 0;
     for (const auto& shape : shapes) {
         u32 faceIndex = 0;
+        printf("start loading %s\n", shape.name.c_str());
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};
             vertex.position = glm::vec4{
@@ -141,6 +148,7 @@ void VkRenderer::loadGeometry() {
             faceIndex++;
             count++;
         }
+        printf("loaded %s\n", shape.name.c_str());
     }
     for (int i = 0; i < indices.size(); i+=3) {
         Vertex & v0 = vertices[indices[i]];

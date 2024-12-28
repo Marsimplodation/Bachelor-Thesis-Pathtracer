@@ -140,6 +140,17 @@ void main() {
     vec4 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
     vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 
+    if (m.normalMapData[0] >= 0) {
+        vec4 normalColor = sampleTexture(m.normalMapData, uv);
+        vec3 textureNormal = vec3(2.0f * normalColor.x, 2.0f * normalColor.y, 2.0f * normalColor.z) - vec3(1);
+        vec3 arbitrary = abs(normal.z) < 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+        vec3 tangent = normalize(cross(normal.xyz, arbitrary));
+        vec3 bitangent = cross(normal.xyz, tangent);
+
+        normal.xyz = textureNormal.x * tangent + textureNormal.y * bitangent + textureNormal.z * normal.xyz;
+        normal.xyz = normalize(normal.xyz);
+    }
+
     if(hitVolume(origin, direction, normal)) return;
     float weight = 1.0; 
     if(m.shaderFlag == 0x00) {
