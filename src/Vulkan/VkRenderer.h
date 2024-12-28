@@ -37,6 +37,12 @@ struct RayState {
     u32 __padding[2];
 };
 
+struct Object {
+    u32 offset;
+    u32 trisCount;
+    u32 padding[2];
+};
+
 struct alignas(16) Camera {
     glm::vec4 position;  // Camera position
     glm::vec4 forward; // Camera direction (where it's looking)
@@ -78,10 +84,8 @@ struct Vertex {
 template<> struct std::hash<Vertex> {
     size_t operator()(Vertex const& vertex) const;
 };
-class VkRenderer {
-public:
+struct VkRenderer {
     void run();
-//private:
     //functions
     void initWindow();
     void initVulkan();
@@ -104,7 +108,7 @@ public:
     void updateDescriptorSet();
     void buildAccelerationStructures();
     void handleInput(float deltaTime);
-    void buildBottomLevelAS();
+    void buildBottomLevelAS(int index);
     void buildTopLevelAS();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime);
     void copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize);
@@ -174,20 +178,26 @@ public:
     VkBuffer indexBuffer;
     VkBuffer emissiveBuffer;
     VkBuffer waveFrontBuffer;
-    VkBuffer bottomLevelASBuffer, topLevelASBuffer, instanceASBuffer;
+    VkBuffer objectBuffer;
+    VkBuffer topLevelASBuffer, instanceASBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkDeviceMemory indexBufferMemory;
+    VkDeviceMemory objectBufferMemory;
     VkDeviceMemory waveFrontBufferMemory;
     VkDeviceMemory materialBufferMemory;
     VkDeviceMemory textureBufferMemory;
     VkDeviceMemory emissiveBufferMemory;
     VkDeviceMemory raygenMemory, missMemory, hitMemory;
-    VkDeviceMemory bottomLevelASMemory, topLevelASMemory, instanceASMemory;
+    VkDeviceMemory topLevelASMemory, instanceASMemory;
     std::vector<Vertex> vertices;
     std::vector<u32> indices;
     std::vector<Material> materials;
     std::vector<std::string> materialNames;
     std::vector<u32> emissiveTriangles;
+    std::vector<Object> objects;
+    std::vector<VkDeviceMemory> bottomLevelASMemories;
+    std::vector<VkBuffer> bottomLevelASBuffers;
+    std::vector<VkAccelerationStructureKHR> bottomLevelASStructures;
 
     //one giant textureAtlas with offsets and so on in the material
     std::vector<glm::vec4> textureAtlas;
@@ -216,7 +226,6 @@ public:
 
 
     VkAccelerationStructureKHR topLevelAS;
-    VkAccelerationStructureKHR bottomLevelAS;
 
     
     std::vector<VkImage> swapChainImages;

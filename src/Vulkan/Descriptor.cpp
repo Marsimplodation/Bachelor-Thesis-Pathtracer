@@ -80,13 +80,21 @@ void VkRenderer::createDescriptorLayout() {
     emissiveBufferBinding.descriptorCount = 1;
     emissiveBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
     emissiveBufferBinding.pImmutableSamplers = nullptr;
+    
+    VkDescriptorSetLayoutBinding objectBufferBinding{};
+    objectBufferBinding.binding = 3;
+    objectBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    objectBufferBinding.descriptorCount = 1;
+    objectBufferBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    objectBufferBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding, emissiveBufferBinding};
+
+    VkDescriptorSetLayoutBinding bindings_set1[] = {vertexBufferBinding, indexBufferBinding, emissiveBufferBinding, objectBufferBinding};
 
     // Create the descriptor set layout
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo_set1 = {};
     layoutCreateInfo_set1.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo_set1.bindingCount = 3;  // Number of bindings
+    layoutCreateInfo_set1.bindingCount = 4;  // Number of bindings
     layoutCreateInfo_set1.pBindings = bindings_set1;
     
     result = vkCreateDescriptorSetLayout(device, &layoutCreateInfo_set1, nullptr, &descriptorSetLayouts[1]);
@@ -125,7 +133,7 @@ void VkRenderer::createDescriptorLayout() {
 
 
 void VkRenderer::createDescriptorPool() {
-    VkDescriptorPoolSize poolSizes[6] = {};
+    VkDescriptorPoolSize poolSizes[7] = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = 4; // Change to 3 for the 3 descriptors (raygen, miss, hit)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -136,7 +144,7 @@ void VkRenderer::createDescriptorPool() {
     poolSizes[3].descriptorCount = 1;
     //set 1 -- geometry
     poolSizes[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[4].descriptorCount = 3; 
+    poolSizes[4].descriptorCount = 4; 
     //set 2 -- materials
     poolSizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[5].descriptorCount = 2; 
@@ -185,6 +193,13 @@ void VkRenderer::updateDescriptorSet() {
     emissiveBufferInfo.buffer = emissiveBuffer;
     emissiveBufferInfo.offset = 0;
     emissiveBufferInfo.range = VK_WHOLE_SIZE;
+    
+
+    VkDescriptorBufferInfo objectBufferInfo = {};
+    objectBufferInfo.buffer = objectBuffer;
+    objectBufferInfo.offset = 0;
+    objectBufferInfo.range = VK_WHOLE_SIZE;
+
     VkDescriptorBufferInfo materialBufferInfo = {};
     materialBufferInfo.buffer = materialBuffer;
     materialBufferInfo.offset = 0;
@@ -232,10 +247,11 @@ void VkRenderer::updateDescriptorSet() {
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &vertexBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &indexBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 2, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &emissiveBufferInfo, nullptr },
+        { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[1], 3, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &objectBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[2], 0, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &materialBufferInfo, nullptr },
         { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, descriptorSets[2], 1, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &textureBufferInfo, nullptr },
         
     };
 
-    vkUpdateDescriptorSets(device, 12, writeDescriptorSets, 0, nullptr);
+    vkUpdateDescriptorSets(device, 13, writeDescriptorSets, 0, nullptr);
 }

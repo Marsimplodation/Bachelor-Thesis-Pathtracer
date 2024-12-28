@@ -44,3 +44,7 @@ layout(set = 0, binding = 5) uniform CameraBlock {
     float fogScale;
 } camera;
 
+layout(set = 1, binding = 3) buffer ObjectBlocks {
+    Object objects[];
+};
+

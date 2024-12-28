@@ -345,12 +345,6 @@ void VkRenderer::createGeometryBuffers() {
     // Triangle vertex data (positions and colors)
     
 // Cube vertex data (positions and colors)
-
-
-
-    
-
-    
     CreateBuffer(sizeof(Vertex) * vertices.size(),
                  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
                  | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -365,32 +359,40 @@ void VkRenderer::createGeometryBuffers() {
                  &indexBufferMemory, true);
 
     CreateBuffer(sizeof(Material) * materials.size(),
-                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &materialBuffer,
-                 &materialBufferMemory, true);
+                 &materialBufferMemory);
 
     u32 texSize = textureAtlas.size() == 0? 1 : textureAtlas.size();
      CreateBuffer(sizeof(glm::vec4) * texSize,
-                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &textureBuffer,
-                 &textureBufferMemory, true);
+                 &textureBufferMemory);
     
     //allocate for each triangle to be emissive in the worst case
     CreateBuffer(sizeof(u32) * indices.size() / 3,
-                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &emissiveBuffer,
-                 &emissiveBufferMemory, true);
+                 &emissiveBufferMemory);
+
+    CreateBuffer(sizeof(objects) * objects.size() ,
+                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 &objectBuffer,
+                 &objectBufferMemory);
 
     copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
     copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
     copyDataToBuffer(materialBufferMemory, materials.data(), sizeof(Material)*materials.size());
 
     if(textureAtlas.size() > 0)
-    copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
-    
+        copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
+
     if(emissiveTriangles.size() > 0)
-    copyDataToBuffer(emissiveBufferMemory, emissiveTriangles.data(), sizeof(u32)*emissiveTriangles.size());
+        copyDataToBuffer(emissiveBufferMemory, emissiveTriangles.data(), sizeof(u32)*emissiveTriangles.size());
+    
+    copyDataToBuffer(objectBufferMemory, objects.data(), sizeof(Object)*objects.size());
 }

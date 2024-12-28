@@ -58,6 +58,7 @@ void VkRenderer::loadGeometry() {
     
     vertices = std::vector<Vertex>();
     indices = std::vector<u32>();
+    objects = std::vector<Object>();
     emissiveTriangles = std::vector<u32>();
     textureAtlas = std::vector<glm::vec4>();
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
@@ -113,7 +114,7 @@ void VkRenderer::loadGeometry() {
     u32 count = 0;
     for (const auto& shape : shapes) {
         u32 faceIndex = 0;
-        printf("start loading %s\n", shape.name.c_str());
+        u32 startIdx = indices.size();
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};
             vertex.position = glm::vec4{
@@ -148,7 +149,9 @@ void VkRenderer::loadGeometry() {
             faceIndex++;
             count++;
         }
-        printf("loaded %s\n", shape.name.c_str());
+        u32 endIdx = indices.size();
+        Object o{startIdx, (endIdx - startIdx)/3};
+        objects.push_back(o);
     }
     for (int i = 0; i < indices.size(); i+=3) {
         Vertex & v0 = vertices[indices[i]];
@@ -156,5 +159,4 @@ void VkRenderer::loadGeometry() {
             emissiveTriangles.push_back(i);
         }
     }
-    printf("vertices: %d deduplicated: %zu\n", count, vertices.size());
 }

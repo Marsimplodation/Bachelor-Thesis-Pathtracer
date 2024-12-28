@@ -178,8 +178,12 @@ void VkRenderer::cleanup() {
     vkDestroyPipeline(device, rtPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
-    vkDestroyAccelerationStructureKHR(device, bottomLevelAS, nullptr);
     vkDestroyAccelerationStructureKHR(device, topLevelAS, nullptr);
+    for (int i = 0; i < objects.size(); ++i) {
+        vkDestroyAccelerationStructureKHR(device, bottomLevelASStructures[i], nullptr);
+        vkFreeMemory(device, bottomLevelASMemories[i], nullptr);
+        vkDestroyBuffer(device, bottomLevelASBuffers[i], nullptr);
+    }
         // Free allocated device memory
     //vkFreeMemory(device, topLevelASMemory, nullptr);
     vkFreeMemory(device, imageMemory, nullptr);
@@ -194,8 +198,8 @@ void VkRenderer::cleanup() {
     vkFreeMemory(device, hitMemory, nullptr);
     vkFreeMemory(device, topLevelASMemory, nullptr);
     vkFreeMemory(device, instanceASMemory, nullptr);
-    vkFreeMemory(device, bottomLevelASMemory, nullptr);
     vkFreeMemory(device, emissiveBufferMemory, nullptr);
+    vkFreeMemory(device, objectBufferMemory, nullptr);
 
     vkDestroyBuffer(device, hitBuffer, nullptr);
     vkDestroyBuffer(device, missBuffer, nullptr);
@@ -205,11 +209,11 @@ void VkRenderer::cleanup() {
     vkDestroyBuffer(device, indexBuffer, nullptr);
     vkDestroyBuffer(device, emissiveBuffer, nullptr);
     vkDestroyBuffer(device, topLevelASBuffer, nullptr);
-    vkDestroyBuffer(device, bottomLevelASBuffer, nullptr);
     vkDestroyBuffer(device, instanceASBuffer, nullptr);
     vkDestroyBuffer(device, materialBuffer, nullptr);
     vkDestroyBuffer(device, textureBuffer, nullptr);
     vkDestroyBuffer(device, waveFrontBuffer, nullptr);
+    vkDestroyBuffer(device, objectBuffer, nullptr);
 
     vkDestroyRenderPass(device, renderPass, nullptr);
 

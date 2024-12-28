@@ -38,4 +38,10 @@ struct Material {
     uint shaderFlag;
 };
 
+struct Object {
+    uint offset;
+    uint numTris;
+    uint padding[2];
+};
+
 #endif

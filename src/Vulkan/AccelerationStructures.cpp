@@ -3,7 +3,7 @@
 #include <vulkan/vulkan_core.h>
 #include <glm/vec3.hpp>
 
-void VkRenderer::buildBottomLevelAS() {
+void VkRenderer::buildBottomLevelAS(int index) {
     VkAccelerationStructureGeometryKHR geometry{};
     geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
     geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
@@ -17,12 +17,12 @@ void VkRenderer::buildBottomLevelAS() {
     geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
 
     // Describe index data
-    geometry.geometry.triangles.indexData.deviceAddress = getBufferAdress(indexBuffer);
+    geometry.geometry.triangles.indexData.deviceAddress = getBufferAdress(indexBuffer) + (objects[index].offset * sizeof(uint32_t));;
     geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 
-    u32 primitiveCount = indices.size()/3;
+    u32 primitiveCount = objects[index].trisCount;
     VkAccelerationStructureBuildRangeInfoKHR buildRange{};
-    buildRange.primitiveCount = primitiveCount; // Number of triangles
+    buildRange.primitiveCount = objects[index].trisCount; // Number of triangles
     buildRange.primitiveOffset = 0;
     buildRange.firstVertex = 0;
     buildRange.transformOffset = 0;
@@ -37,8 +37,6 @@ void VkRenderer::buildBottomLevelAS() {
     VkAccelerationStructureBuildSizesInfoKHR sizeInfo{};
     sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
     vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &primitiveCount, &sizeInfo);
-    printf("BLAS size %lu\n", sizeInfo.accelerationStructureSize);
-    printf("Scratch size %lu\n", sizeInfo.buildScratchSize);
 
     
     VkDeviceMemory scratchBufferMemory;
@@ -56,20 +54,20 @@ void VkRenderer::buildBottomLevelAS() {
     CreateBuffer(sizeInfo.accelerationStructureSize,
                  VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                 &bottomLevelASBuffer,
-                 &bottomLevelASMemory, true);
+                 &bottomLevelASBuffers[index],
+                 &bottomLevelASMemories[index], true);
 
     //--- BOTTOM LEVEL ---//
     VkAccelerationStructureCreateInfoKHR blasCreateInfo = {};
     blasCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
     blasCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
     blasCreateInfo.size = sizeInfo.accelerationStructureSize;
-    blasCreateInfo.buffer = bottomLevelASBuffer;
+    blasCreateInfo.buffer = bottomLevelASBuffers[index];
 
 
-    VkResult result = vkCreateAccelerationStructureKHR(device, &blasCreateInfo, nullptr, &bottomLevelAS);
+    VkResult result = vkCreateAccelerationStructureKHR(device, &blasCreateInfo, nullptr, &bottomLevelASStructures[index]);
     checkIfVkResultIsCorrect(result, "Failed to create empty acceleration structure");
-    buildInfo.dstAccelerationStructure = bottomLevelAS;
+    buildInfo.dstAccelerationStructure = bottomLevelASStructures[index];
 
     beginCommandBuffer();
     const VkAccelerationStructureBuildRangeInfoKHR* pBuildRanges[] = { &buildRange };
@@ -88,42 +86,47 @@ void VkRenderer::buildBottomLevelAS() {
 }
 
 void VkRenderer::buildTopLevelAS() {
-    VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {};
-    addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-    addressInfo.accelerationStructure = bottomLevelAS;
-    VkDeviceAddress blasAdress = vkGetAccelerationStructureDeviceAddressKHR(device, &addressInfo);
-    VkAccelerationStructureInstanceKHR instance{};
-    //instance.transform = { /* 3x4 row-major transform matrix */ };
-    // Transform matrix (row-major 3x4 identity matrix)
-    instance.transform.matrix[0][0] = 1.0f;  // Row 0, Column 0
-    instance.transform.matrix[0][1] = 0.0f;  // Row 0, Column 1
-    instance.transform.matrix[0][2] = 0.0f;  // Row 0, Column 2
-    instance.transform.matrix[0][3] = 0.0f;  // Row 0, Column 3 (translation x)
 
-    instance.transform.matrix[1][0] = 0.0f;  // Row 1, Column 0
-    instance.transform.matrix[1][1] = 1.0f;  // Row 1, Column 1
-    instance.transform.matrix[1][2] = 0.0f;  // Row 1, Column 2
-    instance.transform.matrix[1][3] = 0.0f;  // Row 1, Column 3 (translation y)
+    u32 instanceCount = objects.size();
+    VkAccelerationStructureInstanceKHR instances[instanceCount];
+    for (int i = 0; i < instanceCount; ++i) {
+        VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {};
+        addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+        addressInfo.accelerationStructure = bottomLevelASStructures[i];
+        VkDeviceAddress blasAdress = vkGetAccelerationStructureDeviceAddressKHR(device, &addressInfo);
+        VkAccelerationStructureInstanceKHR & instance = instances[i];
+        //instance.transform = { /* 3x4 row-major transform matrix */ };
+        // Transform matrix (row-major 3x4 identity matrix)
+        instance.transform.matrix[0][0] = 1.0f;  // Row 0, Column 0
+        instance.transform.matrix[0][1] = 0.0f;  // Row 0, Column 1
+        instance.transform.matrix[0][2] = 0.0f;  // Row 0, Column 2
+        instance.transform.matrix[0][3] = 0.0f;  // Row 0, Column 3 (translation x)
 
-    instance.transform.matrix[2][0] = 0.0f;  // Row 2, Column 0
-    instance.transform.matrix[2][1] = 0.0f;  // Row 2, Column 1
-    instance.transform.matrix[2][2] = 1.0f;  // Row 2, Column 2
-    instance.transform.matrix[2][3] = 0.0f;  // Row 2, Column 3 (translation z)
-    instance.instanceCustomIndex = 0; // Custom ID
-    instance.mask = 0xFF;
-    instance.instanceShaderBindingTableRecordOffset = 0;
-    instance.accelerationStructureReference = blasAdress;
+        instance.transform.matrix[1][0] = 0.0f;  // Row 1, Column 0
+        instance.transform.matrix[1][1] = 1.0f;  // Row 1, Column 1
+        instance.transform.matrix[1][2] = 0.0f;  // Row 1, Column 2
+        instance.transform.matrix[1][3] = 0.0f;  // Row 1, Column 3 (translation y)
+
+        instance.transform.matrix[2][0] = 0.0f;  // Row 2, Column 0
+        instance.transform.matrix[2][1] = 0.0f;  // Row 2, Column 1
+        instance.transform.matrix[2][2] = 1.0f;  // Row 2, Column 2
+        instance.transform.matrix[2][3] = 0.0f;  // Row 2, Column 3 (translation z)
+        instance.instanceCustomIndex = i; // Custom ID
+        instance.mask = 0xFF;
+        instance.instanceShaderBindingTableRecordOffset = 0;
+        instance.accelerationStructureReference = blasAdress;
+    }
 
 
     CreateBuffer(
-        sizeof(VkAccelerationStructureInstanceKHR),
+        sizeof(VkAccelerationStructureInstanceKHR) * instanceCount,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         &instanceASBuffer,
         &instanceASMemory,
         true
     );
-    copyDataToBuffer(instanceASMemory, &instance, sizeof(VkAccelerationStructureInstanceKHR));
+    copyDataToBuffer(instanceASMemory, instances, sizeof(VkAccelerationStructureInstanceKHR)*instanceCount);
 
 
     VkAccelerationStructureGeometryKHR geometry{};
@@ -136,7 +139,7 @@ void VkRenderer::buildTopLevelAS() {
     geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
 
 
-    u32 instanceCount = 1;
+    //u32 instanceCount = 1;
 
     VkAccelerationStructureBuildGeometryInfoKHR buildInfo{};
     buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
@@ -149,8 +152,6 @@ void VkRenderer::buildTopLevelAS() {
     sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
     vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &instanceCount, &sizeInfo);
     
-    printf("TLAS Size %lu\n", sizeInfo.accelerationStructureSize);
-    printf("Scratch Size %lu\n", sizeInfo.buildScratchSize);
     VkDeviceMemory scratchBufferMemory;
     VkBuffer scratchBuffer;
     CreateBuffer(sizeInfo.buildScratchSize,
@@ -202,7 +203,13 @@ void VkRenderer::buildTopLevelAS() {
 }
 
 void VkRenderer::buildAccelerationStructures() {
-    buildBottomLevelAS();
+    u32 count = objects.size();
+    bottomLevelASStructures = std::vector<VkAccelerationStructureKHR>(count);
+    bottomLevelASMemories = std::vector<VkDeviceMemory>(count);
+    bottomLevelASBuffers = std::vector<VkBuffer>(count);
+    for (int i = 0; i < objects.size(); ++i) {
+        buildBottomLevelAS(i);
+    }
     buildTopLevelAS();
 }
 

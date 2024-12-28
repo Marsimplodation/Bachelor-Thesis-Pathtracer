@@ -202,10 +202,10 @@ void VkRenderer::createRenderPasses(){
         state.terminated = true;
     }
     CreateBuffer(sizeof(RayState) * waveFront.size(),
-                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &waveFrontBuffer,
-                 &waveFrontBufferMemory, true);
+                 &waveFrontBufferMemory);
 
     //copyDataToBuffer(waveFrontBufferMemory, waveFront.data(), sizeof(RayState)*waveFront.size());
 }
