@@ -135,9 +135,9 @@ void VkRenderer::createRaytracingPipeline() {
     vkGetRayTracingShaderGroupHandlesKHR(device, rtPipeline, 0, 3, shaderHandleStorage.size(), shaderHandleStorage.data());
 
 
-    copyDataToBuffer(raygenMemory, shaderHandleStorage.data(), shaderGroupHandleSize);
-    copyDataToBuffer(missMemory, shaderHandleStorage.data() + 1* shaderGroupHandleSize, shaderGroupHandleSize);
-    copyDataToBuffer(hitMemory, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
+    copyDataToBufferWithStaging(raygenBuffer, shaderHandleStorage.data(), shaderGroupHandleSize);
+    copyDataToBufferWithStaging(missBuffer, shaderHandleStorage.data() + 1* shaderGroupHandleSize, shaderGroupHandleSize);
+    copyDataToBufferWithStaging(hitBuffer, shaderHandleStorage.data() + 2* shaderGroupHandleSize, shaderGroupHandleSize);
 
     // Define Ray Tracing Shader Binding Table (SBT)
     

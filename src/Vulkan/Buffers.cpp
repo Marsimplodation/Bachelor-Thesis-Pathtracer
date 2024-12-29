@@ -101,18 +101,18 @@ VkResult VkRenderer::CreateSBTBuffers(VkDeviceSize raygenSize, VkDeviceSize miss
                           VkBuffer* hitBuffer, VkDeviceMemory* hitMemory){
     
     // Create the raygen buffer
-    VkResult result = CreateBuffer(raygenSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, raygenBuffer, raygenMemory, true);
+    VkResult result = CreateBuffer(raygenSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, raygenBuffer, raygenMemory, true);
     if (result != VK_SUCCESS) return result;
 
     // Create the miss buffer
-    result = CreateBuffer(missSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, missBuffer, missMemory, true);
+    result = CreateBuffer(missSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, missBuffer, missMemory, true);
     if (result != VK_SUCCESS) return result;
 
     // Create the hit buffer
-    result = CreateBuffer(hitSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT| VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, hitBuffer, hitMemory, true);
+    result = CreateBuffer(hitSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT| VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, hitBuffer, hitMemory, true);
     if (result != VK_SUCCESS) return result;
 
     return VK_SUCCESS;

@@ -120,13 +120,13 @@ void VkRenderer::buildTopLevelAS() {
 
     CreateBuffer(
         sizeof(VkAccelerationStructureInstanceKHR) * instanceCount,
-        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         &instanceASBuffer,
         &instanceASMemory,
         true
     );
-    copyDataToBuffer(instanceASMemory, instances, sizeof(VkAccelerationStructureInstanceKHR)*instanceCount);
+    copyDataToBufferWithStaging(instanceASBuffer, instances, sizeof(VkAccelerationStructureInstanceKHR)*instanceCount);
 
 
     VkAccelerationStructureGeometryKHR geometry{};
