@@ -125,6 +125,49 @@ void VkRenderer::copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shade
     vkUnmapMemory(device, bufferMemory);
 }
 
+void VkRenderer::copyDataToBufferWithStaging(VkBuffer buffer, const void* data, VkDeviceSize bufferSize) {
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        CreateBuffer(bufferSize,
+                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                     &stagingBuffer, &stagingBufferMemory);
+
+        void* mappedMemory;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &mappedMemory);
+        memcpy(mappedMemory, data, static_cast<size_t>(bufferSize));
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        //copy data to actual buffer
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = commandPool;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0; // Optional
+        copyRegion.dstOffset = 0; // Optional
+        copyRegion.size = bufferSize;
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer, buffer, 1, &copyRegion);
+        vkEndCommandBuffer(commandBuffer);
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+
+        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(graphicsQueue);
+        vkDestroyBuffer(device, stagingBuffer, nullptr); 
+        vkFreeMemory(device, stagingBufferMemory, nullptr); 
+    }
 
 //---- COMMAND BUFFERS ----//
 void VkRenderer::createCommandPool() {
@@ -346,15 +389,15 @@ void VkRenderer::createGeometryBuffers() {
     
 // Cube vertex data (positions and colors)
     CreateBuffer(sizeof(Vertex) * vertices.size(),
-                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
                  | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &vertexBuffer,
                  &vertexBufferMemory, true);
     CreateBuffer(sizeof(u32) * indices.size(),
-                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
                  | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &indexBuffer,
                  &indexBufferMemory, true);
 
@@ -366,8 +409,8 @@ void VkRenderer::createGeometryBuffers() {
 
     u32 texSize = textureAtlas.size() == 0? 1 : textureAtlas.size();
      CreateBuffer(sizeof(glm::vec4) * texSize,
-                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &textureBuffer,
                  &textureBufferMemory);
     
@@ -379,20 +422,20 @@ void VkRenderer::createGeometryBuffers() {
                  &emissiveBufferMemory);
 
     CreateBuffer(sizeof(objects) * objects.size() ,
-                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  &objectBuffer,
                  &objectBufferMemory);
 
-    copyDataToBuffer(vertexBufferMemory, vertices.data(), sizeof(Vertex)*vertices.size());
-    copyDataToBuffer(indexBufferMemory, indices.data(), sizeof(u32)*indices.size());
+    copyDataToBufferWithStaging(vertexBuffer, vertices.data(), sizeof(Vertex)*vertices.size());
+    copyDataToBufferWithStaging(indexBuffer, indices.data(), sizeof(u32)*indices.size());
     copyDataToBuffer(materialBufferMemory, materials.data(), sizeof(Material)*materials.size());
 
     if(textureAtlas.size() > 0)
-        copyDataToBuffer(textureBufferMemory, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
+        copyDataToBufferWithStaging(textureBuffer, textureAtlas.data(), sizeof(glm::vec4)*textureAtlas.size());
 
     if(emissiveTriangles.size() > 0)
         copyDataToBuffer(emissiveBufferMemory, emissiveTriangles.data(), sizeof(u32)*emissiveTriangles.size());
     
-    copyDataToBuffer(objectBufferMemory, objects.data(), sizeof(Object)*objects.size());
+    copyDataToBufferWithStaging(objectBuffer, objects.data(), sizeof(Object)*objects.size());
 }

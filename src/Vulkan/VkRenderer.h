@@ -112,6 +112,7 @@ struct VkRenderer {
     void buildTopLevelAS();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime);
     void copyDataToBuffer(VkDeviceMemory bufferMemory, const void* shaderCode, VkDeviceSize shaderSize);
+    void copyDataToBufferWithStaging(VkBuffer buffer, const void* data, VkDeviceSize bufferSize);
     void copyTracedImageToSwapchain(int imageIndex);
     void createGeometryBuffers();
     void traceImage();
