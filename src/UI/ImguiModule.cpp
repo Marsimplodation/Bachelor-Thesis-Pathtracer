@@ -9,6 +9,92 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+void customTheme() {
+        auto &colors = ImGui::GetStyle().Colors;
+
+    // General Background
+    colors[ImGuiCol_WindowBg] = ImVec4{0.12f, 0.12f, 0.15f, 1.0f};
+    colors[ImGuiCol_MenuBarBg] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
+
+    // Border
+    colors[ImGuiCol_Border] = ImVec4{0.3f, 0.3f, 0.3f, 0.8f};
+    colors[ImGuiCol_BorderShadow] = ImVec4{0.0f, 0.0f, 0.0f, 0.0f};
+
+    // Text
+    colors[ImGuiCol_Text] = ImVec4{0.9f, 0.9f, 0.9f, 1.0f};
+    colors[ImGuiCol_TextDisabled] = ImVec4{0.5f, 0.5f, 0.5f, 1.0f};
+
+    // Headers
+    colors[ImGuiCol_Header] = ImVec4{0.2f, 0.2f, 0.25f, 1.0f};
+    colors[ImGuiCol_HeaderHovered] = ImVec4{0.25f, 0.25f, 0.3f, 1.0f};
+    colors[ImGuiCol_HeaderActive] = ImVec4{0.3f, 0.3f, 0.35f, 1.0f};
+
+    // Buttons
+    colors[ImGuiCol_Button] = ImVec4{0.2f, 0.2f, 0.25f, 1.0f};
+    colors[ImGuiCol_ButtonHovered] = ImVec4{0.3f, 0.3f, 0.4f, 1.0f};
+    colors[ImGuiCol_ButtonActive] = ImVec4{0.35f, 0.35f, 0.45f, 1.0f};
+    colors[ImGuiCol_CheckMark] = ImVec4{0.45f, 0.7f, 1.0f, 1.0f}; // Vibrant accent color
+
+    // Popups
+    colors[ImGuiCol_PopupBg] = ImVec4{0.1f, 0.1f, 0.14f, 0.95f};
+
+    // Slider
+    colors[ImGuiCol_SliderGrab] = ImVec4{0.3f, 0.5f, 1.0f, 0.7f}; // Smooth blue accent
+    colors[ImGuiCol_SliderGrabActive] = ImVec4{0.4f, 0.6f, 1.0f, 0.8f};
+
+    // Frame BG
+    colors[ImGuiCol_FrameBg] = ImVec4{0.17f, 0.17f, 0.22f, 1.0f};
+    colors[ImGuiCol_FrameBgHovered] = ImVec4{0.2f, 0.2f, 0.27f, 1.0f};
+    colors[ImGuiCol_FrameBgActive] = ImVec4{0.25f, 0.25f, 0.32f, 1.0f};
+
+    // Tabs
+    colors[ImGuiCol_Tab] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
+    colors[ImGuiCol_TabHovered] = ImVec4{0.3f, 0.3f, 0.4f, 1.0f};
+    colors[ImGuiCol_TabActive] = ImVec4{0.25f, 0.25f, 0.35f, 1.0f};
+    colors[ImGuiCol_TabUnfocused] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
+    colors[ImGuiCol_TabUnfocusedActive] = ImVec4{0.2f, 0.2f, 0.27f, 1.0f};
+
+    // Title
+    colors[ImGuiCol_TitleBg] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
+    colors[ImGuiCol_TitleBgActive] = ImVec4{0.2f, 0.2f, 0.27f, 1.0f};
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.1f, 0.1f, 0.13f, 1.0f};
+
+    // Scrollbar
+    colors[ImGuiCol_ScrollbarBg] = ImVec4{0.12f, 0.12f, 0.15f, 1.0f};
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4{0.3f, 0.3f, 0.35f, 1.0f};
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4{0.35f, 0.35f, 0.4f, 1.0f};
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4{0.4f, 0.4f, 0.45f, 1.0f};
+
+    // Separator
+    colors[ImGuiCol_Separator] = ImVec4{0.3f, 0.3f, 0.4f, 1.0f};
+    colors[ImGuiCol_SeparatorHovered] = ImVec4{0.4f, 0.4f, 0.5f, 1.0f};
+    colors[ImGuiCol_SeparatorActive] = ImVec4{0.5f, 0.5f, 0.6f, 1.0f};
+
+    // Resize Grip
+    colors[ImGuiCol_ResizeGrip] = ImVec4{0.3f, 0.3f, 0.4f, 0.6f};
+    colors[ImGuiCol_ResizeGripHovered] = ImVec4{0.35f, 0.35f, 0.45f, 0.7f};
+    colors[ImGuiCol_ResizeGripActive] = ImVec4{0.4f, 0.4f, 0.5f, 0.8f};
+
+    // Docking
+    colors[ImGuiCol_DockingPreview] = ImVec4{0.45f, 0.7f, 1.0f, 0.8f}; // Blue glow effect
+
+    // Style Adjustments for Modern Feel
+    auto &style = ImGui::GetStyle();
+    style.TabRounding = 6;
+    style.ScrollbarRounding = 10;
+    style.WindowRounding = 8;
+    style.GrabRounding = 4;
+    style.FrameRounding = 5;
+    style.PopupRounding = 6;
+    style.ChildRounding = 6;
+
+    // General padding and spacing adjustments
+    style.WindowPadding = ImVec2(10, 10);
+    style.FramePadding = ImVec2(6, 4);
+    style.ItemSpacing = ImVec2(8, 6);
+
+}
+
 void ImguiModule::init(VkDevice device,
                         VkPhysicalDevice physicalDevice,
                         VkInstance instance,
@@ -55,6 +141,7 @@ void ImguiModule::init(VkDevice device,
     init_info.RenderPass = renderPass;
     ImGui_ImplVulkan_Init(&init_info);
     ImGui_ImplGlfw_InitForVulkan(window, true);
+    customTheme();
 
 }
 
