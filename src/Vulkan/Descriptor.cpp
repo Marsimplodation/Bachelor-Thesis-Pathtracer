@@ -42,7 +42,6 @@ void VkRenderer::createDescriptorPool() {
     descriptorBindings.push_back({2,0,ALL_STAGES,SB,&materialBuffer});
     descriptorBindings.push_back({2,1,ALL_STAGES,SB,&textureBuffer});
     std::vector<VkDescriptorType> types(0);
-    std::vector<u32> typeCount(0);
     std::vector<VkDescriptorPoolSize> poolSizes(0);
     auto getTypesIndex = [&](VkDescriptorType type){
         int i = 0;
@@ -56,16 +55,10 @@ void VkRenderer::createDescriptorPool() {
         int index = getTypesIndex(elem.type);
         if(index == -1){
             types.push_back(elem.type);
-            typeCount.push_back(1);
-            poolSizes.push_back({});
+            poolSizes.push_back({.type = elem.type, .descriptorCount = 1});
             continue;
         }
-        typeCount[index]++;
-    }
-    
-    for (int i = 0; i < poolSizes.size(); ++i) {
-        poolSizes[i].type = types[i];
-        poolSizes[i].descriptorCount = typeCount[i]; 
+        poolSizes[index].descriptorCount++;
     }
 
     VkDescriptorPoolCreateInfo poolInfo = {};
@@ -106,7 +99,6 @@ void VkRenderer::createDescriptorLayout() {
 
 
 void VkRenderer::updateDescriptorSet() {
-
     std::vector<VkWriteDescriptorSet> writeDescriptorSets(0);
     std::vector<VkDescriptorBufferInfo> bufferInfos(0);
     std::vector<VkDescriptorImageInfo> imageInfos(0);
