@@ -26,6 +26,16 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct DescriptorBinding {
+    u32 set;
+    u32 binding;
+    VkShaderStageFlags shaderStage;
+    VkDescriptorType type;
+    VkBuffer* buffer;
+    VkImageView* image;
+    VkAccelerationStructureKHR* as;
+};
+
 struct RayState {
     glm::vec4 origin;
     glm::vec4 direction;
@@ -199,6 +209,7 @@ struct VkRenderer {
     std::vector<VkDeviceMemory> bottomLevelASMemories;
     std::vector<VkBuffer> bottomLevelASBuffers;
     std::vector<VkAccelerationStructureKHR> bottomLevelASStructures;
+    std::vector<DescriptorBinding> descriptorBindings;
 
     //one giant textureAtlas with offsets and so on in the material
     std::vector<glm::vec4> textureAtlas;
