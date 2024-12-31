@@ -80,25 +80,39 @@ void NEE(vec3 origin, vec3 normal, bool isVolume) {
     float length = length(direction) - EPS;
     direction = normalize(direction);
     
-
+    float surfaceDistance = rayPayload.hitDistance;
+    rayPayload.isShadowRay = true;
+    traceRayEXT(
+        topLevelAS, 
+        gl_RayFlagsOpaqueEXT, 
+        0xFF, 
+        0,    // SBT record offset
+        1,    // SBT record stride
+        0,    // Miss shader index
+        origin, 
+        0.0, 
+        direction, 
+        INFINITY, 
+        0 // location of the payload
+    );
+    rayPayload.isShadowRay = false;
+    float distance = rayPayload.hitDistance;
+    rayPayload.hitDistance = surfaceDistance;
+    waveFront[rayPayload.idx].terminated = false;
+    if(distance < length) {
+        return;
+    }
+    float inv_square_distance = min(1.0, (1.0/(length * length)));
     float cosSurface = dot(normal, direction);
     float cosLight = abs(dot(lightNormal, direction));
     if(isVolume) cosSurface = 1.0;
-    if(cosSurface < 0.0) {
-        waveFront[rayPayload.idx].terminated = true;
-        return;
-    }
-    
-    float inv_square_distance = min(1.0, (1.0/(length * length)));
-    float surfaceDistance = rayPayload.hitDistance;
-    waveFront[rayPayload.idx].origin.xyz = origin;
-    waveFront[rayPayload.idx].shadowRayIndex = index;
-    waveFront[rayPayload.idx].direction.xyz = direction;
-    vec4 attenuation = vec4(1.0) * cosSurface  * cosLight * inv_square_distance * surfaceAreaTriangle(index) * camera.emissiveTriangleCount;
-    waveFront[rayPayload.idx].throughPut.rgb *= attenuation.rgb; 
-
+    if(cosSurface < 0.0) return;
+    Material light = materials[v0.materialID];
+    vec4 color = getMaterialColor(v0.materialID, uv); 
+    vec4 attenuation = vec4(0.5) * cosSurface  * cosLight * inv_square_distance *  surfaceAreaTriangle(index) * camera.emissiveTriangleCount;
     if(isVolume) {
         float density = camera.fogDensity; 
         attenuation.rgb *= exp(-length * density);
     }
+    waveFront[rayPayload.idx].light += light.emission * color * attenuation * waveFront[rayPayload.idx].throughPut;
 }

@@ -11,12 +11,13 @@ struct RayState {
     uint randomState;
     bool terminated;
     uint samples; 
-    uint shadowRayIndex;
+    uint __padding;
 };
 
 struct RayPayload {
     float hitDistance;
     int idx;
+    bool isShadowRay;
 };
 
 struct Vertex {

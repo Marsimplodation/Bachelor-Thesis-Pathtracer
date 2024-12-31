@@ -64,7 +64,7 @@ struct alignas(16) Camera {
     u32 reset;
     //shading helper - volumetric and MIS
     u32 lightCount;
-    u32 volumetricFog;
+    u32 nee;
     float fogDensity;
     float fogScale;
     void rotate(glm::vec2 mouse, float deltaTime);
