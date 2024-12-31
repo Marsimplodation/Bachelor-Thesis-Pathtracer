@@ -73,8 +73,10 @@ void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv
     hitPosition += EPS * normal.xyz;
     waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
     
-    if(camera.emissiveTriangleCount != 0) {
+    float xi1 = fastRandom(waveFront[rayPayload.idx].randomState);
+    if(xi1 < 0.5f && camera.emissiveTriangleCount != 0) {
         NEE(hitPosition, normal.xyz, false);
+        return;
     }
 
     //next bounce
@@ -110,7 +112,6 @@ bool hitVolume(vec3 origin, vec3 direction, vec4 normal) {
     if(camera.emissiveTriangleCount != 0) {
         NEE(hitPosition, normal.xyz, true);
     }
-    waveFront[rayPayload.idx].terminated = true;
     return true;
 }
 
@@ -122,9 +123,6 @@ void main() {
     vec3 direction = gl_WorldRayDirectionEXT; // Ray direction in world space
     float t = gl_HitTEXT;                      // Distance to the hit point
     rayPayload.hitDistance = t;
-    if(rayPayload.isShadowRay == true) {
-        return;
-    }
 
     // Fetch indices for the triangle
     uint index0 = indices[primitiveID * 3 + 0];
@@ -139,6 +137,18 @@ void main() {
     vec4 color = m.color; 
     vec4 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
     vec2 uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
+
+    if(waveFront[rayPayload.idx].shadowRayIndex == primitiveID*3) {
+        vec4 color = getMaterialColor(v0.materialID, uv); 
+        waveFront[rayPayload.idx].light += m.emission * color * waveFront[rayPayload.idx].throughPut;
+        waveFront[rayPayload.idx].terminated = true;
+        return;
+    }
+    if(waveFront[rayPayload.idx].shadowRayIndex != uint(-1)){
+        waveFront[rayPayload.idx].terminated = true;
+        return;
+    }
+
 
     if (m.normalMapData[0] >= 0) {
         vec4 normalColor = sampleTexture(m.normalMapData, uv);
@@ -155,7 +165,7 @@ void main() {
     float weight = 1.0; 
     if(m.shaderFlag == 0x00) {
         lambert(origin, direction,normal, v0.materialID, uv, t);
-        weight = 0.5;
+        weight = 1.0;
     }
     if(m.shaderFlag == 0x01) {
         mirror(origin, direction,normal, v0.materialID, uv, t);

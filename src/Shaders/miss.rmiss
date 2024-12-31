@@ -21,14 +21,15 @@ bool hitVolume(vec3 origin, vec3 direction, vec4 normal) {
     if(camera.emissiveTriangleCount != 0) {
         NEE(hitPosition, normal.xyz, true);
     }
-    waveFront[rayPayload.idx].terminated = true;
+    //waveFront[rayPayload.idx].terminated = true;
     return true;
 }
 void main() {
-    if(rayPayload.isShadowRay == false) {
+    if(waveFront[rayPayload.idx].shadowRayIndex == uint(-1)) {
         vec3 origin = gl_WorldRayOriginEXT;      // Ray origin in world space
         vec3 direction = gl_WorldRayDirectionEXT; // Ray direction in world space
         if(camera.volumetricFog) hitVolume(origin, direction, vec4(0.0));
+        return;
     }
     rayPayload.hitDistance = INFINITY; 
     waveFront[rayPayload.idx].terminated = true;

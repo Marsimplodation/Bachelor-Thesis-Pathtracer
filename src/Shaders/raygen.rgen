@@ -44,11 +44,11 @@ void main() {
         direction = ndc.x *camera.fov *camera.right.xyz + ndc.y * camera.fov *camera.up.xyz;
         direction += camera.forward.xyz; // Ray direction pointing forward
         direction = normalize(direction); 
+        waveFront[idx].shadowRayIndex = uint(-1);
     }
     
     
     rayPayload.idx = idx;
-    rayPayload.isShadowRay = false;
     traceRayEXT(
         topLevelAS, 
         gl_RayFlagsOpaqueEXT, 
