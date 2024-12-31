@@ -26,21 +26,21 @@ void VkRenderer::createDescriptorPool() {
         VkAccelerationStructureKHR* as;
     };*/
     descriptorBindings = std::vector<DescriptorBinding>();
-    descriptorBindings.push_back({0,0,RGEN,SB,&raygenBuffer});
-    descriptorBindings.push_back({0,1,MISS,SB,&missBuffer});
-    descriptorBindings.push_back({0,2,CHIT,SB,&hitBuffer});
-    descriptorBindings.push_back({0,3,RGEN,IM,VK_NULL_HANDLE,&storageImageView});
-    descriptorBindings.push_back({0,4,ALL_STAGES,AS,VK_NULL_HANDLE,VK_NULL_HANDLE,&topLevelAS});
-    descriptorBindings.push_back({0,5,ALL_STAGES,UB,&cameraBuffer});
-    descriptorBindings.push_back({0,6,ALL_STAGES,SB,&waveFrontBuffer});
+    descriptorBindings.push_back({0,0,RGEN,SB});
+    descriptorBindings.push_back({0,1,MISS,SB});
+    descriptorBindings.push_back({0,2,CHIT,SB});
+    descriptorBindings.push_back({0,3,RGEN,IM});
+    descriptorBindings.push_back({0,4,ALL_STAGES,AS});
+    descriptorBindings.push_back({0,5,ALL_STAGES,UB});
+    descriptorBindings.push_back({0,6,ALL_STAGES,SB});
     
-    descriptorBindings.push_back({1,0,ALL_STAGES,SB,&vertexBuffer});
-    descriptorBindings.push_back({1,1,ALL_STAGES,SB,&indexBuffer});
-    descriptorBindings.push_back({1,2,ALL_STAGES,SB,&emissiveBuffer});
-    descriptorBindings.push_back({1,3,ALL_STAGES,SB,&objectBuffer});
+    descriptorBindings.push_back({1,0,ALL_STAGES,SB});
+    descriptorBindings.push_back({1,1,ALL_STAGES,SB});
+    descriptorBindings.push_back({1,2,ALL_STAGES,SB});
+    descriptorBindings.push_back({1,3,ALL_STAGES,SB});
     
-    descriptorBindings.push_back({2,0,ALL_STAGES,SB,&materialBuffer});
-    descriptorBindings.push_back({2,1,ALL_STAGES,SB,&textureBuffer});
+    descriptorBindings.push_back({2,0,ALL_STAGES,SB});
+    descriptorBindings.push_back({2,1,ALL_STAGES,SB});
     std::vector<VkDescriptorPoolSize> poolSizes(0);
     
     for (auto & elem : descriptorBindings) {
@@ -98,7 +98,28 @@ void VkRenderer::updateDescriptorSet() {
     std::vector<VkDescriptorBufferInfo> bufferInfos(0);
     std::vector<VkDescriptorImageInfo> imageInfos(0);
     std::vector< VkWriteDescriptorSetAccelerationStructureKHR> asInfos(0);
+    
+    bufferInfos.push_back({.buffer=raygenBuffer});
+    bufferInfos.push_back({.buffer=missBuffer});
+    bufferInfos.push_back({.buffer=hitBuffer});
+    imageInfos.push_back({.imageView = storageImageView});
+    asInfos.push_back({.pAccelerationStructures = &topLevelAS});
+    imageInfos.push_back({.imageView = storageImageView});
+    bufferInfos.push_back({.buffer=cameraBuffer});
+    bufferInfos.push_back({.buffer=waveFrontBuffer});
 
+    bufferInfos.push_back({.buffer=vertexBuffer});
+    bufferInfos.push_back({.buffer=indexBuffer});
+    bufferInfos.push_back({.buffer=emissiveBuffer});
+    bufferInfos.push_back({.buffer=objectBuffer});
+
+    bufferInfos.push_back({.buffer=materialBuffer});
+    bufferInfos.push_back({.buffer=textureBuffer});
+
+
+    int asIndex=0;
+    int imIndex=0;
+    int bIndex=0;
     for (auto & elem : descriptorBindings) {
         VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, nullptr, 0, 0, 0, SB, nullptr, nullptr, nullptr};
         write.dstSet = descriptorSets[elem.set];
@@ -108,30 +129,21 @@ void VkRenderer::updateDescriptorSet() {
         write.descriptorCount = 1;
 
         if(elem.type == AS) {
-            int index = asInfos.size();
-            asInfos.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
-                .accelerationStructureCount = 1,
-                .pAccelerationStructures = elem.as,
-            });
-            write.pNext = (void*)(&asInfos[index]); 
+            auto & info = asInfos[asIndex++];
+            info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+            info.accelerationStructureCount = 1;
+            write.pNext = (void*) &info; 
         }
         else if(elem.type == IM) {
-            int index = imageInfos.size();
-            imageInfos.push_back({
-                .imageView = *elem.image, // The image view for the storage image
-                .imageLayout = VK_IMAGE_LAYOUT_GENERAL, // Layout for storage images
-            });
-            write.pImageInfo = &imageInfos[index]; 
+            auto & info = imageInfos[imIndex++];
+            info.imageLayout = VK_IMAGE_LAYOUT_GENERAL, // Layout for storage images
+            write.pImageInfo = &info; 
         }
         else {
-            int index = bufferInfos.size();
-            bufferInfos.push_back({
-                .buffer = *elem.buffer,
-                .offset = 0,
-                .range = VK_WHOLE_SIZE,
-            });
-            write.pBufferInfo = &bufferInfos[index]; 
+            auto & info = bufferInfos[bIndex++];
+            info.offset = 0;
+            info.range = VK_WHOLE_SIZE;
+            write.pBufferInfo = &info; 
         }
         writeDescriptorSets.push_back(write);
     }

@@ -31,9 +31,6 @@ struct DescriptorBinding {
     u32 binding;
     VkShaderStageFlags shaderStage;
     VkDescriptorType type;
-    VkBuffer* buffer;
-    VkImageView* image;
-    VkAccelerationStructureKHR* as;
 };
 
 struct RayState {
