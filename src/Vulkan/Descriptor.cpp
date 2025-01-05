@@ -7,11 +7,14 @@ namespace {
     #define UB VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
     #define AS VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
     #define IM VK_DESCRIPTOR_TYPE_STORAGE_IMAGE 
+    #define IM VK_DESCRIPTOR_TYPE_STORAGE_IMAGE 
+    #define IMS VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 
     #define CHIT VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
     #define RGEN VK_SHADER_STAGE_RAYGEN_BIT_KHR
     #define MISS VK_SHADER_STAGE_MISS_BIT_KHR    
     #define ALL_STAGES VK_SHADER_STAGE_ALL 
+    #define FRAG VK_SHADER_STAGE_FRAGMENT_BIT
 }
 
 
@@ -21,9 +24,6 @@ void VkRenderer::createDescriptorPool() {
         u32 binding;
         VkShaderStageFlags shaderStage;
         VkDescriptorType type;
-        VkBuffer* buffer;
-        VkImageView* image;
-        VkAccelerationStructureKHR* as;
     };*/
     descriptorBindings = std::vector<DescriptorBinding>();
     descriptorBindings.push_back({0,0,RGEN,SB});
@@ -60,14 +60,14 @@ void VkRenderer::createDescriptorPool() {
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = poolSizes.size();
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 3;  // Only need 1 descriptor set (if you're allocating 1 per frame)
+    poolInfo.maxSets = descriptorSets.size();  // Only need 1 descriptor set (if you're allocating 1 per frame)
 
     VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
     checkIfVkResultIsCorrect(result, "Failed to create descriptor pool");
 }
 
 void VkRenderer::createDescriptorLayout() {
-    std::vector<std::vector<VkDescriptorSetLayoutBinding>> bindings(3);
+    std::vector<std::vector<VkDescriptorSetLayoutBinding>> bindings(descriptorSets.size());
     for (auto & elem : descriptorBindings) {
         VkDescriptorSetLayoutBinding binding = {};
         binding.binding = elem.binding;

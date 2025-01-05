@@ -9,90 +9,97 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+
 void customTheme() {
-        auto &colors = ImGui::GetStyle().Colors;
+auto &colors = ImGui::GetStyle().Colors;
+colors[ImGuiCol_WindowBg] = ImVec4{0.1f, 0.1f, 0.13f, 1.0f};
+colors[ImGuiCol_MenuBarBg] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 
-    // General Background
-    colors[ImGuiCol_WindowBg] = ImVec4{0.12f, 0.12f, 0.15f, 1.0f};
-    colors[ImGuiCol_MenuBarBg] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
+// Border
+colors[ImGuiCol_Border] = ImVec4{0.44f, 0.37f, 0.61f, 0.29f};
+colors[ImGuiCol_BorderShadow] = ImVec4{0.0f, 0.0f, 0.0f, 0.24f};
 
-    // Border
-    colors[ImGuiCol_Border] = ImVec4{0.3f, 0.3f, 0.3f, 0.8f};
-    colors[ImGuiCol_BorderShadow] = ImVec4{0.0f, 0.0f, 0.0f, 0.0f};
+// Text
+colors[ImGuiCol_Text] = ImVec4{1.0f, 1.0f, 1.0f, 1.0f};
+colors[ImGuiCol_TextDisabled] = ImVec4{0.5f, 0.5f, 0.5f, 1.0f};
 
-    // Text
-    colors[ImGuiCol_Text] = ImVec4{0.9f, 0.9f, 0.9f, 1.0f};
-    colors[ImGuiCol_TextDisabled] = ImVec4{0.5f, 0.5f, 0.5f, 1.0f};
+// Headers
+colors[ImGuiCol_Header] = ImVec4{0.13f, 0.13f, 0.17, 1.0f};
+colors[ImGuiCol_HeaderHovered] = ImVec4{0.19f, 0.2f, 0.25f, 1.0f};
+colors[ImGuiCol_HeaderActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 
-    // Headers
-    colors[ImGuiCol_Header] = ImVec4{0.2f, 0.2f, 0.25f, 1.0f};
-    colors[ImGuiCol_HeaderHovered] = ImVec4{0.25f, 0.25f, 0.3f, 1.0f};
-    colors[ImGuiCol_HeaderActive] = ImVec4{0.3f, 0.3f, 0.35f, 1.0f};
+// Buttons
+colors[ImGuiCol_Button] = ImVec4{0.13f, 0.13f, 0.17, 1.0f};
+colors[ImGuiCol_ButtonHovered] = ImVec4{0.19f, 0.2f, 0.25f, 1.0f};
+colors[ImGuiCol_ButtonActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+colors[ImGuiCol_CheckMark] = ImVec4{0.74f, 0.58f, 0.98f, 1.0f};
 
-    // Buttons
-    colors[ImGuiCol_Button] = ImVec4{0.2f, 0.2f, 0.25f, 1.0f};
-    colors[ImGuiCol_ButtonHovered] = ImVec4{0.3f, 0.3f, 0.4f, 1.0f};
-    colors[ImGuiCol_ButtonActive] = ImVec4{0.35f, 0.35f, 0.45f, 1.0f};
-    colors[ImGuiCol_CheckMark] = ImVec4{0.45f, 0.7f, 1.0f, 1.0f}; // Vibrant accent color
+// Popups
+colors[ImGuiCol_PopupBg] = ImVec4{0.1f, 0.1f, 0.13f, 0.92f};
 
-    // Popups
-    colors[ImGuiCol_PopupBg] = ImVec4{0.1f, 0.1f, 0.14f, 0.95f};
+// Slider
+colors[ImGuiCol_SliderGrab] = ImVec4{0.44f, 0.37f, 0.61f, 0.54f};
+colors[ImGuiCol_SliderGrabActive] = ImVec4{0.74f, 0.58f, 0.98f, 0.54f};
 
-    // Slider
-    colors[ImGuiCol_SliderGrab] = ImVec4{0.3f, 0.5f, 1.0f, 0.7f}; // Smooth blue accent
-    colors[ImGuiCol_SliderGrabActive] = ImVec4{0.4f, 0.6f, 1.0f, 0.8f};
+// Frame BG
+colors[ImGuiCol_FrameBg] = ImVec4{0.13f, 0.13, 0.17, 1.0f};
+colors[ImGuiCol_FrameBgHovered] = ImVec4{0.19f, 0.2f, 0.25f, 1.0f};
+colors[ImGuiCol_FrameBgActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 
-    // Frame BG
-    colors[ImGuiCol_FrameBg] = ImVec4{0.17f, 0.17f, 0.22f, 1.0f};
-    colors[ImGuiCol_FrameBgHovered] = ImVec4{0.2f, 0.2f, 0.27f, 1.0f};
-    colors[ImGuiCol_FrameBgActive] = ImVec4{0.25f, 0.25f, 0.32f, 1.0f};
+// Tabs
+colors[ImGuiCol_Tab] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+colors[ImGuiCol_TabHovered] = ImVec4{0.24, 0.24f, 0.32f, 1.0f};
+colors[ImGuiCol_TabActive] = ImVec4{0.2f, 0.22f, 0.27f, 1.0f};
+colors[ImGuiCol_TabUnfocused] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+colors[ImGuiCol_TabUnfocusedActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 
-    // Tabs
-    colors[ImGuiCol_Tab] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
-    colors[ImGuiCol_TabHovered] = ImVec4{0.3f, 0.3f, 0.4f, 1.0f};
-    colors[ImGuiCol_TabActive] = ImVec4{0.25f, 0.25f, 0.35f, 1.0f};
-    colors[ImGuiCol_TabUnfocused] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
-    colors[ImGuiCol_TabUnfocusedActive] = ImVec4{0.2f, 0.2f, 0.27f, 1.0f};
+// Title
+colors[ImGuiCol_TitleBg] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+colors[ImGuiCol_TitleBgActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 
-    // Title
-    colors[ImGuiCol_TitleBg] = ImVec4{0.14f, 0.14f, 0.18f, 1.0f};
-    colors[ImGuiCol_TitleBgActive] = ImVec4{0.2f, 0.2f, 0.27f, 1.0f};
-    colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.1f, 0.1f, 0.13f, 1.0f};
+// Scrollbar
+colors[ImGuiCol_ScrollbarBg] = ImVec4{0.1f, 0.1f, 0.13f, 1.0f};
+colors[ImGuiCol_ScrollbarGrab] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
+colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4{0.19f, 0.2f, 0.25f, 1.0f};
+colors[ImGuiCol_ScrollbarGrabActive] = ImVec4{0.24f, 0.24f, 0.32f, 1.0f};
 
-    // Scrollbar
-    colors[ImGuiCol_ScrollbarBg] = ImVec4{0.12f, 0.12f, 0.15f, 1.0f};
-    colors[ImGuiCol_ScrollbarGrab] = ImVec4{0.3f, 0.3f, 0.35f, 1.0f};
-    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4{0.35f, 0.35f, 0.4f, 1.0f};
-    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4{0.4f, 0.4f, 0.45f, 1.0f};
+// Seperator
+colors[ImGuiCol_Separator] = ImVec4{0.44f, 0.37f, 0.61f, 1.0f};
+colors[ImGuiCol_SeparatorHovered] = ImVec4{0.74f, 0.58f, 0.98f, 1.0f};
+colors[ImGuiCol_SeparatorActive] = ImVec4{0.84f, 0.58f, 1.0f, 1.0f};
 
-    // Separator
-    colors[ImGuiCol_Separator] = ImVec4{0.3f, 0.3f, 0.4f, 1.0f};
-    colors[ImGuiCol_SeparatorHovered] = ImVec4{0.4f, 0.4f, 0.5f, 1.0f};
-    colors[ImGuiCol_SeparatorActive] = ImVec4{0.5f, 0.5f, 0.6f, 1.0f};
+// Resize Grip
+colors[ImGuiCol_ResizeGrip] = ImVec4{0.44f, 0.37f, 0.61f, 0.29f};
+colors[ImGuiCol_ResizeGripHovered] = ImVec4{0.74f, 0.58f, 0.98f, 0.29f};
+colors[ImGuiCol_ResizeGripActive] = ImVec4{0.84f, 0.58f, 1.0f, 0.29f};
 
-    // Resize Grip
-    colors[ImGuiCol_ResizeGrip] = ImVec4{0.3f, 0.3f, 0.4f, 0.6f};
-    colors[ImGuiCol_ResizeGripHovered] = ImVec4{0.35f, 0.35f, 0.45f, 0.7f};
-    colors[ImGuiCol_ResizeGripActive] = ImVec4{0.4f, 0.4f, 0.5f, 0.8f};
+// Docking
+colors[ImGuiCol_DockingPreview] = ImVec4{0.44f, 0.37f, 0.61f, 1.0f};
 
-    // Docking
-    colors[ImGuiCol_DockingPreview] = ImVec4{0.45f, 0.7f, 1.0f, 0.8f}; // Blue glow effect
+auto &style = ImGui::GetStyle();
+style.TabRounding = 4;
+style.ScrollbarRounding = 9;
+style.WindowRounding = 7;
+style.GrabRounding = 3;
+style.FrameRounding = 3;
+style.PopupRounding = 4;
+style.ChildRounding = 4;
+  // Go through every colour and convert it to linear
+  // This is because ImGui uses linear colours but we are using sRGB
+  // This is a simple approximation of the conversion
+  for (int i = 0; i < ImGuiCol_COUNT; i++) {
+    /*float linear = (srgb <= 0.04045f) ? srgb / 12.92f : pow((srgb + 0.055f)
+     * / 1.055f, 2.4f);*/
 
-    // Style Adjustments for Modern Feel
-    auto &style = ImGui::GetStyle();
-    style.TabRounding = 6;
-    style.ScrollbarRounding = 10;
-    style.WindowRounding = 8;
-    style.GrabRounding = 4;
-    style.FrameRounding = 5;
-    style.PopupRounding = 6;
-    style.ChildRounding = 6;
-
-    // General padding and spacing adjustments
-    style.WindowPadding = ImVec2(10, 10);
-    style.FramePadding = ImVec2(6, 4);
-    style.ItemSpacing = ImVec2(8, 6);
-
+    ImVec4 &col = style.Colors[i];
+    col.x = col.x <= 0.04045f ? col.x / 12.92f
+                              : pow((col.x + 0.055f) / 1.055f, 2.4f);
+    col.y = col.y <= 0.04045f ? col.y / 12.92f
+                              : pow((col.y + 0.055f) / 1.055f, 2.4f);
+    col.z = col.z <= 0.04045f ? col.z / 12.92f
+                              : pow((col.z + 0.055f) / 1.055f, 2.4f);
+  }
 }
 
 void ImguiModule::init(VkDevice device,
@@ -101,7 +108,8 @@ void ImguiModule::init(VkDevice device,
                         VkQueue graphicsQueue,
                         VkRenderPass renderPass,
                         int imageCount,
-                        GLFWwindow * window
+                        GLFWwindow * window,
+                        void * rendererPtr
                        ) {
     VkDescriptorPoolSize pool_sizes[] = {
             { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -140,6 +148,9 @@ void ImguiModule::init(VkDevice device,
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     init_info.RenderPass = renderPass;
     ImGui_ImplVulkan_Init(&init_info);
+    const VkFormat requested = {VK_FORMAT_B8G8R8A8_SRGB};
+    VkRenderer & renderer = *(VkRenderer*)rendererPtr;
+    ImGui_ImplVulkanH_SelectSurfaceFormat(physicalDevice, renderer.surface, &requested, 1, VK_COLORSPACE_SRGB_NONLINEAR_KHR);
     ImGui_ImplGlfw_InitForVulkan(window, true);
     customTheme();
 
@@ -286,16 +297,32 @@ bool showMaterials(VkRenderer& renderer) {
     }
     return changed;
 }
-
+bool textureCreated = false;
 void ImguiModule::update(void* rendererPtr, float deltaTime) {
         VkRenderer & renderer = *(VkRenderer*)rendererPtr;
-        if(!active) return;
+
+        if(!textureCreated) {
+            textureID = reinterpret_cast<ImTextureID>(ImGui_ImplVulkan_AddTexture(
+                renderer.imageSampler,
+                renderer.storageImageView,                       // VkSampler
+                VK_IMAGE_LAYOUT_GENERAL // Image layout for sampling
+            ));
+            textureCreated = true;
+        }
+
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame(); // If using GLFW
         ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport(0);
 
         // Build your GUI
         ShowFPSOverlay(deltaTime);
+        ImGui::Begin("Viewport");
+        
+        ImVec2 renderingSize = ImGui::GetWindowSize();
+        ImGui::Image(textureID,renderingSize);
+
+        ImGui::End();
         updated |= showMaterials(renderer);
         updated |= showCamera(renderer);
         ImGui::Render();

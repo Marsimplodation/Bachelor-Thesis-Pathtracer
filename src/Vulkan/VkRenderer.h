@@ -171,8 +171,8 @@ struct VkRenderer {
     VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
     VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSets[3];
-    VkDescriptorSetLayout descriptorSetLayouts[3];
+    std::vector<VkDescriptorSet> descriptorSets = std::vector<VkDescriptorSet>(3);
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts =  std::vector<VkDescriptorSetLayout>(3);
     VkRenderPass renderPass;
     ImguiModule gui;
     std::vector<RayState> waveFront;
@@ -225,6 +225,7 @@ struct VkRenderer {
     VkImage storageImage;
     VkImageView storageImageView;
     VkDeviceMemory imageMemory;
+    VkSampler imageSampler;
     
     //Camera
     void updateCamera(glm::vec2 mouse, glm::vec2 control, float deltaTime);
@@ -246,6 +247,7 @@ struct VkRenderer {
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
         VK_KHR_SPIRV_1_4_EXTENSION_NAME,
         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+        VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME,
     };
     
     //validation

@@ -15,7 +15,8 @@ void VkRenderer::initWindow() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    window = glfwCreateWindow(2560, 1440, "Vulkan window", nullptr, nullptr);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
+    window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
 }
 
 void VkRenderer::initVulkan() {
@@ -136,7 +137,7 @@ void VkRenderer::mainLoop() {
     double lastTime = glfwGetTime();  // Initial time
     createCamera();
     gui = ImguiModule();
-    gui.init(device, physicalDevice, instance, graphicsQueue, renderPass, swapChainImages.size(), window);
+    gui.init(device, physicalDevice, instance, graphicsQueue, renderPass, swapChainImages.size(), window, this);
 
     bool guiButtonAvailable = true;
 
@@ -218,9 +219,9 @@ void VkRenderer::cleanup() {
     vkDestroyRenderPass(device, renderPass, nullptr);
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[0], nullptr);
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[1], nullptr);
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayouts[2], nullptr);
+    for(auto & layout : descriptorSetLayouts) {
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+    }
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 

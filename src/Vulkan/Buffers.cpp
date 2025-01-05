@@ -279,8 +279,8 @@ void VkRenderer::traceImage() {
         VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, 
         pipelineLayout, 
         0,  // Descriptor set binding point
-        3,  // Number of descriptor sets
-        descriptorSets,  // The descriptor set to bind
+        descriptorSets.size(),  // Number of descriptor sets
+        descriptorSets.data(),  // The descriptor set to bind
         0,  // Dynamic offsets count (if using dynamic descriptors)
         nullptr  // Dynamic offsets (if applicable)
     );
@@ -364,19 +364,22 @@ void VkRenderer::copyTracedImageToSwapchain(int imageIndex) {
 void VkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, float deltaTime) {
     beginCommandBuffer();
     traceImage();
-    copyTracedImageToSwapchain(imageIndex);
-
-    //render pass for drawing UI    
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-    renderPassInfo.clearValueCount = 0;
-    renderPassInfo.pClearValues = VK_NULL_HANDLE;
-    renderPassInfo.renderArea.extent = swapChainExtent; 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        gui.update(this, deltaTime);
-    vkCmdEndRenderPass(commandBuffer);
+    if(!gui.active) {
+        copyTracedImageToSwapchain(imageIndex);
+    } else {
+        //render pass for drawing UI    
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+        renderPassInfo.clearValueCount = 1;
+        VkClearValue val {0,0,0,1};
+        renderPassInfo.pClearValues = &val;
+        renderPassInfo.renderArea.extent = swapChainExtent; 
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            gui.update(this, deltaTime);
+        vkCmdEndRenderPass(commandBuffer);
+    }
 
 
     endCommandBuffer();

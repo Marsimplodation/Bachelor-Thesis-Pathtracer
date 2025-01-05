@@ -95,10 +95,10 @@ void VkRenderer::createRaytracingPipeline() {
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 3;
-    allocInfo.pSetLayouts = descriptorSetLayouts;
+    allocInfo.descriptorSetCount = descriptorSets.size();
+    allocInfo.pSetLayouts = descriptorSetLayouts.data();
 
-    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets);
+    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data());
     checkIfVkResultIsCorrect(result, "Failed to allocate descriptor set");
 
 
@@ -106,8 +106,8 @@ void VkRenderer::createRaytracingPipeline() {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     // You will add descriptor set layouts for ray tracing resources (acceleration structures, buffers, etc.)
-    pipelineLayoutCreateInfo.setLayoutCount = 3; // Add descriptor set layouts here if needed
-    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
+    pipelineLayoutCreateInfo.setLayoutCount = descriptorSetLayouts.size(); // Add descriptor set layouts here if needed
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 
     result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
     checkIfVkResultIsCorrect(result, "Failed to create pipeline layout");
@@ -168,11 +168,11 @@ void VkRenderer::createRenderPasses(){
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapChainImageFormat;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorAttachmentRef{};

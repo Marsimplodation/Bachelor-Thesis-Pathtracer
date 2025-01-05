@@ -95,6 +95,7 @@ void main() {
     newPixel.r = pow(newPixel.r, INV_GAMMA);
     newPixel.g = pow(newPixel.g, INV_GAMMA);
     newPixel.b = pow(newPixel.b, INV_GAMMA);
+    newPixel.a = 1.0f; 
 
     imageStore(storageImage, pixelCoords, newPixel);
     // Write the color to the storage image
