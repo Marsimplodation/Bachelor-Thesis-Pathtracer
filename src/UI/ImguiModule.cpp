@@ -301,14 +301,15 @@ bool textureCreated = false;
 void ImguiModule::update(void* rendererPtr, float deltaTime) {
         VkRenderer & renderer = *(VkRenderer*)rendererPtr;
 
-        if(!textureCreated) {
+        if(textureCreated) {
+            ImGui_ImplVulkan_RemoveTexture(reinterpret_cast<VkDescriptorSet>(textureID));
+        }
             textureID = reinterpret_cast<ImTextureID>(ImGui_ImplVulkan_AddTexture(
                 renderer.imageSampler,
                 renderer.storageImageView,                       // VkSampler
-                VK_IMAGE_LAYOUT_GENERAL // Image layout for sampling
+                VK_IMAGE_LAYOUT_GENERAL// Image layout for sampling
             ));
             textureCreated = true;
-        }
 
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame(); // If using GLFW
@@ -318,9 +319,12 @@ void ImguiModule::update(void* rendererPtr, float deltaTime) {
         // Build your GUI
         ShowFPSOverlay(deltaTime);
         ImGui::Begin("Viewport");
+        auto size = ImGui::GetWindowSize();
+        float ratio = renderer.swapChainExtent.width / renderer.swapChainExtent.height;
+        size.y = size.x * ratio;
+        ImGui::SetWindowSize(size);
         
-        ImVec2 renderingSize = ImGui::GetWindowSize();
-        ImGui::Image(textureID,renderingSize);
+        ImGui::Image(textureID,size);
 
         ImGui::End();
         updated |= showMaterials(renderer);

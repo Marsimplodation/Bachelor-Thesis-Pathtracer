@@ -16,7 +16,7 @@ void VkRenderer::initWindow() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
-    window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
+    window = glfwCreateWindow(2560, 1440, "Vulkan window", nullptr, nullptr);
 }
 
 void VkRenderer::initVulkan() {
