@@ -71,6 +71,14 @@ void refraction(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2
 void lambert(vec3 origin, vec3 direction, vec4 normal, uint materialIdx, vec2 uv, float t) {
     vec3 hitPosition = origin + (t-EPS) * direction; // Compute world-space hit position
     hitPosition += EPS * normal.xyz;
+    if(getMaterialColor(materialIdx, uv).a < 0.9) {
+        waveFront[rayPayload.idx].terminated = false;
+        hitPosition -= EPS * normal.xyz;
+        hitPosition += 0.001f * direction;
+        waveFront[rayPayload.idx].origin.xyz = hitPosition;
+        waveFront[rayPayload.idx].direction.xyz = direction;
+        return;
+    }
     waveFront[rayPayload.idx].throughPut.rgb *= getMaterialColor(materialIdx, uv).rgb;
     
     if(camera.emissiveTriangleCount != 0) {
