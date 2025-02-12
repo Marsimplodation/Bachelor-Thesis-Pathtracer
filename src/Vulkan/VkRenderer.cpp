@@ -201,6 +201,7 @@ void VkRenderer::cleanup() {
     vkFreeMemory(device, instanceASMemory, nullptr);
     vkFreeMemory(device, emissiveBufferMemory, nullptr);
     vkFreeMemory(device, objectBufferMemory, nullptr);
+    vkDestroySampler(device, imageSampler, nullptr); 
 
     vkDestroyBuffer(device, hitBuffer, nullptr);
     vkDestroyBuffer(device, missBuffer, nullptr);
